@@ -61,7 +61,7 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 | # | Manque | Contournement | Ce qui le lèverait |
 |---|---|---|---|
 | I1 | Images d'assets en style peint (en cours chez Olivier) | visuels provisoires générés en local, essais 3D actuels marqués `placeholder` | dépôt dans `refs/inbox/` sous l'identifiant de `PROMPTS.md` |
-| I2 | Concepts S1, S3, S4 manquants | concepts provisoires générés en local | génération Midjourney |
+| I2 | Concepts S1, S3, S4 manquants | concepts provisoires générés en local (`assets/concepts/`, `pipeline/comfy/concepts.py`, prompts de PROMPTS.md) | génération Midjourney |
 | I3 | Blender absent | nœuds de maillage ComfyUI (décimation, UV), import GLB dans UE | D9, ou installation par Olivier |
 | I4 | Pas de création de PR (connecteur GitHub sans accès, `gh` non connecté) | D6 | `gh auth login`, ou installer l'application GitHub de Claude sur le dépôt |
 | I5 | Musique en MP3 185 kb/s | MP3 utilisé tel quel | export WAV depuis Suno |
@@ -69,6 +69,8 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 | I6 | Freesound : seuls les aperçus OGG sont accessibles sans OAuth | aperçus utilisés pour le prototype | connexion OAuth pour les originaux (au master) |
 
 ## 🟢 Mineurs
+
+- **Originalité** : le concept provisoire S4 (`assets/concepts/S4-GUE.png`) montre des créatures façon sangliers moussus à défenses, trop proches d'un film d'animation connu ; il ne sert qu'à la palette, pas au design (ton troupeau aux oreilles tombantes reste la référence).
 
 - Ciel provisoire flou (2048 px pour 360°) : à régénérer plus grand ou agrandir ; ce n'est pas un vrai équirectangulaire (horizon à 82 % de l'image).
 - Les captures de revue (exposition fixe) restent plus sombres que l'animatic (exposition automatique du rendu).
@@ -91,6 +93,7 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 
 ## Fait récemment
 
+- **Bible de style (J0)** : palette par beat (7 beats) ; concepts provisoires S1/S3/S4 générés en local avec les prompts de PROMPTS.md.
 - **Itération 5 (J2)** : eau à reflet du ciel peint + Fresnel (miroir à l'horizon, transparente vers le bas), sans réflexions temps réel (coût Quest faible) ; les berges ne s'y reflètent pas.
 - **J1b** : variante de repli de J1 (calque stéréo équirectangulaire natif du Quest), APK prêt, pour éviter un aller-retour si la sphère à matériau échoue.
 - **Itération 4 (J2)** : ciel peint provisoire généré en local (Z-Image Turbo, prompt « Ciel et lointain »), projeté sur la voûte, luminosité animée du crépuscule à la nuit ; lune plus brillante (la créature passe devant en silhouette).
@@ -117,7 +120,7 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 
 | Jalon | État |
 |---|---|
-| J0 Bible de style | prompts prêts ; attend les images d'Olivier (I1, D1) |
+| J0 Bible de style | prompts prêts ; **palette par beat** (`review/bible/palettes.png`, `pipeline/style/palettes.yaml`) à partir de tes essais S2/S5/S6/S7 et de concepts provisoires S1/S3/S4 ; ciel peint provisoire ; attend tes images d'assets (I1) et le choix de l'image maîtresse (D1) |
 | J1 Spike vidéo 360 + Quest | scène J1_Spike construite par script (sphère 360 stéréo + séquence + témoin de synchro), matériau validé dans l'éditeur ; **APK prêt : `builds/android/Barque-arm64.apk`** (485 Mo) ; attend le test au casque (go / no-go) |
 | J2 Greybox + animatic | greybox construit par script (terrain, eau translucide, arche, forêt, lac, lune, blocs des créatures) ; séquence LS_Animatic calée sur la musique ; 18 captures et animatic vidéo avec musique ; **itération 5 : eau qui reflète le ciel peint**, ciel peint (itération 4) (crépuscule → nuit) après les créatures 3D (itération 3) (abysses lumineuse, troupeau, créature volante) après la barque 3D en itération 2 (modèle TRELLIS.2 de ta vue 3/4, lanterne lumineuse, place assise sur le banc arrière) — `review/iter-005/planche.jpg` et `review/iter-005/animatic.mp4` ; à valider : timing et confort au casque |
 | J3 à J6 | non commencés |

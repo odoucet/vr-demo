@@ -1,0 +1,113 @@
+# Palettes par beat (générées par pipeline/style/palettes.py, ne pas éditer à la main)
+S1-NOIR:
+  source: assets/concepts/S1-NOIR.png
+  provisoire: true
+  couleurs:
+  - hex: '#142649'
+    part: 0.176
+  - hex: '#192b26'
+    part: 0.257
+  - hex: '#25483a'
+    part: 0.219
+  - hex: '#315d5e'
+    part: 0.174
+  - hex: '#627a86'
+    part: 0.095
+  - hex: '#97aba4'
+    part: 0.079
+S2-PONTON:
+  source: refs/S2-PONTON.png
+  provisoire: false
+  couleurs:
+  - hex: '#04171b'
+    part: 0.146
+  - hex: '#133749'
+    part: 0.15
+  - hex: '#27597d'
+    part: 0.15
+  - hex: '#417cb0'
+    part: 0.294
+  - hex: '#6497c8'
+    part: 0.161
+  - hex: '#9ccbea'
+    part: 0.099
+S3-ABYSSE:
+  source: assets/concepts/S3-ABYSSE.png
+  provisoire: true
+  couleurs:
+  - hex: '#223d38'
+    part: 0.26
+  - hex: '#316259'
+    part: 0.293
+  - hex: '#2a79a5'
+    part: 0.115
+  - hex: '#5b9273'
+    part: 0.162
+  - hex: '#7cb8b3'
+    part: 0.08
+  - hex: '#c6d6c7'
+    part: 0.089
+S4-GUE:
+  source: assets/concepts/S4-GUE.png
+  provisoire: true
+  couleurs:
+  - hex: '#2d3b29'
+    part: 0.16
+  - hex: '#425b3e'
+    part: 0.207
+  - hex: '#5b7b61'
+    part: 0.216
+  - hex: '#6a9fb6'
+    part: 0.116
+  - hex: '#899a88'
+    part: 0.153
+  - hex: '#cdcb9e'
+    part: 0.147
+S5-RACINES:
+  source: refs/S5-RACINES.png
+  provisoire: false
+  couleurs:
+  - hex: '#0a1911'
+    part: 0.333
+  - hex: '#1b301f'
+    part: 0.237
+  - hex: '#334b2f'
+    part: 0.178
+  - hex: '#60693c'
+    part: 0.116
+  - hex: '#838a6e'
+    part: 0.09
+  - hex: '#d0b66d'
+    part: 0.045
+S6-LUNE:
+  source: refs/S6-LUNE.png
+  provisoire: false
+  couleurs:
+  - hex: '#03140b'
+    part: 0.301
+  - hex: '#0c322c'
+    part: 0.287
+  - hex: '#214c43'
+    part: 0.18
+  - hex: '#386c69'
+    part: 0.161
+  - hex: '#6a8a8f'
+    part: 0.051
+  - hex: '#d9dad2'
+    part: 0.02
+S7-LAC:
+  source: refs/S7-LAC.png
+  provisoire: false
+  couleurs:
+  - hex: '#0a1f2a'
+    part: 0.303
+  - hex: '#133e66'
+    part: 0.25
+  - hex: '#413533'
+    part: 0.105
+  - hex: '#325582'
+    part: 0.199
+  - hex: '#866b69'
+    part: 0.081
+  - hex: '#d29872'
+    part: 0.062

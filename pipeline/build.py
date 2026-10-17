@@ -22,6 +22,7 @@ STAGES = [
     ("music", "analyse de structure de la musique", [PY, "pipeline/audio/structure.py"], None),
     ("layout", "tracé de la rivière et trajectoire", [PY, "pipeline/layout/river.py"], None),
     ("cameras", "caméras de revue", [PY, "pipeline/review/cameras.py"], None),
+    ("palettes", "bible de style : palette par beat", [PY, "pipeline/style/palettes.py"], None),
     ("unreal-project", "projet Unreal et configuration", [PY, "pipeline/unreal/create_project.py"], None),
     ("unreal-probe", "vérification du projet", [PY, "pipeline/unreal/run.py", "pipeline/unreal/scripts/probe.py"], "unreal"),
     ("music-wav", "musique en WAV pour Unreal", [PY, "pipeline/audio/prepare_music.py"], None),

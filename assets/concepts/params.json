@@ -1,0 +1,20 @@
+{
+  "S1-NOIR": {
+    "seed": 1,
+    "prompt": "near-total darkness on a still river at night, only faint ripples catching a sliver of blue light, hints of reeds, hand-painted 1980s Japanese animation background art, gouache and watercolor, soft painterly edges, flat color shapes, gentle diffuse light, lush saturated greens, towering cumulus clouds, nostalgic and serene mood",
+    "model": "z_image_turbo_bf16",
+    "workflow": "pipeline/comfy/workflows/z_image_turbo_t2i.json"
+  },
+  "S3-ABYSSE": {
+    "seed": 1,
+    "prompt": "view from a small boat looking down into crystal-clear dark river water, a vast glowing creature shadow gliding beneath, bioluminescent cyan patterns, lily pads on the surface, hand-painted 1980s Japanese animation background art, gouache and watercolor, soft painterly edges, flat color shapes, gentle diffuse light, lush saturated greens, towering cumulus clouds, nostalgic and serene mood",
+    "model": "z_image_turbo_bf16",
+    "workflow": "pipeline/comfy/workflows/z_image_turbo_t2i.json"
+  },
+  "S4-GUE": {
+    "seed": 1,
+    "prompt": "shallow river ford at golden dusk, a herd of large gentle moss-covered creatures wading chest-deep across the river, mist, fireflies starting, seen from water level, hand-painted 1980s Japanese animation background art, gouache and watercolor, soft painterly edges, flat color shapes, gentle diffuse light, lush saturated greens, towering cumulus clouds, nostalgic and serene mood",
+    "model": "z_image_turbo_bf16",
+    "workflow": "pipeline/comfy/workflows/z_image_turbo_t2i.json"
+  }
+}

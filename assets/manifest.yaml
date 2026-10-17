@@ -256,3 +256,40 @@ assets:
   licence: généré localement
   note: projeté sur la voûte (horizon à 82 % de l'image) ; résolution insuffisante (flou), à agrandir
   generated: '2026-10-18'
+- id: concept/S1-NOIR
+  type: image
+  placeholder: true
+  file: assets/concepts/S1-NOIR.png
+  source: génération locale Z-Image Turbo (bf16), 1344×768
+  workflow: pipeline/comfy/workflows/z_image_turbo_t2i.json
+  script: pipeline/comfy/concepts.py S1-NOIR
+  seed: 1
+  prompt: PROMPTS.md, concept S1-NOIR (+ bloc [style])
+  licence: généré localement
+  note: substitut en attendant l'image d'Olivier ; sert à la palette
+  generated: '2026-10-18'
+- id: concept/S3-ABYSSE
+  type: image
+  placeholder: true
+  file: assets/concepts/S3-ABYSSE.png
+  source: génération locale Z-Image Turbo (bf16), 1344×768
+  workflow: pipeline/comfy/workflows/z_image_turbo_t2i.json
+  script: pipeline/comfy/concepts.py S3-ABYSSE
+  seed: 1
+  prompt: PROMPTS.md, concept S3-ABYSSE (+ bloc [style])
+  licence: généré localement
+  note: substitut en attendant l'image d'Olivier ; sert à la palette
+  generated: '2026-10-18'
+- id: concept/S4-GUE
+  type: image
+  placeholder: true
+  file: assets/concepts/S4-GUE.png
+  source: génération locale Z-Image Turbo (bf16), 1344×768
+  workflow: pipeline/comfy/workflows/z_image_turbo_t2i.json
+  script: pipeline/comfy/concepts.py S4-GUE
+  seed: 1
+  prompt: PROMPTS.md, concept S4-GUE (+ bloc [style])
+  licence: généré localement
+  note: substitut en attendant l'image d'Olivier ; sert à la palette ; créatures trop proches d'un film connu, ne
+    pas utiliser comme design
+  generated: '2026-10-18'
