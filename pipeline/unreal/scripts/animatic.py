@@ -176,6 +176,31 @@ if mpc is not None:
     for t, v in [(97.9, 1.0), (127.8, 0.8), (157.8, 0.45), (180.0, 0.28), (DURATION, 0.25)]:
         msec.add_scalar_parameter_key("CielLuminosite", frame(t), v)
 
+# Brume par beat (pipeline/style/ambiance.json, partagé avec le rendu offline du lointain) : couleur et densité
+# tenues pendant le beat, fondu de fondu_s centré sur le début de chaque beat.
+with open(os.path.join(ROOT, "pipeline", "style", "ambiance.json"), encoding="utf-8") as f:
+    AMBIANCE = json.load(f)
+fog_comp = by_label["Brume"].component
+fog_binding = seq.add_possessable(fog_comp)
+color_sec = fog_binding.add_track(unreal.MovieSceneColorTrack)
+color_sec.set_property_name_and_path("FogInscatteringLuminance", "FogInscatteringLuminance")
+color_sec = color_sec.add_section()
+color_sec.set_range(0, end)
+dens_sec = fog_binding.add_track(unreal.MovieSceneFloatTrack)
+dens_sec.set_property_name_and_path("FogDensity", "FogDensity")
+dens_sec = dens_sec.add_section()
+dens_sec.set_range(0, end)
+rgba = color_sec.get_all_channels()[:4]
+half = AMBIANCE["fondu_s"] / 2
+beats = AMBIANCE["beats"]
+for i, b in enumerate(beats):
+    t_in = 0.0 if i == 0 else b["debut_s"] + half
+    t_out = beats[i + 1]["debut_s"] - half if i + 1 < len(beats) else DURATION
+    for t in (t_in, max(t_in, t_out)):
+        for ch, v in zip(rgba, b["brume_lineaire"] + [1.0]):
+            ch.add_key(frame(t), v)
+        dens_sec.get_all_channels()[0].add_key(frame(t), b["densite"])
+
 # Paysage sonore (pipeline/audio/soundscape.yaml) : ambiances 2D en boucle avec fondus ; repères des créatures
 # attachés à leur bloc et spatialisés (atténuation à très longue portée pour la créature volante, à 300 m).
 # (soundscape.yaml exporté en JSON par pipeline/audio/prepare_sounds.py : pas de yaml dans le Python d'Unreal)

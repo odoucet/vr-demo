@@ -66,9 +66,22 @@ comp.set_editor_property("texture_target", rt)
 comp.set_editor_property("capture_source", unreal.SceneCaptureSource.SCS_FINAL_COLOR_LDR)
 comp.set_editor_property("capture_every_frame", False)
 comp.set_editor_property("capture_on_movement", False)
-comp.capture_scene()
-world = unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem).get_editor_world()
-unreal.RenderingLibrary.export_render_target(world, rt, r"{out_dir}", "{out_name}")
+# Capture deux images plus tard : les états de rendu animés par la séquence (couleur et densité de la brume)
+# ne sont transmis au rendu qu'à la fin de l'image ; capturer tout de suite montrerait l'état précédent.
+_ticks = [0]
+
+
+def _shot(dt):
+    _ticks[0] += 1
+    if _ticks[0] < 3:
+        return
+    unreal.unregister_slate_post_tick_callback(_handle)
+    comp.capture_scene()
+    world = unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem).get_editor_world()
+    unreal.RenderingLibrary.export_render_target(world, rt, r"{out_dir}", "{out_name}")
+
+
+_handle = unreal.register_slate_post_tick_callback(_shot)
 """
 
 

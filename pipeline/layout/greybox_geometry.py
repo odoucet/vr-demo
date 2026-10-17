@@ -172,6 +172,56 @@ def lantern_tree(river):
     return mesh_dict(verts, tris)
 
 
+def reeds(river, field, bounds, seed=5):
+    """Roseaux (S2) : lames fines doubles le long des berges entre 0:12 et 0:52, et une touffe qui avance dans
+    l'eau à gauche de 0:32 à 0:40 jusqu'à ~1,5 m de la trajectoire (« roseaux qui frôlent la barque »)."""
+    gx, gy, d, z = field
+    rng = np.random.default_rng(seed)
+    s = [p for p in river["samples"] if 12 <= p["t"] <= 52]
+    verts, tris = [], []
+
+    def blade(x, y, z0, h, lean, ang):
+        w = 0.035
+        dx, dy = math.cos(ang) * w, math.sin(ang) * w
+        lx, ly = math.cos(ang + 1.3) * lean, math.sin(ang + 1.3) * lean
+        b = len(verts)
+        verts.extend([[x - dx, y - dy, z0], [x + dx, y + dy, z0], [x + lx, y + ly, z0 + h]])
+        tris.extend([[b, b + 1, b + 2], [b, b + 2, b + 1]])     # double face
+
+    for p in s:
+        h0 = math.radians(p["heading_deg"])
+        nx, ny = -math.sin(h0), math.cos(h0)
+        for side in (1, -1):
+            for _ in range(40):
+                off = side * (p["width_m"] / 2 + rng.uniform(-1.5, 2.5))
+                if side == 1 and 32 <= p["t"] <= 40:
+                    off = rng.uniform(1.5, p["width_m"] / 2 + 2)   # la touffe qui frôle, à gauche
+                x = p["x"] + nx * off + rng.uniform(-0.5, 0.5)
+                y = p["y"] + ny * off + rng.uniform(-0.5, 0.5)
+                blade(x, y, -0.3, rng.uniform(1.1, 2.1), rng.uniform(0.05, 0.3), rng.uniform(0, 2 * math.pi))
+    return mesh_dict(verts, tris)
+
+
+def lily_pads(river, seed=9):
+    """Nénuphars (S3) : disques posés sur l'eau entre 0:48 et 1:30, à plus de 2 m de la trajectoire."""
+    rng = np.random.default_rng(seed)
+    s = [p for p in river["samples"] if 48 <= p["t"] <= 90]
+    verts, tris = [], []
+    for p in s:
+        h0 = math.radians(p["heading_deg"])
+        nx, ny = -math.sin(h0), math.cos(h0)
+        for _ in range(7):
+            off = rng.choice([-1, 1]) * rng.uniform(2.0, p["width_m"] / 2 - 0.5)
+            cx, cy, r = p["x"] + nx * off, p["y"] + ny * off, rng.uniform(0.25, 0.6)
+            b = len(verts)
+            verts.append([cx, cy, 0.03])
+            for k in range(8):
+                a = 2 * math.pi * k / 8
+                verts.append([cx + r * math.cos(a), cy + r * math.sin(a), 0.03])
+            tris.extend([[b, b + 1 + k, b + 1 + (k + 1) % 8] for k in range(7)])   # encoche : 7 secteurs sur 8
+    return mesh_dict(verts, tris)
+
+
 def fireflies(n=400, size=0.07, extent=(28.0, 22.0, 7.0), seed=11):
     """Nuage de lucioles (octaèdres), centré sur l'origine, animé par la séquence (envol de S5/S6)."""
     rng = np.random.default_rng(seed)
@@ -201,6 +251,8 @@ def main():
             "ArbreColossal": colossal_tree(river),
             "ArbreLanternes": lantern_tree(river),
             "Lucioles": fireflies(),
+            "Roseaux": reeds(river, field, bounds),
+            "Nenuphars": lily_pads(river),
         },
     }
     OUT.write_text(json.dumps(data, separators=(",", ":")), encoding="utf-8")

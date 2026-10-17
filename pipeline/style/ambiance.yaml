@@ -1,0 +1,20 @@
+# Ambiance par beat (réglages d'Olivier ou de l'agent ; les couleurs de brume sont mesurées sur les références).
+# pipeline/style/ambiance.py → pipeline/style/ambiance.json, lu tel quel par le temps réel (Unreal) et le rendu
+# offline du lointain : la brume sert de raccord proche / lointain, sa couleur doit être identique des deux côtés.
+#
+# luminance : luminance linéaire de la brume (la teinte vient de la référence du beat).
+# densite   : densité de l'ExponentialHeightFog (Unreal), à reprendre à l'identique dans le rendu offline.
+# saturation: atténuation de la teinte mesurée (commune à tous les beats).
+# Densités choisies sur essais (2026-10-18, review/iter-006) : 0,03-0,06 étage les silhouettes en plans successifs.
+# fondu_s   : durée du fondu depuis le beat précédent, centré sur le début du beat.
+
+fondu_s: 12
+saturation: 0.6     # 1 = teinte mesurée telle quelle, 0 = gris
+beats:
+  S1-NOIR:    {luminance: 0.02, densite: 0.080}
+  S2-PONTON:  {luminance: 0.13, densite: 0.200}   # départ dans la vraie brume (essai ×20, review/iter-006)
+  S3-ABYSSE:  {luminance: 0.11, densite: 0.045}
+  S4-GUE:     {luminance: 0.12, densite: 0.045}
+  S5-RACINES: {luminance: 0.08, densite: 0.060}
+  S6-LUNE:    {luminance: 0.05, densite: 0.030}   # trouée : ciel et lune dégagés
+  S7-LAC:     {luminance: 0.06, densite: 0.035}

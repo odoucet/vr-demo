@@ -108,9 +108,11 @@ MATS = {
     "Lanterne": material("Lanterne", (6.0, 2.5, 0.6), emissive=True),
     "LanternePapier": material("LanternePapier", (1.1, 0.55, 0.22), emissive=True),
     "Luciole": material("Luciole", (4.0, 5.0, 1.2), emissive=True),
+    "Roseau": material("Roseau", (0.045, 0.075, 0.025), roughness=0.9),
+    "Nenuphar": material("Nenuphar", (0.06, 0.20, 0.07), roughness=0.6),
 }
 MESH_MATS = {"Terrain": "Terrain", "ArcheRacines": "Bois", "Foret": "Foret", "ArbreColossal": "Bois", "ArbreLanternes": "Foret",
-             "Lucioles": "Luciole"}
+             "Lucioles": "Luciole", "Roseaux": "Roseau", "Nenuphars": "Nenuphar"}
 
 
 # --- Maillages depuis greybox.json -------------------------------------------------------------------------
@@ -508,8 +510,11 @@ sky.light_component.set_editor_property("real_time_capture", True)
 sky.light_component.set_editor_property("intensity", 4.0)
 fog = tag(actors.spawn_actor_from_class(unreal.ExponentialHeightFog, unreal.Vector(0, 0, 0)), "Brume")
 fc = fog.component
-fc.set_editor_property("fog_density", 0.006)
-fc.set_editor_property("fog_inscattering_luminance", unreal.LinearColor(0.10, 0.13, 0.20, 1.0))
+# Valeurs de S2 (pipeline/style/ambiance.json) ; la séquence les anime ensuite beat par beat (animatic.py).
+with open(os.path.join(ROOT, "pipeline", "style", "ambiance.json"), encoding="utf-8") as f:
+    fog_s2 = next(b for b in json.load(f)["beats"] if b["id"] == "S2-PONTON")
+fc.set_editor_property("fog_density", fog_s2["densite"])
+fc.set_editor_property("fog_inscattering_luminance", unreal.LinearColor(*fog_s2["brume_lineaire"], 1.0))
 fc.set_editor_property("start_distance", 1500.0)
 tag(actors.spawn_actor_from_class(unreal.PlayerStart, ue(start["x"], start["y"], 0.2)), "Depart")
 

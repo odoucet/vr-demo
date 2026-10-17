@@ -1,0 +1,89 @@
+{
+  "fondu_s": 12,
+  "beats": [
+    {
+      "id": "S1-NOIR",
+      "debut_s": 0,
+      "source": "assets/concepts/S1-NOIR.png",
+      "brume_lineaire": [
+        0.0169,
+        0.0206,
+        0.0233
+      ],
+      "densite": 0.08,
+      "brume_hex": "#ddf2ff"
+    },
+    {
+      "id": "S2-PONTON",
+      "debut_s": 20,
+      "source": "refs/S2-PONTON.png",
+      "brume_lineaire": [
+        0.0854,
+        0.135,
+        0.2121
+      ],
+      "densite": 0.2,
+      "brume_hex": "#aad1ff"
+    },
+    {
+      "id": "S3-ABYSSE",
+      "debut_s": 44.0,
+      "source": "assets/concepts/S3-ABYSSE.png",
+      "brume_lineaire": [
+        0.0666,
+        0.1258,
+        0.0816
+      ],
+      "densite": 0.045,
+      "brume_hex": "#c0ffd3"
+    },
+    {
+      "id": "S4-GUE",
+      "debut_s": 97.9,
+      "source": "assets/concepts/S4-GUE.png",
+      "brume_lineaire": [
+        0.1005,
+        0.1286,
+        0.0926
+      ],
+      "densite": 0.045,
+      "brume_hex": "#e5ffdd"
+    },
+    {
+      "id": "S5-RACINES",
+      "debut_s": 127.8,
+      "source": "refs/S5-RACINES.png",
+      "brume_lineaire": [
+        0.0766,
+        0.0821,
+        0.0697
+      ],
+      "densite": 0.06,
+      "brume_hex": "#f7ffed"
+    },
+    {
+      "id": "S6-LUNE",
+      "debut_s": 157.8,
+      "source": "refs/S6-LUNE.png",
+      "brume_lineaire": [
+        0.0317,
+        0.0546,
+        0.0586
+      ],
+      "densite": 0.03,
+      "brume_hex": "#c2f7ff"
+    },
+    {
+      "id": "S7-LAC",
+      "debut_s": 201.7,
+      "source": "refs/S7-LAC.png",
+      "brume_lineaire": [
+        0.0798,
+        0.0546,
+        0.0556
+      ],
+      "densite": 0.035,
+      "brume_hex": "#ffd8da"
+    }
+  ]
+}
