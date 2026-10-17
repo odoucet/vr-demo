@@ -23,6 +23,7 @@ OUT_ROOT = ROOT / "builds"
 VARIANTS = {
     "j1": ("/Game/Maps/J1_Spike.J1_Spike", "com.odoucet.barque", "android"),
     "greybox": ("/Game/Maps/Barque_Greybox.Barque_Greybox", "com.odoucet.barque.greybox", "android_greybox"),
+    "j1b": ("/Game/Maps/J1b_StereoLayer.J1b_StereoLayer", "com.odoucet.barque.j1b", "android_j1b"),
 }
 
 

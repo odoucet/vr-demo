@@ -30,6 +30,7 @@ STAGES = [
     ("unreal-greybox", "niveau greybox", [PY, "pipeline/unreal/run.py", "pipeline/unreal/scripts/greybox.py"], "unreal"),
     ("unreal-animatic", "séquence de l'animatic", [PY, "pipeline/unreal/run.py", "pipeline/unreal/scripts/animatic.py"], "unreal"),
     ("unreal-j1", "scène de test J1 (sphère 360 stéréo)", [PY, "pipeline/unreal/run.py", "pipeline/unreal/scripts/j1_spike.py"], "unreal"),
+    ("unreal-j1b", "scène de test J1b (calque stéréo équirectangulaire)", [PY, "pipeline/unreal/run.py", "pipeline/unreal/scripts/j1b_stereolayer.py"], "unreal"),
     # Non lancées par défaut (longues ou dépendantes d'Olivier) : review/shoot.py (éditeur ouvert),
     # review/animatic.py (rendu MRQ), comfy/image_to_3d.py (GPU), unreal/package_android.py (APK).
 ]
