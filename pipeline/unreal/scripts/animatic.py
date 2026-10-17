@@ -145,7 +145,7 @@ for i in range(5):
 cl = MARKS["creature-lune"]
 alt = cl["ahead_m"] * math.tan(math.radians(22))
 keys = []
-for t, side in [(cl["t"] - 12, 160.0), (cl["t"], 0.0), (cl["t"] + 12, -160.0)]:
+for t, side in [(cl["t"] - 12, cl["side_m"] + 160.0), (cl["t"], cl["side_m"]), (cl["t"] + 12, cl["side_m"] - 160.0)]:
     (x, y, z), yaw = rel(cl["t"], cl["ahead_m"], side, alt)
     keys.append((t, (x, y, z), yaw - 90))
 keys = [(0.0, keys[0][1], keys[0][2])] + keys + [(DURATION, keys[-1][1], keys[-1][2])]

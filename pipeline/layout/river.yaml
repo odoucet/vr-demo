@@ -41,5 +41,5 @@ landmarks:
   - {id: abysses-passage, t: 70, ahead_m: 0, side_m: 0, note: "la créature passe sous la barque, perpendiculaire"}
   - {id: troupeau-gue, t: 112, ahead_m: 14, side_m: 0, note: "le troupeau traverse 14 m devant, de droite à gauche"}
   - {id: arche-racines, t: 144.8, ahead_m: 0, side_m: 0, note: "la barque passe sous l'arche à 2:24.8 (creux sombre)"}
-  - {id: creature-lune, t: 180.8, ahead_m: 300, side_m: 0, note: "la lune et la créature, droit devant au sommet"}
+  - {id: creature-lune, t: 180.8, ahead_m: 300, side_m: 80, note: "la lune et la créature au sommet, ~15° à gauche du cap pour ne pas être masquées par la lanterne de proue (D11)"}
   - {id: ile-lanternes, t: 223.7, ahead_m: 60, side_m: -25, note: "l'arbre aux lanternes, devant à droite"}

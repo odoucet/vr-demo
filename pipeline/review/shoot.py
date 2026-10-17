@@ -143,7 +143,15 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--iter", type=int)
     ap.add_argument("--only", nargs="*")
+    ap.add_argument("--pose", nargs=7, metavar=("T", "X", "Y", "Z", "YAW", "PITCH", "SORTIE"),
+                    help="capture libre : instant (s), position (m, repère du tracé), yaw/pitch (°), fichier PNG")
     args = ap.parse_args()
+    if args.pose:
+        t, x, y, z, yaw, pitch, dest = args.pose
+        cam = {"id": "libre", "t": float(t), "x": float(x), "y": float(y), "z": float(z), "yaw_deg": float(yaw),
+               "pitch_deg": float(pitch), "fov_deg": 90}
+        print(shoot(cam, Path(dest).resolve()))
+        return
     n = args.iter or next_iter()
     out = REVIEW / f"iter-{n:03d}"
     cams = json.loads(CAMERAS.read_text(encoding="utf-8"))["cameras"]

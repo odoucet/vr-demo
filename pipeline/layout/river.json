@@ -99,10 +99,10 @@
    "id": "creature-lune",
    "t": 180.8,
    "ahead_m": 300,
-   "side_m": 0,
-   "note": "la lune et la créature, droit devant au sommet",
-   "x": 455.33,
-   "y": 141.06
+   "side_m": 80,
+   "note": "la lune et la créature au sommet, ~15° à gauche du cap pour ne pas être masquées par la lanterne de proue (D11)",
+   "x": 425.31,
+   "y": 215.21
   },
   {
    "id": "ile-lanternes",

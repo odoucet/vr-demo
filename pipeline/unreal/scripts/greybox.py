@@ -86,6 +86,7 @@ MATS = {
     "Volante": material("Volante", (0.75, 0.80, 0.85)),
     "Lune": material("Lune", (3.0, 2.9, 2.6), emissive=True),
     "Lanterne": material("Lanterne", (6.0, 2.5, 0.6), emissive=True),
+    "LanternePapier": material("LanternePapier", (1.1, 0.55, 0.22), emissive=True),
 }
 MESH_MATS = {"Terrain": "Terrain", "ArcheRacines": "Bois", "Foret": "Foret", "ArbreColossal": "Bois", "ArbreLanternes": "Foret"}
 
@@ -169,10 +170,76 @@ for i, side in enumerate((-8.5, -6.0, -3.5)):
 loc, rot = oriented(pm["t"], pm["ahead_m"], -6.0, 0.75)
 deck = place_mesh(CUBE, "GB_PontonTablier", "Bois", loc, unreal.Rotator(0, 0, rot.yaw + 90), (6.5, 2.0, 0.15))
 
-# Barque (bloc 3,5 × 1,3 m) et caméra du spectateur, assis à l'arrière, yeux à 1,10 m de l'eau.
+# Barque : racine invisible (animée par la séquence, porte la caméra) + modèle 3D attaché.
+# Modèle : assets/3d/barque/trellis2-s42 (image refs/barque.png, repère standard). Mesures à l'import :
+# longueur 100 cm sur +Y (proue côté perche), fond à -35 cm, bordé à -9 cm. Mis à 3,5 m (D4), tourné de -90°
+# pour que la proue regarde +X, posé avec 25 cm de tirant d'eau. Bloc en repli si le modèle manque.
+BOAT_GLB = os.path.join(ROOT, "assets", "3d", "barque", "trellis2-s42", "model.glb")
+BOAT_DIR, BOAT_MESH = "/Game/Assets/Barque", "/Game/Assets/Barque/model/StaticMeshes/model"
+# Hauteur réduite (2,6 au lieu de 3,5) : franc-bord de ~45 cm au lieu de 68, pour voir l'eau par-dessus le bord.
+BOAT_SCALE, BOAT_SCALE_Z, BOAT_YAW = 3.5, 2.6, -90.0
+BOAT_Z = 35.1 * BOAT_SCALE_Z - 25.0
+
+
+def boat_mesh():
+    if not os.path.exists(BOAT_GLB):
+        return None
+    import hashlib
+    with open(BOAT_GLB, "rb") as f:
+        digest = hashlib.sha1(f.read()).hexdigest()[:12]
+    if eal.does_asset_exist(BOAT_MESH) and eal.get_metadata_tag(eal.load_asset(BOAT_MESH), "source_sha1") == digest:
+        return eal.load_asset(BOAT_MESH)
+    task = unreal.AssetImportTask()
+    task.filename, task.destination_path = BOAT_GLB, BOAT_DIR
+    task.automated, task.replace_existing, task.save = True, True, True
+    tools.import_asset_tasks([task])
+    mesh = eal.load_asset(BOAT_MESH)
+    eal.set_metadata_tag(mesh, "source_sha1", digest)
+    eal.save_loaded_asset(mesh)
+    return mesh
+
+
 start = pose_at(0)
-boat = place_mesh(CUBE, "Barque", "Bois", ue(start["x"], start["y"], 0.0), unreal.Rotator(0, 0, ue_yaw(start["heading_deg"])), (3.5, 1.3, 0.5))
-cam = tag(actors.spawn_actor_from_class(unreal.CineCameraActor, ue(start["x"], start["y"], 0) + unreal.Vector(-80, 0, EYE_CM)), "CameraBarque")
+boat = place_mesh(CUBE, "Barque", "Bois", ue(start["x"], start["y"], 0.0), unreal.Rotator(0, 0, ue_yaw(start["heading_deg"])))  # échelle 1 : le modèle attaché en hérite
+model = boat_mesh()
+if model is not None:
+    boat.set_actor_hidden_in_game(True)
+    boat.static_mesh_component.set_visibility(False)
+    hull = actors.spawn_actor_from_object(model, boat.get_actor_location(), boat.get_actor_rotation())
+    tag(hull, "BarqueModele")
+    hull.static_mesh_component.set_collision_enabled(unreal.CollisionEnabled.NO_COLLISION)
+    hull.attach_to_actor(boat, "", unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, False)
+    hull.root_component.set_editor_property("relative_location", unreal.Vector(0, 0, BOAT_Z))
+    hull.root_component.set_editor_property("relative_rotation", unreal.Rotator(0, 0, BOAT_YAW))
+    hull.root_component.set_editor_property("relative_scale3d", unreal.Vector(BOAT_SCALE, BOAT_SCALE, BOAT_SCALE_Z))
+    # Lanterne de proue : corps mesuré dans le maillage (x ±4, y 22-30, z 8-24 cm à l'échelle d'import), soit
+    # ~30 × 55 cm centré à (+91, 0, 154) cm dans le repère de la barque. Papier lumineux posé par-dessus
+    # (le maillage n'a pas de matériau séparé pour la lanterne) et lumière au centre.
+    LANTERN = unreal.Vector(26 * BOAT_SCALE, 0, BOAT_Z + 16 * BOAT_SCALE_Z)
+    paper = place_mesh(CYL, "LanternePapier", "LanternePapier", boat.get_actor_location(), scale=(0.34, 0.34, 0.56))
+    paper.attach_to_actor(boat, "", unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, False)
+    paper.root_component.set_editor_property("relative_location", LANTERN)
+    paper.root_component.set_editor_property("relative_rotation", unreal.Rotator(0, 0, 0))
+    paper.root_component.set_editor_property("relative_scale3d", unreal.Vector(0.34, 0.34, 0.56 * BOAT_SCALE_Z / BOAT_SCALE))
+    paper.static_mesh_component.set_editor_property("cast_shadow", False)
+    lantern = tag(actors.spawn_actor_from_class(unreal.PointLight, boat.get_actor_location()), "LumiereLanterne")
+    lantern.attach_to_actor(boat, "", unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, False)
+    lantern.root_component.set_editor_property("relative_location", LANTERN)
+    lc = lantern.point_light_component
+    lc.set_editor_property("intensity_units", unreal.LightUnits.CANDELAS)
+    lc.set_editor_property("intensity", 25.0)
+    lc.set_editor_property("light_color", unreal.Color(90, 170, 255, 255))  # BGRA : orangé chaud
+    lc.set_editor_property("attenuation_radius", 900.0)
+    lc.set_editor_property("source_radius", 12.0)
+    lc.set_editor_property("cast_shadows", False)   # la lumière est dans le maillage de la lanterne
+else:
+    boat.set_actor_scale3d(unreal.Vector(3.5, 1.3, 0.5))
+# Caméra du spectateur, sur le banc arrière (-1,20 m du centre), yeux à 1,10 m de l'eau. Reculée de 0,80 m
+# à 1,20 m pour réduire la place de la lanterne de proue dans le champ (SUIVI.md, D11).
+SEAT_X_CM = -120.0
+h0 = math.radians(start["heading_deg"])
+cam_loc = ue(start["x"] + SEAT_X_CM / 100 * math.cos(h0), start["y"] + SEAT_X_CM / 100 * math.sin(h0), EYE_CM / 100)
+cam = tag(actors.spawn_actor_from_class(unreal.CineCameraActor, cam_loc), "CameraBarque")
 cam.attach_to_actor(boat, "", unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, False)
 cine = cam.get_cine_camera_component()
 cine.set_editor_property("current_focal_length", 12.0)    # ~ 90° horizontal sur capteur 16:9
@@ -180,11 +247,12 @@ focus = cine.get_editor_property("focus_settings")
 focus.set_editor_property("focus_method", unreal.CameraFocusMethod.DISABLE)
 cine.set_editor_property("focus_settings", focus)
 
-# Lune, droit devant au sommet de S6, haute de ~22° ; à 900 m (lointain, pas de stéréo).
+# Lune : dans la direction du repère « creature-lune » (sommet de S6), prolongée à 900 m, haute de ~22°.
 lm = MARKS["creature-lune"]
 p = pose_at(lm["t"])
-h = math.radians(p["heading_deg"])
-moon_xy = (p["x"] + 900 * math.cos(h), p["y"] + 900 * math.sin(h))
+dx, dy = lm["x"] - p["x"], lm["y"] - p["y"]
+dist = math.hypot(dx, dy)
+moon_xy = (p["x"] + dx / dist * 900, p["y"] + dy / dist * 900)
 place_mesh(SPHERE, "GB_Lune", "Lune", ue(*moon_xy, 900 * math.tan(math.radians(22))), scale=(70, 70, 70))
 
 # Lanternes de l'arbre de S7 : 40 petites sources sur le houppier.

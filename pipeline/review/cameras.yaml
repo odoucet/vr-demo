@@ -1,9 +1,10 @@
 # Caméras de revue fixes : 3 par beat, toujours au même cadrage et au même instant.
-# Position : la barque à l'instant t, yeux à 1,10 m. Direction : yaw relatif au cap de la barque
+# Position : la place assise dans la barque à l'instant t (seat_x_m le long du cap), yeux à 1,10 m. Direction : yaw relatif au cap de la barque
 # (0 = droit devant, + = vers la gauche) et pitch (+ = vers le haut), ou look_at = un repère de river.yaml.
 # Choix éditorial : modifier ici, puis `python pipeline/review/cameras.py`.
 
 fov_deg: 90
+seat_x_m: -1.2          # place assise : banc arrière, 1,20 m derrière le centre de la barque (D11)
 cameras:
   S2-PONTON:
     A: {t: 22, yaw: 0, pitch: 0, note: "départ dans la brume"}

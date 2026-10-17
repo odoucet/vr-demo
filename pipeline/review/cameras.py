@@ -35,6 +35,8 @@ def main():
     for beat, views in cfg["cameras"].items():
         for letter, v in views.items():
             x, y, heading = boat_pose(river["samples"], v["t"])
+            seat = cfg.get("seat_x_m", 0.0)
+            x, y = x + seat * math.cos(math.radians(heading)), y + seat * math.sin(math.radians(heading))
             if "look_at" in v:
                 lm = marks[v["look_at"]]
                 yaw = math.degrees(math.atan2(lm["y"] - y, lm["x"] - x))
