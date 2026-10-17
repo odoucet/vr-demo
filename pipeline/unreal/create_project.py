@@ -20,6 +20,8 @@ from tools import ROOT, project  # noqa: E402
 PLUGINS = [
     "PythonScriptPlugin", "EditorScriptingUtilities",       # pilotage par script
     "ModelContextProtocol",                                  # MCP natif (exploration)
+    # Jeux d'outils exposés par le MCP (sans eux, il ne propose que la gestion des AgentSkills)
+    "EditorToolset", "PCGToolset", "NiagaraToolsets", "ConfigSettingsToolset",
     "OpenXR",                                                # Quest 3 et PC VR
     "MediaPlate", "ElectraPlayer",                           # sphère vidéo 360 (lointain)
     "MovieRenderPipeline",                                   # rendus offline (360, fenêtre stéréo)
