@@ -191,27 +191,36 @@ att.set_editor_property("spatialize", True)
 att.set_editor_property("falloff_distance", 60000.0)    # 600 m : la créature volante passe à 300 m
 att.set_editor_property("attenuation_shape_extents", unreal.Vector(2000.0, 0, 0))
 attenuation.set_editor_property("attenuation", att)
-eal.save_loaded_asset(attenuation)
+eal.save_loaded_asset(attenuation, only_if_is_dirty=True)
 
 
 def sound_asset(sid):
+    """Importe le WAV préparé, seulement s'il a changé (empreinte en métadonnée) : pas de réécriture inutile."""
+    import hashlib
     path = f"/Game/Audio/SFX/{sid}"
-    if True:  # réimport systématique : le WAV peut avoir été retraité (normalisation)
-        task = unreal.AssetImportTask()
-        task.filename = os.path.join(ROOT, "Unreal", "Saved", "import", "sfx", f"{sid}.wav")
-        task.destination_path = "/Game/Audio/SFX"
-        task.automated, task.replace_existing, task.save = True, True, True
-        tools.import_asset_tasks([task])
-    return eal.load_asset(path)
+    wav = os.path.join(ROOT, "Unreal", "Saved", "import", "sfx", f"{sid}.wav")
+    with open(wav, "rb") as f:
+        digest = hashlib.sha1(f.read()).hexdigest()[:12]
+    if eal.does_asset_exist(path) and eal.get_metadata_tag(eal.load_asset(path), "source_sha1") == digest:
+        return eal.load_asset(path)
+    task = unreal.AssetImportTask()
+    task.filename, task.destination_path = wav, "/Game/Audio/SFX"
+    task.automated, task.replace_existing, task.save = True, True, True
+    tools.import_asset_tasks([task])
+    asset = eal.load_asset(path)
+    eal.set_metadata_tag(asset, "source_sha1", digest)
+    eal.save_loaded_asset(asset)
+    return asset
 
 
 bindings = {}
 for snd in SOUNDSCAPE:
     wave = sound_asset(snd["id"])
-    wave.set_editor_property("looping", "attach" not in snd)
-    if "attach" in snd:
-        wave.set_editor_property("attenuation_settings", attenuation)
-    eal.save_loaded_asset(wave)
+    want_att = attenuation if "attach" in snd else None
+    if wave.get_editor_property("looping") != ("attach" not in snd) or wave.get_editor_property("attenuation_settings") != want_att:
+        wave.set_editor_property("looping", "attach" not in snd)
+        wave.set_editor_property("attenuation_settings", want_att)
+        eal.save_loaded_asset(wave)
     if "attach" in snd:
         label = snd["attach"]
         if label not in bindings:

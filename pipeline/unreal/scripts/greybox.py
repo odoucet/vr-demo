@@ -420,6 +420,9 @@ def glow(dest_dir, tint):
         if not isinstance(mi, unreal.MaterialInstanceConstant):
             continue
         base = mel.get_material_instance_texture_parameter_value(mi, "BaseColorTexture")
+        if mel.get_material_instance_texture_parameter_value(mi, "EmissiveTexture") == base and \
+                mel.get_material_instance_vector_parameter_value(mi, "EmissiveFactor") == unreal.LinearColor(*tint, 1.0):
+            continue   # déjà lumineux : ne pas réécrire l'asset
         mel.set_material_instance_texture_parameter_value(mi, "EmissiveTexture", base)
         mel.set_material_instance_static_switch_parameter_value(mi, "bHasEmissiveTexture", True)
         mel.set_material_instance_vector_parameter_value(mi, "EmissiveFactor", unreal.LinearColor(*tint, 1.0))
