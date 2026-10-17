@@ -164,6 +164,18 @@ transform_track(by_label["GB_Lucioles"], [
     (t_env + 22, (x1, y1, 2600.0), yaw0),
     (t_env + 22.5, hidden, yaw0), (DURATION, hidden, yaw0)], scale=(1.0, 1.0, 1.0))
 
+# Crépuscule → nuit : luminosité du ciel peint (MPC_Ambiance.CielLuminosite), pleine en S2-S4, baisse sous les
+# racines et pendant la trouée, nuit pour la lune (S6) et le lac (S7).
+mpc = eal.load_asset("/Game/Greybox/MPC_Ambiance")
+if mpc is not None:
+    mtrack = seq.add_track(unreal.MovieSceneMaterialParameterCollectionTrack)
+    mtrack.set_editor_property("mpc", mpc)
+    msec = mtrack.add_section()
+    msec.set_range(0, end)
+    msec.add_scalar_parameter_key("CielLuminosite", frame(0), 1.0)
+    for t, v in [(97.9, 1.0), (127.8, 0.8), (157.8, 0.45), (180.0, 0.28), (DURATION, 0.25)]:
+        msec.add_scalar_parameter_key("CielLuminosite", frame(t), v)
+
 # Paysage sonore (pipeline/audio/soundscape.yaml) : ambiances 2D en boucle avec fondus ; repères des créatures
 # attachés à leur bloc et spatialisés (atténuation à très longue portée pour la créature volante, à 300 m).
 # (soundscape.yaml exporté en JSON par pipeline/audio/prepare_sounds.py : pas de yaml dans le Python d'Unreal)

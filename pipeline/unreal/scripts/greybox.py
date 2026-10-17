@@ -84,7 +84,7 @@ MATS = {
     "Creature": material("Creature", (0.0, 0.6, 0.7), emissive=True),  # bioluminescente
     "Troupeau": material("Troupeau", (0.18, 0.30, 0.08)),
     "Volante": material("Volante", (0.75, 0.80, 0.85)),
-    "Lune": material("Lune", (3.0, 2.9, 2.6), emissive=True),
+    "Lune": material("Lune", (14.0, 13.5, 12.0), emissive=True),
     "Lanterne": material("Lanterne", (6.0, 2.5, 0.6), emissive=True),
     "LanternePapier": material("LanternePapier", (1.1, 0.55, 0.22), emissive=True),
     "Luciole": material("Luciole", (4.0, 5.0, 1.2), emissive=True),
@@ -291,6 +291,57 @@ dx, dy = lm["x"] - p["x"], lm["y"] - p["y"]
 dist = math.hypot(dx, dy)
 moon_xy = (p["x"] + dx / dist * 900, p["y"] + dy / dist * 900)
 place_mesh(SPHERE, "GB_Lune", "Lune", ue(*moon_xy, 900 * math.tan(math.radians(22))), scale=(70, 70, 70))
+
+# Ciel peint provisoire (assets/sky/ciel.png, pipeline/comfy/sky.py) : panorama « paysage » dont l'horizon est à
+# ~82 % de la hauteur ; projeté sur la voûte (horizon → zénith) par la direction de vue, sur une sphère de 5 km
+# en matériau « ciel » (dessiné derrière tout, hors brume).
+SKY_PNG = os.path.join(ROOT, "assets", "sky", "ciel.png")
+if os.path.exists(SKY_PNG):
+    task = unreal.AssetImportTask()
+    task.filename, task.destination_path = SKY_PNG, GB
+    task.automated, task.replace_existing, task.save = True, True, True
+    tools.import_asset_tasks([task])
+    sky_tex = eal.load_asset(f"{GB}/ciel")
+    sky_mat_path = f"{GB}/M_GB_CielPeint"
+    sky_mat = eal.load_asset(sky_mat_path) if eal.does_asset_exist(sky_mat_path) else tools.create_asset("M_GB_CielPeint", GB, unreal.Material, unreal.MaterialFactoryNew())
+    mel.delete_all_material_expressions(sky_mat)
+    sky_mat.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_UNLIT)
+    sky_mat.set_editor_property("is_sky", True)
+    sky_mat.set_editor_property("two_sided", True)
+    camv = mel.create_material_expression(sky_mat, unreal.MaterialExpressionCameraVectorWS, -700, 0)
+    cu = mel.create_material_expression(sky_mat, unreal.MaterialExpressionCustom, -450, 0)
+    cu.set_editor_property("code", "float3 d = normalize(-Dir);\n"
+                                   "float u = 0.5 + atan2(d.y, d.x) / (2.0 * PI);\n"
+                                   "float e = asin(clamp(d.z, -1.0, 1.0));\n"
+                                   "float v = clamp(0.82 - e / (0.5 * PI) * 0.82, 0.0, 1.0);\n"
+                                   "return float2(u, v);")
+    cu.set_editor_property("output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT2)
+    ci = unreal.CustomInput()
+    ci.set_editor_property("input_name", "Dir")
+    cu.set_editor_property("inputs", [ci])
+    st = mel.create_material_expression(sky_mat, unreal.MaterialExpressionTextureSample, -200, 0)
+    st.set_editor_property("texture", sky_tex)
+    mel.connect_material_expressions(camv, "", cu, "Dir")
+    mel.connect_material_expressions(cu, "", st, "UVs")
+    # Luminosité du ciel pilotée par la séquence (crépuscule → nuit) via une collection de paramètres.
+    mpc_path = f"{GB}/MPC_Ambiance"
+    mpc = eal.load_asset(mpc_path) if eal.does_asset_exist(mpc_path) else tools.create_asset("MPC_Ambiance", GB, unreal.MaterialParameterCollection, unreal.MaterialParameterCollectionFactoryNew())
+    sp = unreal.CollectionScalarParameter()
+    sp.set_editor_property("parameter_name", "CielLuminosite")
+    sp.set_editor_property("default_value", 1.0)
+    mpc.set_editor_property("scalar_parameters", [sp])
+    eal.save_loaded_asset(mpc)
+    cp = mel.create_material_expression(sky_mat, unreal.MaterialExpressionCollectionParameter, -200, 250)
+    cp.set_editor_property("collection", mpc)
+    cp.set_editor_property("parameter_name", "CielLuminosite")
+    mul = mel.create_material_expression(sky_mat, unreal.MaterialExpressionMultiply, 0, 100)
+    mel.connect_material_expressions(st, "RGB", mul, "A")
+    mel.connect_material_expressions(cp, "", mul, "B")
+    mel.connect_material_property(mul, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
+    mel.recompile_material(sky_mat)
+    MATS["CielPeint"] = sky_mat
+    sky_sphere = place_mesh(SPHERE, "GB_CielPeint", "CielPeint", unreal.Vector(10000, 0, 0), scale=(10000, 10000, 10000))
+    sky_sphere.static_mesh_component.set_editor_property("cast_shadow", False)
 
 # Lanternes de l'arbre de S7 : 40 petites sources sur le houppier.
 lt = MARKS["ile-lanternes"]

@@ -1,0 +1,9 @@
+{
+  "source": "refs/barque.png",
+  "source_sha1": "3423f3d9caf6",
+  "seed": 42,
+  "workflow": "pipeline/comfy/workflows/qwen_edit_2509_angle.json",
+  "views": {
+    "left": "将镜头向右旋转90度，侧面视角，纯浅灰色背景"
+  }
+}

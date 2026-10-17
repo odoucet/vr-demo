@@ -244,3 +244,15 @@ assets:
   licence: généré localement depuis les images d'Olivier (Midjourney)
   note: 40 m d'envergure
   generated: '2026-10-17'
+- id: sky/ciel
+  type: texture
+  placeholder: true
+  file: assets/sky/ciel.png
+  source: génération locale Z-Image Turbo (bf16), 2048×1024, rendue raccordable horizontalement
+  workflow: pipeline/comfy/workflows/z_image_turbo_t2i.json
+  script: pipeline/comfy/sky.py --seeds 2 --pick 2
+  seed: 2
+  prompt: PROMPTS.md, section Ciel et lointain (+ bloc de style commun)
+  licence: généré localement
+  note: projeté sur la voûte (horizon à 82 % de l'image) ; résolution insuffisante (flou), à agrandir
+  generated: '2026-10-18'
