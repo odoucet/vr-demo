@@ -23,13 +23,11 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 | D7 | Sons Freesound (9 ambiances et bruitages, tous CC0) | un candidat retenu par besoin d'après titre et fiabilité, sans écoute : `audio/sfx/*.ogg` ; alternatives dans `audio/sfx/candidates/README.md` | `freesound.py pick <besoin> <id>` | |
 | D8 | Cadrages des caméras de revue | `pipeline/review/cameras.yaml` actuel | éditer le YAML | |
 | D9 | M'autoriser à installer Blender portable (sans droits admin, sur G:) | j'attends ; nettoyage des maillages via les nœuds ComfyUI en attendant | — | |
-| D10 | M'autoriser à installer les outils Android : SDK séparé dans `G:\android\` (bootstrap avec l'archive cmdline-tools déjà téléchargée par Ren'Py), NDK 27.2.12479018, cmake 3.22.1, build-tools 36.0.0, plateforme android-36, JDK 21 portable (le JDK 25 installé est trop récent pour Gradle 8.13 d'UE), variables d'environnement utilisateur | j'attends. Alternative : compléter le SDK de Ren'Py (moins de téléchargement, mais Unreal dépendrait du dossier Ren'Py) | — | |
 
 ## 🔴 Bloquants
 
 | # | Blocage | Bloque | Ce qu'il faut | Contournement en cours |
 |---|---|---|---|---|
-| B2 | Outils Android (SDK, NDK, JDK) absents | APK Quest (J1) | accord D10 (je l'installe moi-même après UE), ou installation par Olivier | aucun |
 
 ## 🟠 Importants (contournés)
 
@@ -55,6 +53,7 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 
 ## Fait récemment
 
+- Outils Android installés dans `G:\android\` (SDK, NDK r27c, JDK 21), validés par Unreal : `pipeline/unreal/setup_android.py`.
 - MCP Unreal opérationnel : ~20 jeux d'outils (scène, acteurs, assets, matériaux, PCG, Niagara, journaux), capture du viewport (`pipeline/unreal/mcp.py capture`).
 - Projet Unreal créé par script (Quest 3 + PC VR, MCP), exécution headless depuis WSL.
 - 9 sons Freesound CC0 retenus provisoirement, tracés dans le manifeste.
@@ -68,6 +67,6 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 | Jalon | État |
 |---|---|
 | J0 Bible de style | prompts prêts ; attend les images d'Olivier (I1, D1) |
-| J1 Spike vidéo 360 + Quest | vidéos de test prêtes, projet UE prêt ; attend les outils Android (B2) |
+| J1 Spike vidéo 360 + Quest | vidéos de test prêtes, projet UE prêt, outils Android validés par UE (« Android VALID r27c ») ; APK de test à construire |
 | J2 Greybox + animatic | données prêtes (tracé, caméras, séquencier), UE et MCP opérationnels ; greybox à construire |
 | J3 à J6 | non commencés |

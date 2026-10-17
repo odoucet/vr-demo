@@ -26,8 +26,11 @@ def run(script, rhi=False, mcp=False, extra=()):
         cmd.append("-ModelContextProtocolStartServer")
     cmd += list(extra)
     # WSLENV « /p » : WSL traduit le chemin en chemin Windows pour le processus Unreal.
-    wslenv = ":".join(filter(None, [os.environ.get("WSLENV"), "BARQUE_ROOT/p"]))
-    env = dict(os.environ, BARQUE_ROOT=str(ROOT), WSLENV=wslenv)
+    # Variables Android : positionnées côté Windows par setup_android.py, mais invisibles d'une session WSL
+    # ouverte avant leur création ; on les transmet explicitement (WSLENV sans drapeau = valeur telle quelle).
+    from unreal.setup_android import ENV as ANDROID_ENV
+    wslenv = ":".join(filter(None, [os.environ.get("WSLENV"), "BARQUE_ROOT/p", *ANDROID_ENV]))
+    env = dict(os.environ, BARQUE_ROOT=str(ROOT), WSLENV=wslenv, **ANDROID_ENV)
     proc = subprocess.run(cmd, env=env, capture_output=True, text=True, errors="replace")
     lines = proc.stdout.splitlines()
     keep = [l for l in lines if "LogPython" in l or "Error" in l or "error:" in l.lower()]
