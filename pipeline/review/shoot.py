@@ -30,6 +30,9 @@ W, H = 1920, 1080
 
 SHOT_SCRIPT = """
 import unreal
+levels = unreal.get_editor_subsystem(unreal.LevelEditorSubsystem)
+if "Barque_Greybox" not in unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem).get_editor_world().get_path_name():
+    levels.load_level("/Game/Maps/Barque_Greybox")
 # Capture par SceneCapture2D vers une cible de rendu 1920x1080 : indépendante de la fenêtre de l'éditeur
 # (HighResShot ne produit rien quand le viewport n'est pas affiché).
 seq = unreal.load_asset("/Game/Sequences/LS_Animatic")

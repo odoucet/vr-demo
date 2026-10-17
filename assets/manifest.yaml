@@ -200,3 +200,47 @@ assets:
   beats:
   - S6-LUNE
   script: pipeline/audio/freesound.py pick cue-volante 171945
+- id: 3d/barque
+  type: mesh
+  placeholder: true
+  file: assets/3d/barque/trellis2-s42/model.glb (hors dépôt, régénérable)
+  source: image → 3D TRELLIS.2 (bf16, seed 42) depuis refs/barque.png
+  workflow: pipeline/comfy/workflows/3d_pixal3d_trellis2_image_to_model.ui.json
+  script: pipeline/comfy/image_to_3d.py refs/barque.png --models trellis2
+  seed: 42
+  licence: généré localement depuis les images d'Olivier (Midjourney)
+  note: 'import Unreal : 3,5 m, hauteur ×0,74, proue +X ; lanterne en papier lumineux ajoutée par greybox.py'
+  generated: '2026-10-17'
+- id: 3d/abysses
+  type: mesh
+  placeholder: true
+  file: assets/3d/abysses/trellis2-s42/model.glb (hors dépôt, régénérable)
+  source: image → 3D TRELLIS.2 (bf16, seed 42) depuis refs/abysses.png
+  workflow: pipeline/comfy/workflows/3d_pixal3d_trellis2_image_to_model.ui.json
+  script: pipeline/comfy/image_to_3d.py refs/abysses.png --models trellis2
+  seed: 42
+  licence: généré localement depuis les images d'Olivier (Midjourney)
+  note: 15 m, épaisseur 2,5 m ; texture réutilisée en émissif cyan (bioluminescence)
+  generated: '2026-10-17'
+- id: 3d/troupeau
+  type: mesh
+  placeholder: true
+  file: assets/3d/troupeau/trellis2-s42/model.glb (hors dépôt, régénérable)
+  source: image → 3D TRELLIS.2 (bf16, seed 42) depuis refs/troupeau.png
+  workflow: pipeline/comfy/workflows/3d_pixal3d_trellis2_image_to_model.ui.json
+  script: pipeline/comfy/image_to_3d.py refs/troupeau.png --models trellis2
+  seed: 42
+  licence: généré localement depuis les images d'Olivier (Midjourney)
+  note: 2,5 m au garrot, 5 instances, à mi-corps dans l'eau
+  generated: '2026-10-17'
+- id: 3d/volante
+  type: mesh
+  placeholder: true
+  file: assets/3d/fly/trellis2-s42/model.glb (hors dépôt, régénérable)
+  source: image → 3D TRELLIS.2 (bf16, seed 42) depuis refs/fly.png
+  workflow: pipeline/comfy/workflows/3d_pixal3d_trellis2_image_to_model.ui.json
+  script: pipeline/comfy/image_to_3d.py refs/fly.png --models trellis2
+  seed: 42
+  licence: généré localement depuis les images d'Olivier (Midjourney)
+  note: 40 m d'envergure
+  generated: '2026-10-17'

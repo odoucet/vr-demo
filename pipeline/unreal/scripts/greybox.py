@@ -87,8 +87,10 @@ MATS = {
     "Lune": material("Lune", (3.0, 2.9, 2.6), emissive=True),
     "Lanterne": material("Lanterne", (6.0, 2.5, 0.6), emissive=True),
     "LanternePapier": material("LanternePapier", (1.1, 0.55, 0.22), emissive=True),
+    "Luciole": material("Luciole", (4.0, 5.0, 1.2), emissive=True),
 }
-MESH_MATS = {"Terrain": "Terrain", "ArcheRacines": "Bois", "Foret": "Foret", "ArbreColossal": "Bois", "ArbreLanternes": "Foret"}
+MESH_MATS = {"Terrain": "Terrain", "ArcheRacines": "Bois", "Foret": "Foret", "ArbreColossal": "Bois", "ArbreLanternes": "Foret",
+             "Lucioles": "Luciole"}
 
 
 # --- Maillages depuis greybox.json -------------------------------------------------------------------------
@@ -146,7 +148,9 @@ def place_mesh(mesh, label, mat, loc=unreal.Vector(0, 0, 0), rot=unreal.Rotator(
 
 
 for name, mesh in MESHES.items():
-    place_mesh(mesh, f"GB_{name}", MESH_MATS[name])
+    a = place_mesh(mesh, f"GB_{name}", MESH_MATS[name])
+    if name == "Lucioles":
+        a.set_actor_location(unreal.Vector(0, 0, -3000), False, False)   # sous le terrain jusqu'à l'envol (séquence)
 
 CUBE = eal.load_asset("/Engine/BasicShapes/Cube")      # 100 cm
 SPHERE = eal.load_asset("/Engine/BasicShapes/Sphere")  # 100 cm de diamètre
@@ -181,22 +185,29 @@ BOAT_SCALE, BOAT_SCALE_Z, BOAT_YAW = 3.5, 2.6, -90.0
 BOAT_Z = 35.1 * BOAT_SCALE_Z - 25.0
 
 
-def boat_mesh():
-    if not os.path.exists(BOAT_GLB):
-        return None
+def import_glb(rel_glb, dest_dir):
+    """Importe assets/3d/<rel_glb>/model.glb dans dest_dir (une fois par empreinte du fichier) ; None si absent."""
     import hashlib
-    with open(BOAT_GLB, "rb") as f:
+    glb = os.path.join(ROOT, "assets", "3d", rel_glb, "model.glb")
+    if not os.path.exists(glb):
+        return None
+    mesh_path = f"{dest_dir}/model/StaticMeshes/model"
+    with open(glb, "rb") as f:
         digest = hashlib.sha1(f.read()).hexdigest()[:12]
-    if eal.does_asset_exist(BOAT_MESH) and eal.get_metadata_tag(eal.load_asset(BOAT_MESH), "source_sha1") == digest:
-        return eal.load_asset(BOAT_MESH)
+    if eal.does_asset_exist(mesh_path) and eal.get_metadata_tag(eal.load_asset(mesh_path), "source_sha1") == digest:
+        return eal.load_asset(mesh_path)
     task = unreal.AssetImportTask()
-    task.filename, task.destination_path = BOAT_GLB, BOAT_DIR
+    task.filename, task.destination_path = glb, dest_dir
     task.automated, task.replace_existing, task.save = True, True, True
     tools.import_asset_tasks([task])
-    mesh = eal.load_asset(BOAT_MESH)
+    mesh = eal.load_asset(mesh_path)
     eal.set_metadata_tag(mesh, "source_sha1", digest)
     eal.save_loaded_asset(mesh)
     return mesh
+
+
+def boat_mesh():
+    return import_glb("barque/trellis2-s42", BOAT_DIR)
 
 
 start = pose_at(0)
@@ -256,6 +267,9 @@ root_handle = sds.k2_gather_subobject_data_for_instance(vr)[0]
 sds.add_new_subobject(unreal.AddNewSubobjectParams(parent_handle=root_handle, new_class=unreal.CameraComponent))
 vr_cam = vr.get_component_by_class(unreal.CameraComponent)
 vr_cam.set_editor_property("lock_to_hmd", True)
+# Sans casque (rendu MRQ, jeu à l'écran), la caméra reste à sa position relative : yeux à 1,10 m. Avec le casque,
+# la pose de la tête (origine STAGE, au sol) remplace cette position relative.
+vr_cam.set_editor_property("relative_location", unreal.Vector(0, 0, EYE_CM))
 vr.attach_to_actor(boat, "", unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, False)
 cine = cam.get_cine_camera_component()
 cine.set_editor_property("current_focal_length", 12.0)    # ~ 90° horizontal sur capteur 16:9
@@ -278,11 +292,59 @@ for i in range(40):
     r = 4 + 7 * ((i * 37) % 11) / 11
     place_mesh(SPHERE, f"GB_Lanterne{i:02d}", "Lanterne", ue(lt["x"] + r * math.cos(a), lt["y"] + r * math.sin(a), 8 + 9 * ((i * 17) % 13) / 13), scale=(0.5, 0.5, 0.6))
 
-# Blocs des créatures (positions de départ ; animés par la séquence de l'animatic).
-place_mesh(SPHERE, "GB_Abysses", "Creature", ue(0, -60, -3.2), scale=(15, 7, 1.2))          # 15 m (D4)
+# Créatures : bloc animé par la séquence (repère : +X = sens du mouvement) + modèle 3D attaché s'il existe.
+# Modèles TRELLIS.2 : longueur sur +Y à l'import (1 unité = 100 cm), comme la barque → rotation -90°.
+# Échelles D4 : abysses 15 m de long (épaisseur ramenée à 2,5 m), troupeau 2,5 m au garrot, volante 40 m d'envergure.
+CREATURES = {
+    # bloc : (modèle, matériau du bloc, échelle du bloc de repli, échelle du modèle (x, y, z), décalage z cm)
+    "GB_Abysses": ("abysses/trellis2-s42", "Creature", (15, 7, 1.2), (15, 15, 4.5), 0.0),
+    "GB_Troupeau": ("troupeau/trellis2-s42", "Troupeau", (3.0, 2.2, 2.5), (4.1, 4.1, 4.1), -60.0),   # à mi-corps
+    "GB_Volante": ("fly/trellis2-s42", "Volante", (40, 12, 4), (56, 56, 56), 0.0),
+}
+
+
+GLOW = {"GB_Abysses": (0.15, 1.6, 2.0)}   # bioluminescence : texture de couleur réutilisée en émissif, teintée
+
+
+def glow(dest_dir, tint):
+    """Rend le modèle lumineux : sa texture de couleur sert aussi d'émissif, multipliée par une teinte."""
+    mel = unreal.MaterialEditingLibrary
+    for path in eal.list_assets(f"{dest_dir}/model/Materials", recursive=True):
+        mi = eal.load_asset(path)
+        if not isinstance(mi, unreal.MaterialInstanceConstant):
+            continue
+        base = mel.get_material_instance_texture_parameter_value(mi, "BaseColorTexture")
+        mel.set_material_instance_texture_parameter_value(mi, "EmissiveTexture", base)
+        mel.set_material_instance_static_switch_parameter_value(mi, "bHasEmissiveTexture", True)
+        mel.set_material_instance_vector_parameter_value(mi, "EmissiveFactor", unreal.LinearColor(*tint, 1.0))
+        mel.update_material_instance(mi)
+        eal.save_loaded_asset(mi)
+
+
+def creature(label, kind, loc):
+    rel_glb, mat, fallback, mscale, dz = CREATURES[kind]
+    model = import_glb(rel_glb, f"/Game/Assets/{kind[3:]}")
+    if model is not None and kind in GLOW:
+        glow(f"/Game/Assets/{kind[3:]}", GLOW[kind])
+    blk = place_mesh(SPHERE, label, mat, loc, scale=(1, 1, 1) if model else fallback)
+    if model is None:
+        return blk
+    blk.set_actor_hidden_in_game(True)
+    blk.static_mesh_component.set_visibility(False)
+    m = actors.spawn_actor_from_object(model, loc)
+    tag(m, label + "_Modele")
+    m.static_mesh_component.set_collision_enabled(unreal.CollisionEnabled.NO_COLLISION)
+    m.attach_to_actor(blk, "", unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, False)
+    m.root_component.set_editor_property("relative_location", unreal.Vector(0, 0, dz))
+    m.root_component.set_editor_property("relative_rotation", unreal.Rotator(0, 0, -90.0))
+    m.root_component.set_editor_property("relative_scale3d", unreal.Vector(*mscale))
+    return blk
+
+
+creature("GB_Abysses", "GB_Abysses", ue(0, -60, -3.2))
 for i in range(5):
-    place_mesh(SPHERE, f"GB_Troupeau{i}", "Troupeau", ue(0, -60 - i * 4, 0.6), scale=(3.0, 2.2, 2.5))  # 2,5 m (D4)
-place_mesh(SPHERE, "GB_Volante", "Volante", ue(*moon_xy, 150), scale=(40, 12, 4))              # 40 m (D4)
+    creature(f"GB_Troupeau{i}", "GB_Troupeau", ue(0, -60 - i * 4, 0.6))
+creature("GB_Volante", "GB_Volante", ue(*moon_xy, 150))
 
 # Lumière de crépuscule, ciel, brume.
 sun = tag(actors.spawn_actor_from_class(unreal.DirectionalLight, unreal.Vector(0, 0, 3000), unreal.Rotator(0, -8, ue_yaw(start["heading_deg"]) + 150)), "Soleil")

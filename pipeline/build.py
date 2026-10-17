@@ -25,6 +25,7 @@ STAGES = [
     ("unreal-project", "projet Unreal et configuration", [PY, "pipeline/unreal/create_project.py"], None),
     ("unreal-probe", "vérification du projet", [PY, "pipeline/unreal/run.py", "pipeline/unreal/scripts/probe.py"], "unreal"),
     ("music-wav", "musique en WAV pour Unreal", [PY, "pipeline/audio/prepare_music.py"], None),
+    ("sounds", "sons retenus normalisés + plan de mixage pour Unreal", [PY, "pipeline/audio/prepare_sounds.py"], None),
     ("greybox-geometry", "géométrie du greybox (terrain, arche, forêt)", [PY, "pipeline/layout/greybox_geometry.py"], None),
     ("unreal-greybox", "niveau greybox", [PY, "pipeline/unreal/run.py", "pipeline/unreal/scripts/greybox.py"], "unreal"),
     ("unreal-animatic", "séquence de l'animatic", [PY, "pipeline/unreal/run.py", "pipeline/unreal/scripts/animatic.py"], "unreal"),

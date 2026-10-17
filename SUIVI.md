@@ -23,7 +23,7 @@ Dans le casque : Bibliothèque → Sources inconnues.
    Hauteur : le joueur est posé au niveau de l'eau, ta tête assise doit tomber vers 1,10 m (origine OpenXR « STAGE », au sol).
    Si tu es trop haut ou trop bas, dis-le-moi : c'est un réglage.
    Alternative sans APK : Quest Link + éditeur, niveau `Barque_Greybox`, Play → VR Preview.
-3. Sans casque : `review/iter-002/animatic.mp4` (4 min, musique + ambiances) et `review/iter-002/planche.jpg`.
+3. Sans casque : `review/iter-003/animatic.mp4` (4 min, musique + ambiances) et `review/iter-003/planche.jpg`.
 
 Retours : dans ce fichier, en issue GitHub, ou en conversation (`ID-caméra : remarque [étiquette]`).
 
@@ -84,6 +84,7 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 
 ## Fait récemment
 
+- **Itération 3 (J2)** : envol des lucioles à la modulation (2:37,8 : nuage de 400 lucioles qui monte vers la trouée, substitut d'un futur Niagara) ; modèles 3D des créatures attachés aux blocs animés (abysses en émissif cyan, troupeau à mi-corps, créature volante dans le sens de son vol) ; caméra du joueur VR à 1,10 m sans casque.
 - **APK greybox jouable** (`builds/android_greybox/`) : joueur VR assis dans la barque, séquence en lecture automatique.
 - **Paysage sonore** : 12 sons Freesound CC0 (9 ambiances, 3 repères de créatures spatialisés) placés selon `pipeline/audio/soundscape.yaml`, normalisés ; mixés aussi dans l'animatic.
 - **Itération 2 (J2)** : barque 3D intégrée (3,5 m, franc-bord ~45 cm), lumière de lanterne, lune et créature volante décalées de 15° à gauche pour ne pas être masquées par la lanterne, caméras de revue à la place assise.
@@ -107,5 +108,5 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 |---|---|
 | J0 Bible de style | prompts prêts ; attend les images d'Olivier (I1, D1) |
 | J1 Spike vidéo 360 + Quest | scène J1_Spike construite par script (sphère 360 stéréo + séquence + témoin de synchro), matériau validé dans l'éditeur ; **APK prêt : `builds/android/Barque-arm64.apk`** (485 Mo) ; attend le test au casque (go / no-go) |
-| J2 Greybox + animatic | greybox construit par script (terrain, eau translucide, arche, forêt, lac, lune, blocs des créatures) ; séquence LS_Animatic calée sur la musique ; 18 captures et animatic vidéo avec musique ; **itération 2 : la vraie barque 3D** (modèle TRELLIS.2 de ta vue 3/4, lanterne lumineuse, place assise sur le banc arrière) — `review/iter-002/planche.jpg` et `review/iter-002/animatic.mp4` ; à valider : timing et confort au casque |
+| J2 Greybox + animatic | greybox construit par script (terrain, eau translucide, arche, forêt, lac, lune, blocs des créatures) ; séquence LS_Animatic calée sur la musique ; 18 captures et animatic vidéo avec musique ; **itération 3 : créatures 3D** (abysses lumineuse, troupeau, créature volante) après la barque 3D en itération 2 (modèle TRELLIS.2 de ta vue 3/4, lanterne lumineuse, place assise sur le banc arrière) — `review/iter-003/planche.jpg` et `review/iter-003/animatic.mp4` ; à valider : timing et confort au casque |
 | J3 à J6 | non commencés |

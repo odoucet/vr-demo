@@ -172,6 +172,20 @@ def lantern_tree(river):
     return mesh_dict(verts, tris)
 
 
+def fireflies(n=400, size=0.07, extent=(28.0, 22.0, 7.0), seed=11):
+    """Nuage de lucioles (octaèdres), centré sur l'origine, animé par la séquence (envol de S5/S6)."""
+    rng = np.random.default_rng(seed)
+    verts, tris = [], []
+    pts = rng.normal(0, 1, (n, 3)) * np.array(extent) / 3
+    for c in pts:
+        r = size * rng.uniform(0.6, 1.4)
+        base = len(verts)
+        verts += [c + d for d in (np.array(v) * r for v in ((1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1)))]
+        tris += [[base + a, base + b, base + c_] for a, b, c_ in
+                 ((0, 2, 4), (2, 1, 4), (1, 3, 4), (3, 0, 4), (2, 0, 5), (1, 2, 5), (3, 1, 5), (0, 3, 5))]
+    return mesh_dict(verts, tris)
+
+
 def main():
     river = json.loads(RIVER.read_text(encoding="utf-8"))
     terrain_mesh, bounds, field = terrain(river)
@@ -186,6 +200,7 @@ def main():
             "Foret": forest(river, field, bounds),
             "ArbreColossal": colossal_tree(river),
             "ArbreLanternes": lantern_tree(river),
+            "Lucioles": fireflies(),
         },
     }
     OUT.write_text(json.dumps(data, separators=(",", ":")), encoding="utf-8")
