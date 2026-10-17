@@ -55,6 +55,8 @@ r.Shadow.Virtual.Enable=0
 r.DefaultFeature.AutoExposure=False
 r.DefaultFeature.MotionBlur=False
 r.DefaultFeature.LensFlare=False
+; ajouté par l'éditeur pour Meta Quest
+r.Mobile.UseHWsRGBEncoding=True
 
 [/Script/WindowsTargetPlatform.WindowsTargetSettings]
 DefaultGraphicsRHI=DefaultGraphicsRHI_DX12
@@ -72,6 +74,22 @@ bBuildForArm64=True
 bFullScreen=True
 Orientation=Landscape
 bPackageDataInsideApk=True
+ExtraApplicationSettings=<meta-data android:name="com.oculus.supportedDevices" android:value="quest2|questpro|quest3|quest3s" />
+
+; Serveur de fichiers Android (ajouté par l'éditeur ; jeton figé pour que le fichier reste stable)
+[/Script/AndroidFileServerEditor.AndroidFileServerRuntimeSettings]
+bEnablePlugin=True
+bAllowNetworkConnection=True
+SecurityToken=D21AE0084B500918132937AAAB75BF0D
+bIncludeInShipping=False
+bAllowExternalStartInShipping=False
+bCompileAFSProject=False
+bUseCompression=False
+bLogFiles=False
+bReportStats=False
+ConnectionType=USBOnly
+bUseManualIPAddress=False
+ManualIPAddress=
 """
 
 GAME_INI = """\

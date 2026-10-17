@@ -68,6 +68,6 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 | Jalon | État |
 |---|---|
 | J0 Bible de style | prompts prêts ; attend les images d'Olivier (I1, D1) |
-| J1 Spike vidéo 360 + Quest | vidéos de test prêtes ; attend UE et Android (B1, B2) |
-| J2 Greybox + animatic | données prêtes (tracé, caméras, séquencier) ; attend UE (B1) |
+| J1 Spike vidéo 360 + Quest | vidéos de test prêtes, projet UE prêt ; attend les outils Android (B2) |
+| J2 Greybox + animatic | données prêtes (tracé, caméras, séquencier), UE et MCP opérationnels ; greybox à construire |
 | J3 à J6 | non commencés |
