@@ -95,6 +95,12 @@ MESH_MATS = {"Terrain": "Terrain", "ArcheRacines": "Bois", "Foret": "Foret", "Ar
 
 # --- Maillages depuis greybox.json -------------------------------------------------------------------------
 def build_mesh(name, data, uv_scale_cm=400.0):
+    """Maillage statique depuis les données du tracé ; réécrit seulement si la géométrie a changé (empreinte)."""
+    import hashlib
+    digest = hashlib.sha1(json.dumps(data, sort_keys=True).encode()).hexdigest()[:12]
+    path = f"{GB}/SM_{name}"
+    if eal.does_asset_exist(path) and eal.get_metadata_tag(eal.load_asset(path), "source_sha1") == digest:
+        return eal.load_asset(path)
     dm = unreal.DynamicMesh()
     buffers = unreal.GeometryScriptSimpleMeshBuffers()
     buffers.vertices = [ue(*v) for v in data["vertices"]]
@@ -105,14 +111,16 @@ def build_mesh(name, data, uv_scale_cm=400.0):
     buffers.uv0 = [unreal.Vector2D(v[0] * k, -v[1] * k) for v in data["vertices"]]
     dm.append_buffers_to_mesh(buffers)
     dm.recompute_normals(unreal.GeometryScriptCalculateNormalsOptions())
-    path = f"{GB}/SM_{name}"
     if eal.does_asset_exist(path):
-        unreal.GeometryScript_AssetUtils.copy_mesh_to_static_mesh(dm, eal.load_asset(path), unreal.GeometryScriptCopyMeshToAssetOptions(),
+        mesh = eal.load_asset(path)
+        unreal.GeometryScript_AssetUtils.copy_mesh_to_static_mesh(dm, mesh, unreal.GeometryScriptCopyMeshToAssetOptions(),
                                                                   unreal.GeometryScriptMeshWriteLOD())
-        return eal.load_asset(path)
-    options = unreal.GeometryScriptCreateNewStaticMeshAssetOptions()
-    options.set_editor_property("enable_collision", False)
-    mesh, _ = unreal.GeometryScript_NewAssetUtils.create_new_static_mesh_asset_from_mesh(dm, path, options)
+    else:
+        options = unreal.GeometryScriptCreateNewStaticMeshAssetOptions()
+        options.set_editor_property("enable_collision", False)
+        mesh, _ = unreal.GeometryScript_NewAssetUtils.create_new_static_mesh_asset_from_mesh(dm, path, options)
+    eal.set_metadata_tag(mesh, "source_sha1", digest)
+    eal.save_loaded_asset(mesh)
     return mesh
 
 
@@ -297,11 +305,18 @@ place_mesh(SPHERE, "GB_Lune", "Lune", ue(*moon_xy, 900 * math.tan(math.radians(2
 # en matériau « ciel » (dessiné derrière tout, hors brume).
 SKY_PNG = os.path.join(ROOT, "assets", "sky", "ciel.png")
 if os.path.exists(SKY_PNG):
-    task = unreal.AssetImportTask()
-    task.filename, task.destination_path = SKY_PNG, GB
-    task.automated, task.replace_existing, task.save = True, True, True
-    tools.import_asset_tasks([task])
-    sky_tex = eal.load_asset(f"{GB}/ciel")
+    import hashlib
+    with open(SKY_PNG, "rb") as f:
+        sky_digest = hashlib.sha1(f.read()).hexdigest()[:12]
+    sky_tex = eal.load_asset(f"{GB}/ciel") if eal.does_asset_exist(f"{GB}/ciel") else None
+    if sky_tex is None or eal.get_metadata_tag(sky_tex, "source_sha1") != sky_digest:
+        task = unreal.AssetImportTask()
+        task.filename, task.destination_path = SKY_PNG, GB
+        task.automated, task.replace_existing, task.save = True, True, True
+        tools.import_asset_tasks([task])
+        sky_tex = eal.load_asset(f"{GB}/ciel")
+        eal.set_metadata_tag(sky_tex, "source_sha1", sky_digest)
+        eal.save_loaded_asset(sky_tex)
     sky_mat_path = f"{GB}/M_GB_CielPeint"
     sky_mat = eal.load_asset(sky_mat_path) if eal.does_asset_exist(sky_mat_path) else tools.create_asset("M_GB_CielPeint", GB, unreal.Material, unreal.MaterialFactoryNew())
     mel.delete_all_material_expressions(sky_mat)
@@ -474,6 +489,5 @@ tag(actors.spawn_actor_from_class(unreal.PlayerStart, ue(start["x"], start["y"],
 # Pas de réglage d'exposition : l'exposition auto est coupée dans le projet (VR) et le moteur ignore alors
 # toute compensation. La lisibilité du greybox se règle par l'intensité des lumières.
 
-eal.save_directory(GB)
 levels.save_current_level()
 unreal.log(f"Greybox : {MAP} construit ({len(MESHES)} maillages)")
