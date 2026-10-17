@@ -16,4 +16,4 @@ android:
   build_tools: 36.0.0
   cmake: 3.22.1
   ndk: 27.2.12479018
-  sdk_root: null
+  root: G:/android                      # sdk\ et jdk-21\ (pipeline/unreal/setup_android.py)

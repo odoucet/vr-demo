@@ -23,7 +23,7 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 | D7 | Sons Freesound (9 ambiances et bruitages, tous CC0) | un candidat retenu par besoin d'après titre et fiabilité, sans écoute : `audio/sfx/*.ogg` ; alternatives dans `audio/sfx/candidates/README.md` | `freesound.py pick <besoin> <id>` | |
 | D8 | Cadrages des caméras de revue | `pipeline/review/cameras.yaml` actuel | éditer le YAML | |
 | D9 | M'autoriser à installer Blender portable (sans droits admin, sur G:) | j'attends ; nettoyage des maillages via les nœuds ComfyUI en attendant | — | |
-| D10 | M'autoriser à installer les outils Android en ligne de commande (`cmdline-tools`, SDK, NDK, JDK portable dans `G:\android\`, variables d'environnement utilisateur), versions lues dans UE 5.8 | j'attends (Docker écarté : UE Windows ne peut pas utiliser un SDK Linux en conteneur) | — | |
+| D10 | M'autoriser à installer les outils Android : SDK séparé dans `G:\android\` (bootstrap avec l'archive cmdline-tools déjà téléchargée par Ren'Py), NDK 27.2.12479018, cmake 3.22.1, build-tools 36.0.0, plateforme android-36, JDK 21 portable (le JDK 25 installé est trop récent pour Gradle 8.13 d'UE), variables d'environnement utilisateur | j'attends. Alternative : compléter le SDK de Ren'Py (moins de téléchargement, mais Unreal dépendrait du dossier Ren'Py) | — | |
 
 ## 🔴 Bloquants
 
