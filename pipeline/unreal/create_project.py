@@ -10,6 +10,7 @@ et PC VR (forward shading, instanced stereo, MSAA) ; éclairage statique autoris
 coupés ; serveur MCP d'Unreal démarré automatiquement avec l'éditeur.
 """
 import json
+import os
 import subprocess
 import sys
 import uuid
@@ -32,7 +33,7 @@ PLUGINS = [
 ENGINE_INI = """\
 [/Script/EngineSettings.GameMapsSettings]
 ; Carte de démarrage du jeu : scène de test J1 tant que la démo n'existe pas
-GameDefaultMap=/Game/Maps/J1_Spike.J1_Spike
+GameDefaultMap={default_map}
 
 [/Script/HardwareTargeting.HardwareTargetingSettings]
 TargetedHardwareClass=Mobile
@@ -70,7 +71,7 @@ DefaultGraphicsRHI=DefaultGraphicsRHI_DX12
 +D3D12TargetedShaderFormats=PCD3D_SM6
 
 [/Script/AndroidRuntimeSettings.AndroidRuntimeSettings]
-PackageName=com.odoucet.barque
+PackageName={package_name}
 StoreVersion=1
 MinSDKVersion=32
 TargetSDKVersion=32
@@ -173,7 +174,10 @@ def main():
     }
     changed = [str(p.relative_to(ROOT)) for p, t in [
         (uproject, json.dumps(descriptor, indent="\t") + "\n"),
-        (base / "Config" / "DefaultEngine.ini", ENGINE_INI),
+        # Variante d'empaquetage (package_android.py --variant) : carte de démarrage et nom de paquet.
+        (base / "Config" / "DefaultEngine.ini", ENGINE_INI.format(
+            default_map=os.environ.get("BARQUE_DEFAULT_MAP", "/Game/Maps/J1_Spike.J1_Spike"),
+            package_name=os.environ.get("BARQUE_PACKAGE_NAME", "com.odoucet.barque"))),
         (base / "Config" / "DefaultGame.ini", GAME_INI.format(project_id=project_id)),
         (base / "Config" / "DefaultEditorPerProjectUserSettings.ini", EDITOR_USER_INI),
     ] if write(p, t)]

@@ -167,3 +167,36 @@ assets:
   script: pipeline/unreal/scripts/greybox.py
   licence: contenu moteur Unreal
   generated: '2026-10-17'
+- id: sfx/cue-abysses
+  type: sound
+  file: audio/sfx/cue-abysses.ogg
+  source: 'Freesound #88449 « Baleines.wav » par davidou'
+  url: https://freesound.org/people/davidou/sounds/88449/
+  licence: http://creativecommons.org/publicdomain/zero/1.0/
+  credit: Baleines.wav by davidou (freesound.org)
+  format: aperçu OGG ~192 kb/s (original à récupérer via OAuth pour le master)
+  beats:
+  - S3-ABYSSE
+  script: pipeline/audio/freesound.py pick cue-abysses 88449
+- id: sfx/cue-troupeau
+  type: sound
+  file: audio/sfx/cue-troupeau.ogg
+  source: 'Freesound #350414 « Animal Heavy Breathing » par bevibeldesign'
+  url: https://freesound.org/people/bevibeldesign/sounds/350414/
+  licence: http://creativecommons.org/publicdomain/zero/1.0/
+  credit: Animal Heavy Breathing by bevibeldesign (freesound.org)
+  format: aperçu OGG ~192 kb/s (original à récupérer via OAuth pour le master)
+  beats:
+  - S4-GUE
+  script: pipeline/audio/freesound.py pick cue-troupeau 350414
+- id: sfx/cue-volante
+  type: sound
+  file: audio/sfx/cue-volante.ogg
+  source: 'Freesound #171945 « LowWhalesong.wav » par RebekahDay'
+  url: https://freesound.org/people/RebekahDay/sounds/171945/
+  licence: http://creativecommons.org/publicdomain/zero/1.0/
+  credit: LowWhalesong.wav by RebekahDay (freesound.org)
+  format: aperçu OGG ~192 kb/s (original à récupérer via OAuth pour le master)
+  beats:
+  - S6-LUNE
+  script: pipeline/audio/freesound.py pick cue-volante 171945

@@ -241,6 +241,22 @@ h0 = math.radians(start["heading_deg"])
 cam_loc = ue(start["x"] + SEAT_X_CM / 100 * math.cos(h0), start["y"] + SEAT_X_CM / 100 * math.sin(h0), EYE_CM / 100)
 cam = tag(actors.spawn_actor_from_class(unreal.CineCameraActor, cam_loc), "CameraBarque")
 cam.attach_to_actor(boat, "", unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, False)
+# Joueur VR : pion attaché à la barque sur la place assise, au niveau de l'eau. En suivi « au sol » (Quest),
+# le casque ajoute la hauteur réelle de la tête assise (~1,10 m). Caméra verrouillée sur le casque, ni collision
+# ni déplacement ; la séquence ignore ses coupes caméra en jeu (animatic.py).
+vr = tag(actors.spawn_actor_from_class(unreal.DefaultPawn, ue(start["x"] + SEAT_X_CM / 100 * math.cos(h0), start["y"] + SEAT_X_CM / 100 * math.sin(h0), 0.0),
+                                       unreal.Rotator(0, 0, ue_yaw(start["heading_deg"]))), "JoueurVR")
+vr.set_editor_property("auto_possess_player", unreal.AutoReceiveInput.PLAYER0)
+vr.set_editor_property("base_eye_height", 0.0)
+vr.collision_component.set_collision_enabled(unreal.CollisionEnabled.NO_COLLISION)
+vr.mesh_component.set_visibility(False)
+vr.mesh_component.set_hidden_in_game(True)
+sds = unreal.get_engine_subsystem(unreal.SubobjectDataSubsystem)
+root_handle = sds.k2_gather_subobject_data_for_instance(vr)[0]
+sds.add_new_subobject(unreal.AddNewSubobjectParams(parent_handle=root_handle, new_class=unreal.CameraComponent))
+vr_cam = vr.get_component_by_class(unreal.CameraComponent)
+vr_cam.set_editor_property("lock_to_hmd", True)
+vr.attach_to_actor(boat, "", unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, False)
 cine = cam.get_cine_camera_component()
 cine.set_editor_property("current_focal_length", 12.0)    # ~ 90° horizontal sur capteur 16:9
 focus = cine.get_editor_property("focus_settings")

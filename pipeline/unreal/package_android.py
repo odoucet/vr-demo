@@ -2,6 +2,7 @@
 
     python pipeline/unreal/package_android.py                 # Development → builds/android/
     python pipeline/unreal/package_android.py --config Shipping
+    python pipeline/unreal/package_android.py --variant greybox   # J2 : greybox jouable, paquet distinct
 
 Journal complet : builds/android/package.log. L'APK et son script d'installation sont archivés dans
 builds/android/Android_ASTC/. L'éditeur peut rester ouvert (le cook lit les assets sauvegardés).
@@ -17,14 +18,32 @@ from tools import ROOT, from_windows, project, to_windows, unreal, CONFIG  # noq
 from unreal.setup_android import ENV as ANDROID_ENV  # noqa: E402
 
 RUNUAT = from_windows(CONFIG["unreal"]["root"]) / "Engine/Build/BatchFiles/RunUAT.bat"
-OUT = ROOT / "builds" / "android"
+OUT_ROOT = ROOT / "builds"
+# Variantes : carte de démarrage et nom de paquet distincts, pour installer plusieurs tests côte à côte.
+VARIANTS = {
+    "j1": ("/Game/Maps/J1_Spike.J1_Spike", "com.odoucet.barque", "android"),
+    "greybox": ("/Game/Maps/Barque_Greybox.Barque_Greybox", "com.odoucet.barque.greybox", "android_greybox"),
+}
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--config", default="Development", choices=["Development", "Shipping"])
+    ap.add_argument("--variant", default="j1", choices=list(VARIANTS))
     args = ap.parse_args()
+    default_map, package_name, out_name = VARIANTS[args.variant]
+    OUT = OUT_ROOT / out_name
     OUT.mkdir(parents=True, exist_ok=True)
+    # Écrit la configuration de la variante, empaquette, puis restaure la configuration par défaut (J1).
+    env = dict(os.environ, BARQUE_DEFAULT_MAP=default_map, BARQUE_PACKAGE_NAME=package_name)
+    subprocess.run([sys.executable, str(ROOT / "pipeline/unreal/create_project.py")], env=env, check=True)
+    try:
+        package(args, OUT)
+    finally:
+        subprocess.run([sys.executable, str(ROOT / "pipeline/unreal/create_project.py")], check=True)
+
+
+def package(args, OUT):
     # Un .bat évite les problèmes d'échappement des guillemets entre Python, WSL et cmd.exe.
     bat = OUT / "package.bat"
     bat.write_text("@echo off\r\n" + "".join(f"set {k}={v}\r\n" for k, v in ANDROID_ENV.items()) +

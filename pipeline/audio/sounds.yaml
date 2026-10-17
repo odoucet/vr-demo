@@ -42,3 +42,17 @@ sounds:
     beats: [all]
     query: boat creak wood
     min_duration: 3
+  # Repères sonores des créatures (2-3 s avant l'apparition, depuis leur direction) : substituts Freesound
+  # en attendant une génération dédiée.
+  - id: cue-abysses
+    beats: [S3-ABYSSE]
+    query: underwater whale
+    min_duration: 3
+  - id: cue-troupeau
+    beats: [S4-GUE]
+    query: large animal breathing
+    min_duration: 2
+  - id: cue-volante
+    beats: [S6-LUNE]
+    query: whale song
+    min_duration: 4

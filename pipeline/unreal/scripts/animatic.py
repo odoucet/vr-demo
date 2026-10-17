@@ -151,6 +151,60 @@ for t, side in [(cl["t"] - 12, cl["side_m"] + 160.0), (cl["t"], cl["side_m"]), (
 keys = [(0.0, keys[0][1], keys[0][2])] + keys + [(DURATION, keys[-1][1], keys[-1][2])]
 transform_track(by_label["GB_Volante"], keys)
 
+# Paysage sonore (pipeline/audio/soundscape.yaml) : ambiances 2D en boucle avec fondus ; repères des créatures
+# attachés à leur bloc et spatialisés (atténuation à très longue portée pour la créature volante, à 300 m).
+# (soundscape.yaml exporté en JSON par pipeline/audio/prepare_sounds.py : pas de yaml dans le Python d'Unreal)
+with open(os.path.join(ROOT, "Unreal", "Saved", "import", "soundscape.json"), encoding="utf-8") as f:
+    SOUNDSCAPE = json.load(f)["sounds"]
+att_path = "/Game/Audio/ATT_Reperes"
+if eal.does_asset_exist(att_path):
+    attenuation = eal.load_asset(att_path)
+else:
+    attenuation = tools.create_asset("ATT_Reperes", "/Game/Audio", unreal.SoundAttenuation, unreal.SoundAttenuationFactory())
+att = attenuation.get_editor_property("attenuation")
+att.set_editor_property("spatialize", True)
+att.set_editor_property("falloff_distance", 60000.0)    # 600 m : la créature volante passe à 300 m
+att.set_editor_property("attenuation_shape_extents", unreal.Vector(2000.0, 0, 0))
+attenuation.set_editor_property("attenuation", att)
+eal.save_loaded_asset(attenuation)
+
+
+def sound_asset(sid):
+    path = f"/Game/Audio/SFX/{sid}"
+    if True:  # réimport systématique : le WAV peut avoir été retraité (normalisation)
+        task = unreal.AssetImportTask()
+        task.filename = os.path.join(ROOT, "Unreal", "Saved", "import", "sfx", f"{sid}.wav")
+        task.destination_path = "/Game/Audio/SFX"
+        task.automated, task.replace_existing, task.save = True, True, True
+        tools.import_asset_tasks([task])
+    return eal.load_asset(path)
+
+
+bindings = {}
+for snd in SOUNDSCAPE:
+    wave = sound_asset(snd["id"])
+    wave.set_editor_property("looping", "attach" not in snd)
+    if "attach" in snd:
+        wave.set_editor_property("attenuation_settings", attenuation)
+    eal.save_loaded_asset(wave)
+    if "attach" in snd:
+        label = snd["attach"]
+        if label not in bindings:
+            bindings[label] = next((b for b in seq.get_bindings() if b.get_display_name() == label), None) or seq.add_possessable(by_label[label])
+        track = bindings[label].add_track(unreal.MovieSceneAudioTrack)
+    else:
+        track = seq.add_track(unreal.MovieSceneAudioTrack)
+        track.set_display_name(snd["id"])
+    section = track.add_section()
+    section.set_sound(wave)
+    section.set_range(frame(snd["start"]).value, frame(snd["end"]).value)
+    section.set_editor_property("looping", "attach" not in snd)
+    vol = section.get_all_channels()[0]   # Volume
+    vol.add_key(frame(snd["start"]), 0.0, interpolation=LIN)
+    vol.add_key(frame(snd["start"] + snd["fade_in"]), snd["volume"], interpolation=LIN)
+    vol.add_key(frame(snd["end"] - snd["fade_out"]), snd["volume"], interpolation=LIN)
+    vol.add_key(frame(snd["end"]), 0.0, interpolation=LIN)
+
 # Lecture automatique en jeu (PIE / casque).
 for a in actors.get_all_level_actors():
     if a.get_actor_label() == "SequenceAnimatic":
@@ -161,6 +215,8 @@ player.tags = ["barque_gb"]
 player.set_sequence(seq)
 settings = player.get_editor_property("playback_settings")
 settings.set_editor_property("auto_play", True)
+settings.set_editor_property("disable_camera_cuts", True)    # en jeu : la vue est celle du casque (JoueurVR)
+settings.set_editor_property("disable_movement_input", True)
 player.set_editor_property("playback_settings", settings)
 
 eal.save_loaded_asset(seq)

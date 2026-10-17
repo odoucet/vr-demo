@@ -66,16 +66,32 @@ def main():
 
 
 def mux(iteration, seq, duration, last):
+    """Vidéo + musique (à offset_s) + paysage sonore (pipeline/audio/soundscape.yaml, mixé en stéréo : les
+    repères des créatures y sont centrés, ils ne sont spatialisés qu'en jeu)."""
     out = ROOT / "review" / f"iter-{iteration:03d}" / "animatic.mp4"
     out.parent.mkdir(parents=True, exist_ok=True)
     music = ROOT / seq["music"]["file"]
     first = min(int(p.stem) for p in FRAMES.glob("*.jpeg"))
-    subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
-                    "-framerate", str(FPS), "-start_number", str(first), "-i", str(FRAMES / "%05d.jpeg"),
-                    "-itsoffset", str(seq["music"]["offset_s"]), "-i", str(music),
-                    "-map", "0:v", "-map", "1:a", "-c:v", "libx264", "-crf", "20", "-pix_fmt", "yuv420p",
+    sounds = yaml.safe_load((ROOT / "pipeline" / "audio" / "soundscape.yaml").read_text(encoding="utf-8"))["sounds"]
+    sfx_dir = ROOT / "Unreal" / "Saved" / "import" / "sfx"
+    inputs = ["-framerate", str(FPS), "-start_number", str(first), "-i", str(FRAMES / "%05d.jpeg"),
+              "-i", str(music)]
+    filters = [f"[1:a]adelay={int(seq['music']['offset_s'] * 1000)}|{int(seq['music']['offset_s'] * 1000)}[m]"]
+    labels = ["[m]"]
+    for i, snd in enumerate(sounds, start=2):
+        loop = "attach" not in snd
+        inputs += (["-stream_loop", "-1"] if loop else []) + ["-i", str(sfx_dir / f"{snd['id']}.wav")]
+        length = snd["end"] - snd["start"]
+        d = int(snd["start"] * 1000)
+        filters.append(f"[{i}:a]aformat=channel_layouts=stereo,atrim=0:{length},asetpts=PTS-STARTPTS,"
+                       f"afade=t=in:d={snd['fade_in']},afade=t=out:st={max(0, length - snd['fade_out'])}:d={snd['fade_out']},"
+                       f"volume={snd['volume']},adelay={d}|{d}[s{i}]")
+        labels.append(f"[s{i}]")
+    filters.append("".join(labels) + f"amix=inputs={len(labels)}:normalize=0:duration=longest,alimiter=limit=0.95[a]")
+    subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", *inputs, "-filter_complex", ";".join(filters),
+                    "-map", "0:v", "-map", "[a]", "-c:v", "libx264", "-crf", "20", "-pix_fmt", "yuv420p",
                     "-c:a", "aac", "-b:a", "192k", "-t", str(duration), "-movflags", "+faststart", str(out)], check=True)
-    print(f"{out.relative_to(ROOT)} ({out.stat().st_size / 1e6:.0f} Mo, {last} images)")
+    print(f"{out.relative_to(ROOT)} ({out.stat().st_size / 1e6:.0f} Mo, {last} images, {len(sounds)} sons + musique)")
 
 
 if __name__ == "__main__":
