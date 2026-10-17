@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[2]
 RIVER = ROOT / "pipeline" / "layout" / "river.json"
 OUT = ROOT / "pipeline" / "layout" / "greybox.json"
 
-GRID_M = 1.5
+GRID_M = 2.0   # ~50 k triangles (budget Quest : ≤ 500 k triangles visibles)
 ARCH_HEIGHT_M = 8.0          # SUIVI.md D4 : arche à 8 m au-dessus de l'eau
 TREE_SEED = 7
 

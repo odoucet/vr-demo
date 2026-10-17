@@ -185,15 +185,16 @@ BOAT_SCALE, BOAT_SCALE_Z, BOAT_YAW = 3.5, 2.6, -90.0
 BOAT_Z = 35.1 * BOAT_SCALE_Z - 25.0
 
 
-def import_glb(rel_glb, dest_dir):
-    """Importe assets/3d/<rel_glb>/model.glb dans dest_dir (une fois par empreinte du fichier) ; None si absent."""
+def import_glb(rel_glb, dest_dir, max_tris=None):
+    """Importe assets/3d/<rel_glb>/model.glb dans dest_dir (une fois par empreinte du fichier et par budget de
+    triangles) ; None si absent. max_tris : simplification à l'import (budget Quest : ≤ 500 k triangles visibles)."""
     import hashlib
     glb = os.path.join(ROOT, "assets", "3d", rel_glb, "model.glb")
     if not os.path.exists(glb):
         return None
     mesh_path = f"{dest_dir}/model/StaticMeshes/model"
     with open(glb, "rb") as f:
-        digest = hashlib.sha1(f.read()).hexdigest()[:12]
+        digest = hashlib.sha1(f.read()).hexdigest()[:12] + (f"-{max_tris}" if max_tris else "")
     if eal.does_asset_exist(mesh_path) and eal.get_metadata_tag(eal.load_asset(mesh_path), "source_sha1") == digest:
         return eal.load_asset(mesh_path)
     task = unreal.AssetImportTask()
@@ -201,13 +202,19 @@ def import_glb(rel_glb, dest_dir):
     task.automated, task.replace_existing, task.save = True, True, True
     tools.import_asset_tasks([task])
     mesh = eal.load_asset(mesh_path)
+    if max_tris and mesh.get_num_triangles(0) > max_tris:
+        dm = unreal.DynamicMesh()
+        unreal.GeometryScript_AssetUtils.copy_mesh_from_static_mesh_v2(mesh, dm, unreal.GeometryScriptCopyMeshFromAssetOptions(), unreal.GeometryScriptMeshReadLOD())
+        dm.apply_editor_simplify_to_triangle_count(max_tris)
+        unreal.GeometryScript_AssetUtils.copy_mesh_to_static_mesh(dm, mesh, unreal.GeometryScriptCopyMeshToAssetOptions(), unreal.GeometryScriptMeshWriteLOD())
+        unreal.log(f"{rel_glb} : simplifié à {mesh.get_num_triangles(0)} triangles")
     eal.set_metadata_tag(mesh, "source_sha1", digest)
     eal.save_loaded_asset(mesh)
     return mesh
 
 
 def boat_mesh():
-    return import_glb("barque/trellis2-s42", BOAT_DIR)
+    return import_glb("barque/trellis2-s42", BOAT_DIR, 30000)
 
 
 start = pose_at(0)
@@ -296,10 +303,10 @@ for i in range(40):
 # Modèles TRELLIS.2 : longueur sur +Y à l'import (1 unité = 100 cm), comme la barque → rotation -90°.
 # Échelles D4 : abysses 15 m de long (épaisseur ramenée à 2,5 m), troupeau 2,5 m au garrot, volante 40 m d'envergure.
 CREATURES = {
-    # bloc : (modèle, matériau du bloc, échelle du bloc de repli, échelle du modèle (x, y, z), décalage z cm)
-    "GB_Abysses": ("abysses/trellis2-s42", "Creature", (15, 7, 1.2), (15, 15, 4.5), 0.0),
-    "GB_Troupeau": ("troupeau/trellis2-s42", "Troupeau", (3.0, 2.2, 2.5), (4.1, 4.1, 4.1), -60.0),   # à mi-corps
-    "GB_Volante": ("fly/trellis2-s42", "Volante", (40, 12, 4), (56, 56, 56), 0.0),
+    # bloc : (modèle, matériau du bloc, échelle du bloc de repli, échelle du modèle (x, y, z), décalage z cm, triangles max)
+    "GB_Abysses": ("abysses/trellis2-s42", "Creature", (15, 7, 1.2), (15, 15, 4.5), 0.0, 20000),
+    "GB_Troupeau": ("troupeau/trellis2-s42", "Troupeau", (3.0, 2.2, 2.5), (4.1, 4.1, 4.1), -60.0, 12000),   # à mi-corps, ×5
+    "GB_Volante": ("fly/trellis2-s42", "Volante", (40, 12, 4), (56, 56, 56), 0.0, 20000),
 }
 
 
@@ -322,8 +329,8 @@ def glow(dest_dir, tint):
 
 
 def creature(label, kind, loc):
-    rel_glb, mat, fallback, mscale, dz = CREATURES[kind]
-    model = import_glb(rel_glb, f"/Game/Assets/{kind[3:]}")
+    rel_glb, mat, fallback, mscale, dz, max_tris = CREATURES[kind]
+    model = import_glb(rel_glb, f"/Game/Assets/{kind[3:]}", max_tris)
     if model is not None and kind in GLOW:
         glow(f"/Game/Assets/{kind[3:]}", GLOW[kind])
     blk = place_mesh(SPHERE, label, mat, loc, scale=(1, 1, 1) if model else fallback)
