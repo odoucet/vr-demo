@@ -47,12 +47,16 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 
 ## À vérifier au casque
 
+- **J1 (APK `builds/android/`)** : la vidéo s'affiche ; « AVANT » devant ; la stéréo n'est pas inversée (« ŒIL GAUCHE » ne doit être lu que de l'œil gauche) ; les repères 1,5 m / 3 m / 10 m / ∞ paraissent à ces distances ; le cube rouge clignote en même temps que le flash blanc et le bip ; fluidité (72 Hz) en 4096 px. Point technique incertain : sélection de l'œil (`ResolvedView.StereoPassIndex`) avec le multiview mobile.
+
 - J1 : vidéos `assets/spike/test360_*` (orientation, stéréo, résolution maximale fluide, synchronisation).
 - Confort du tracé : rotation maximale de 1,15 °/s, vitesse de 1 m/s.
 - Échelles (D4) dès le greybox.
 
 ## Fait récemment
 
+- Premier APK Quest empaqueté sans erreur (`python pipeline/unreal/package_android.py`, 7 min 30).
+- Scène de test J1 et script d'empaquetage Android (`pipeline/unreal/scripts/j1_spike.py`, `package_android.py`) ; scripts exécutés dans l'éditeur ouvert (Python à distance).
 - Outils Android installés dans `G:\android\` (SDK, NDK r27c, JDK 21), validés par Unreal : `pipeline/unreal/setup_android.py`.
 - MCP Unreal opérationnel : ~20 jeux d'outils (scène, acteurs, assets, matériaux, PCG, Niagara, journaux), capture du viewport (`pipeline/unreal/mcp.py capture`).
 - Projet Unreal créé par script (Quest 3 + PC VR, MCP), exécution headless depuis WSL.
@@ -67,6 +71,6 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 | Jalon | État |
 |---|---|
 | J0 Bible de style | prompts prêts ; attend les images d'Olivier (I1, D1) |
-| J1 Spike vidéo 360 + Quest | vidéos de test prêtes, projet UE prêt, outils Android validés par UE (« Android VALID r27c ») ; APK de test à construire |
+| J1 Spike vidéo 360 + Quest | scène J1_Spike construite par script (sphère 360 stéréo + séquence + témoin de synchro), matériau validé dans l'éditeur ; **APK prêt : `builds/android/Barque-arm64.apk`** (485 Mo) ; attend le test au casque (go / no-go) |
 | J2 Greybox + animatic | données prêtes (tracé, caméras, séquencier), UE et MCP opérationnels ; greybox à construire |
 | J3 à J6 | non commencés |

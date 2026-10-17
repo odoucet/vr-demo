@@ -13,7 +13,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from tools import ROOT, from_windows, project, to_windows, CONFIG  # noqa: E402
+from tools import ROOT, from_windows, project, to_windows, unreal, CONFIG  # noqa: E402
 from unreal.setup_android import ENV as ANDROID_ENV  # noqa: E402
 
 RUNUAT = from_windows(CONFIG["unreal"]["root"]) / "Engine/Build/BatchFiles/RunUAT.bat"
@@ -25,13 +25,17 @@ def main():
     ap.add_argument("--config", default="Development", choices=["Development", "Shipping"])
     args = ap.parse_args()
     OUT.mkdir(parents=True, exist_ok=True)
-    env_set = "&& ".join(f"set {k}={v}" for k, v in ANDROID_ENV.items())
-    uat = (f'"{to_windows(RUNUAT)}" BuildCookRun -project="{to_windows(project())}" -noP4 -platform=Android '
-           f"-cookflavor=ASTC -clientconfig={args.config} -build -cook -stage -pak -package -archive "
-           f'-archivedirectory="{to_windows(OUT)}" -unattended -utf8output -nocompileeditor')
+    # Un .bat évite les problèmes d'échappement des guillemets entre Python, WSL et cmd.exe.
+    bat = OUT / "package.bat"
+    bat.write_text("@echo off\r\n" + "".join(f"set {k}={v}\r\n" for k, v in ANDROID_ENV.items()) +
+                   f'call "{to_windows(RUNUAT)}" BuildCookRun -project="{to_windows(project())}" -noP4 -platform=Android '
+                   f"-cookflavor=ASTC -clientconfig={args.config} -build -cook -stage -pak -package -archive "
+                   f'-archivedirectory="{to_windows(OUT)}" -unattended -utf8output -nocompileeditor '
+                   # Projet sans code : sans -unrealexe, le cook cherche un éditeur propre au projet (BarqueEditor.target)
+                   f'-unrealexe="{to_windows(unreal("editor_cmd"))}"\r\n', encoding="utf-8")
     log = OUT / "package.log"
     with log.open("w", encoding="utf-8") as f:
-        proc = subprocess.run(["cmd.exe", "/c", f"{env_set}&& {uat}"], cwd="/mnt/c", stdout=f,
+        proc = subprocess.run(["cmd.exe", "/c", to_windows(bat)], cwd="/mnt/c", stdout=f,
                               stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
     tail = log.read_text(encoding="utf-8", errors="replace").splitlines()[-25:]
     print("\n".join(tail))
