@@ -27,7 +27,13 @@ Dans le casque : Bibliothèque → Sources inconnues.
    Hauteur : le joueur est posé au niveau de l'eau, ta tête assise doit tomber vers 1,10 m (origine OpenXR « STAGE », au sol).
    Si tu es trop haut ou trop bas, dis-le-moi : c'est un réglage.
    Alternative sans APK : Quest Link + éditeur, niveau `Barque_Greybox`, Play → VR Preview.
-3. Sans casque : `review/iter-005/animatic.mp4` (4 min, musique + ambiances) et `review/iter-005/planche.jpg`.
+3. Sans casque : `review/iter-006/animatic.mp4` (4 min, musique + ambiances) et `review/iter-006/planche.jpg`.
+
+**Mesure de fréquence d'image (facultatif, 5 min)** : Quest branché en USB et casque porté, lance
+`python pipeline/unreal/quest_perf.py --variant greybox` (ou dis-moi « Quest branché » et je la lance). L'APK
+démarre, la télémétrie du casque est relevée pendant toute la balade, puis résumée par beat dans `review/perf/`
+(FPS minimum, images perdues, charge GPU/CPU) : c'est la mesure des budgets Quest qui manque au jalon J2.
+Sans câble, l'overlay de l'application OVR Metrics Tool (Store Meta, gratuite) donne la même information à l'œil.
 
 Retours : dans ce fichier, en issue GitHub, ou en conversation (`ID-caméra : remarque [étiquette]`).
 
@@ -65,19 +71,18 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 | I3 | Blender absent | nœuds de maillage ComfyUI (décimation, UV), import GLB dans UE | D9, ou installation par Olivier |
 | I4 | Pas de création de PR (connecteur GitHub sans accès, `gh` non connecté) | D6 | `gh auth login`, ou installer l'application GitHub de Claude sur le dépôt |
 | I5 | Musique en MP3 185 kb/s | MP3 utilisé tel quel | export WAV depuis Suno |
-| I7 | Le MCP n'exécute pas de Python arbitraire (orchestration en bac à sable) : les constructions de scène passent par les scripts headless, qui ne doivent pas tourner sur le projet pendant que l'éditeur le modifie | si l'éditeur est ouvert, je n'écris que par le MCP ou je diffère ; fermer l'éditeur avant un `build.py` complet | activer l'exécution Python à distance de l'éditeur (à tester) |
 | I6 | Freesound : seuls les aperçus OGG sont accessibles sans OAuth | aperçus utilisés pour le prototype | connexion OAuth pour les originaux (au master) |
 
 ## 🟢 Mineurs
 
 - **Originalité** : le concept provisoire S4 (`assets/concepts/S4-GUE.png`) montre des créatures façon sangliers moussus à défenses, trop proches d'un film d'animation connu ; il ne sert qu'à la palette, pas au design (ton troupeau aux oreilles tombantes reste la référence).
 
-- Ciel provisoire flou (2048 px pour 360°) : à régénérer plus grand ou agrandir ; ce n'est pas un vrai équirectangulaire (horizon à 82 % de l'image).
-- Les captures de revue (exposition fixe) restent plus sombres que l'animatic (exposition automatique du rendu).
+- Ciel provisoire : ce n'est pas un vrai équirectangulaire (horizon à 82 % de l'image, projeté sur la voûte) ; le ciel définitif viendra du rendu du lointain.
 
 - 17/10 au soir : j'ai fait planter l'éditeur une fois (maillage sans UV, corrigé) ; la fenêtre du rapport de plantage Unreal peut être restée ouverte.
 - L'animatic (exposition de la caméra) est plus clair que les captures de revue (exposition fixe) : à harmoniser avec l'éclairage définitif.
 - Greybox très sombre (crépuscule sans exposition automatique) : lisible pour le timing, l'éclairage définitif viendra avec le look (J3).
+- Roseaux : jaunâtres à contre-jour malgré un vert très sombre (lumière du soleil rasant sur des lames double face) ; à reprendre avec le matériau peint.
 
 - Clé Freesound collée dans la conversation : risque faible, à régénérer si tu préfères.
 
@@ -93,6 +98,12 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 
 ## Fait récemment
 
+- **Mesure au casque prête** : `pipeline/unreal/quest_perf.py` lance l'APK par adb, relève la télémétrie VrApi (FPS, images perdues, GPU %, CPU %) et la résume par beat avec une courbe. Testé sur un journal simulé, en attente d'un Quest branché.
+- **Ciel en 4096×2048** : le panorama retenu est agrandi par un modèle 4x (Remacri), puis réduit, avec le raccord gauche/droite préservé (`sky.py --upscale`). Les nuages sont nets et les aplats propres ; le ciel était flou en 2048 px.
+- **Itération 6 (J2)** : brume par beat. La teinte est mesurée sur la bande d'horizon de chaque référence ; luminance et densité sont réglées par beat. Source unique : `pipeline/style/ambiance.json`, lue par Unreal et à reprendre telle quelle par le rendu offline du lointain (raccord). La séquence fond la brume sur 12 s à chaque beat : vraie brume au départ du ponton (S2), plans étagés ensuite. Roseaux procéduraux le long des berges en S2, avec une touffe qui frôle la barque à gauche (0:32-0:40) ; nénuphars en S3. Nuancier : `review/bible/brume.png`.
+- **Captures de revue** : la capture attend deux images après le placement de la séquence. Avant, la brume animée affichée était celle de la caméra précédente.
+- **Reconstruction idempotente** : `build.py` ne réécrit plus les sons, maillages, matériaux ni le ciel quand leur source n'a pas changé (empreintes en métadonnées). Seuls le niveau et la séquence sont régénérés, ce qui évite de gonfler le dépôt LFS. Les scènes de test J1/J1b ne sont relancées que si leur script ou leur vidéo change (`--force` pour les forcer).
+- **Python à distance dans l'éditeur ouvert** : tous les scripts Unreal passent par l'éditeur s'il est ouvert, sinon en headless ; l'ancien blocage I7 est levé.
 - **Bible de style (J0)** : palette par beat (7 beats) ; concepts provisoires S1/S3/S4 générés en local avec les prompts de PROMPTS.md.
 - **Itération 5 (J2)** : eau à reflet du ciel peint + Fresnel (miroir à l'horizon, transparente vers le bas), sans réflexions temps réel (coût Quest faible) ; les berges ne s'y reflètent pas.
 - **J1b** : variante de repli de J1 (calque stéréo équirectangulaire natif du Quest), APK prêt, pour éviter un aller-retour si la sphère à matériau échoue.
@@ -122,5 +133,5 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 |---|---|
 | J0 Bible de style | prompts prêts ; **palette par beat** (`review/bible/palettes.png`, `pipeline/style/palettes.yaml`) à partir de tes essais S2/S5/S6/S7 et de concepts provisoires S1/S3/S4 ; ciel peint provisoire ; attend tes images d'assets (I1) et le choix de l'image maîtresse (D1) |
 | J1 Spike vidéo 360 + Quest | scène J1_Spike construite par script (sphère 360 stéréo + séquence + témoin de synchro), matériau validé dans l'éditeur ; **APK prêt : `builds/android/Barque-arm64.apk`** (485 Mo) ; attend le test au casque (go / no-go) |
-| J2 Greybox + animatic | greybox construit par script (terrain, eau translucide, arche, forêt, lac, lune, blocs des créatures) ; séquence LS_Animatic calée sur la musique ; 18 captures et animatic vidéo avec musique ; **itération 5 : eau qui reflète le ciel peint**, ciel peint (itération 4) (crépuscule → nuit) après les créatures 3D (itération 3) (abysses lumineuse, troupeau, créature volante) après la barque 3D en itération 2 (modèle TRELLIS.2 de ta vue 3/4, lanterne lumineuse, place assise sur le banc arrière) — `review/iter-005/planche.jpg` et `review/iter-005/animatic.mp4` ; à valider : timing et confort au casque |
+| J2 Greybox + animatic | greybox construit par script (terrain, eau translucide, arche, forêt, lac, lune, blocs des créatures) ; séquence LS_Animatic calée sur la musique ; 18 captures et animatic vidéo avec musique ; **itération 6 : brume par beat, roseaux, nénuphars** ; eau qui reflète le ciel peint (itération 5), ciel peint (itération 4) (crépuscule → nuit) après les créatures 3D (itération 3) (abysses lumineuse, troupeau, créature volante) après la barque 3D en itération 2 (modèle TRELLIS.2 de ta vue 3/4, lanterne lumineuse, place assise sur le banc arrière) — `review/iter-006/planche.jpg` et `review/iter-006/animatic.mp4` ; à valider : timing et confort au casque |
 | J3 à J6 | non commencés |

@@ -248,13 +248,14 @@ assets:
   type: texture
   placeholder: true
   file: assets/sky/ciel.png
-  source: génération locale Z-Image Turbo (bf16), 2048×1024, rendue raccordable horizontalement
-  workflow: pipeline/comfy/workflows/z_image_turbo_t2i.json
+  source: génération locale Z-Image Turbo (bf16), 2048×1024, rendue raccordable horizontalement, agrandie à 4096×2048
+    (modèle 4x_foolhardy_Remacri, bords prolongés pour garder le raccord)
+  workflow: pipeline/comfy/workflows/z_image_turbo_t2i.json + pipeline/comfy/workflows/upscale_model.json
   script: pipeline/comfy/sky.py --seeds 2 --pick 2
   seed: 2
   prompt: PROMPTS.md, section Ciel et lointain (+ bloc de style commun)
   licence: généré localement
-  note: projeté sur la voûte (horizon à 82 % de l'image) ; résolution insuffisante (flou), à agrandir
+  note: projeté sur la voûte (horizon à 82 % de l'image)
   generated: '2026-10-18'
 - id: concept/S1-NOIR
   type: image

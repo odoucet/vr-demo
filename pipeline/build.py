@@ -4,8 +4,11 @@
     python pipeline/build.py layout cameras  # seulement certaines étapes
     python pipeline/build.py --list
 
-Chaque étape est un script idempotent. Une étape dont l'outil n'est pas encore installé (Unreal, Blender)
-est signalée et sautée, sans bloquer les suivantes qui n'en dépendent pas.
+Chaque étape est un script idempotent. Les étapes listées dans SKIP_IF_UNCHANGED ne sont relancées que si leurs
+entrées ont changé (empreinte dans Unreal/Saved/stamps/) ou si leurs sorties manquent : elles recréent leurs
+assets de zéro, et les relancer sans raison réécrirait des binaires dans git. --force les relance.
+Une étape dont l'outil n'est pas encore installé (Unreal, Blender) est signalée et sautée, sans bloquer les
+suivantes qui n'en dépendent pas.
 """
 import argparse
 import os
@@ -37,6 +40,34 @@ STAGES = [
     # review/animatic.py (rendu MRQ), comfy/image_to_3d.py (GPU), unreal/package_android.py (APK).
 ]
 
+# Étapes qui recréent tous leurs assets : relancées seulement si une entrée change ou si une sortie manque.
+SKIP_IF_UNCHANGED = {
+    "unreal-j1": (["pipeline/unreal/scripts/j1_spike.py", "Unreal/Content/Movies/test360_j1.mp4"],
+                  ["Unreal/Content/Maps/J1_Spike.umap", "Unreal/Content/Spike/LS_J1.uasset"]),
+    "unreal-j1b": (["pipeline/unreal/scripts/j1b_stereolayer.py", "pipeline/unreal/scripts/j1_spike.py",
+                    "Unreal/Content/Movies/test360_j1.mp4"],
+                   ["Unreal/Content/Maps/J1b_StereoLayer.umap", "Unreal/Content/Spike/LS_J1b.uasset"]),
+}
+STAMPS = ROOT / "Unreal" / "Saved" / "stamps"
+
+
+def _inputs_digest(name):
+    import hashlib
+    h = hashlib.sha1()
+    for rel in SKIP_IF_UNCHANGED[name][0]:
+        h.update(rel.encode())
+        h.update((ROOT / rel).read_bytes())
+    return h.hexdigest()
+
+
+def _unchanged(name):
+    if name not in SKIP_IF_UNCHANGED:
+        return False
+    stamp = STAMPS / f"{name}.sha1"
+    outputs_ok = all((ROOT / rel).exists() for rel in SKIP_IF_UNCHANGED[name][1])
+    return outputs_ok and stamp.exists() and stamp.read_text().strip() == _inputs_digest(name)
+
+
 def _tool_exists(name):
     sys.path.insert(0, str(ROOT / "pipeline"))
     import tools
@@ -57,6 +88,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("stages", nargs="*")
     ap.add_argument("--list", action="store_true")
+    ap.add_argument("--force", action="store_true", help="relancer aussi les étapes dont les entrées n'ont pas changé")
     args = ap.parse_args()
     if args.list:
         for name, desc, _, tool in STAGES:
@@ -70,8 +102,14 @@ def main():
         if tool and not TOOLS[tool]():
             print(f"── {name} : sautée ({tool} indisponible)")
             continue
+        if not args.force and _unchanged(name):
+            print(f"── {name} : à jour (entrées inchangées)")
+            continue
         print(f"── {name} : {desc}")
         subprocess.run(cmd, cwd=ROOT, check=True)
+        if name in SKIP_IF_UNCHANGED:
+            STAMPS.mkdir(parents=True, exist_ok=True)
+            (STAMPS / f"{name}.sha1").write_text(_inputs_digest(name) + "\n")
 
 
 if __name__ == "__main__":

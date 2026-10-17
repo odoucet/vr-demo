@@ -1,15 +1,18 @@
 """Skydome provisoire : panorama de crépuscule 2:1 généré en local (Z-Image Turbo), raccordé horizontalement.
 
     python pipeline/comfy/sky.py                    # graines 1 à 3 → assets/sky/ciel_s<graine>.png
-    python pipeline/comfy/sky.py --seeds 7 --pick 7 # retient une graine → assets/sky/ciel.png
+    python pipeline/comfy/sky.py --seeds 7 --pick 7 # retient une graine → assets/sky/ciel.png (agrandi en 4096×2048)
+    python pipeline/comfy/sky.py --upscale          # réagrandit la graine retenue (params.json)
 
 Prompt : section « Ciel et lointain » de PROMPTS.md (bloc de style commun). Le panorama est rendu
 raccordable (fondu circulaire des bords gauche/droit) pour se refermer sur la sphère du ciel. Substitut :
 le skydome final viendra du pipeline de rendu du lointain (CLAUDE.md). Idempotent par graine.
+Agrandissement : modèle 4x (Remacri, net sur les aplats peints) puis réduction à 4096×2048, la taille maximale
+raisonnable sur Quest. L'image est prolongée de chaque côté par son bord opposé avant l'agrandissement pour que
+le raccord gauche/droite reste continu.
 """
 import argparse
 import json
-import shutil
 import sys
 from pathlib import Path
 
@@ -41,12 +44,40 @@ def make_seamless(path, blend=0.08):
     Image.fromarray(np.clip(out, 0, 255).astype(np.uint8)).resize((w, w // 2), Image.LANCZOS).save(path)
 
 
+SIZE = (4096, 2048)
+PAD = 64
+
+
+def upscale(src, dest):
+    im = Image.open(src).convert("RGB")
+    w, h = im.size
+    padded = Image.new("RGB", (w + 2 * PAD, h))
+    padded.paste(im.crop((w - PAD, 0, w, h)), (0, 0))
+    padded.paste(im, (PAD, 0))
+    padded.paste(im.crop((0, 0, PAD, h)), (w + PAD, 0))
+    tmp = OUT / "_upscale_in.png"
+    padded.save(tmp)
+    wf = client.load_workflow("upscale_model.json")
+    wf["1"]["inputs"]["image"] = client.upload_image(tmp)
+    wf["4"]["inputs"]["filename_prefix"] = "barque/sky/upscale"
+    entry = client.wait(client.submit(wf), timeout=1800)
+    client.download(client.output_files(entry, "4", "images")[0], tmp)
+    big = Image.open(tmp).convert("RGB")
+    k = big.width / padded.width
+    big = big.crop((round(PAD * k), 0, round((PAD + w) * k), big.height))
+    big.resize(SIZE, Image.LANCZOS).save(dest)
+    tmp.unlink()
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--seeds", type=int, nargs="+", default=[1, 2, 3])
     ap.add_argument("--pick", type=int)
+    ap.add_argument("--upscale", action="store_true", help="réagrandir la graine retenue")
     args = ap.parse_args()
     OUT.mkdir(parents=True, exist_ok=True)
+    if args.upscale:
+        args.pick, args.seeds = json.loads((OUT / "params.json").read_text(encoding="utf-8"))["seed"], []
     with gpu_lock("sky.py (Z-Image Turbo)"):
         for seed in args.seeds:
             dest = OUT / f"ciel_s{seed}.png"
@@ -60,10 +91,13 @@ def main():
             client.download(client.output_files(entry, "9", "images")[0], dest)
             make_seamless(dest)
             print(f"  {dest.relative_to(ROOT)}")
+        if args.pick:
+            upscale(OUT / f"ciel_s{args.pick}.png", OUT / "ciel.png")
     if args.pick:
-        shutil.copyfile(OUT / f"ciel_s{args.pick}.png", OUT / "ciel.png")
         (OUT / "params.json").write_text(json.dumps({"seed": args.pick, "prompt": PROMPT, "model": "z_image_turbo_bf16",
-                                                     "workflow": "pipeline/comfy/workflows/z_image_turbo_t2i.json"},
+                                                     "workflow": "pipeline/comfy/workflows/z_image_turbo_t2i.json",
+                                                     "upscale": "pipeline/comfy/workflows/upscale_model.json "
+                                                                "(4x_foolhardy_Remacri) → 4096x2048"},
                                                     indent=2, ensure_ascii=False), encoding="utf-8")
         print(f"Retenu : assets/sky/ciel.png (graine {args.pick})")
 
