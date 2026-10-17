@@ -61,10 +61,13 @@ def terrain(river):
     t_near = ts[seg]
 
     # Profondeur du lit : 1,5 m ; 5 m en S3 (la créature passe dessous) ; 0,6 m au gué ; lac 3 m.
-    depth = np.full(gx.shape, 1.5)
-    depth = np.where((t_near > 50) & (t_near < 92), 5.0, depth)
-    depth = np.where((t_near > 100) & (t_near < 124), 0.6, depth)
-    depth = np.where(d_lake < d_river, 3.0, depth)
+    def window(t, a, b, ramp=8.0):
+        return smoothstep(a - ramp, a + ramp, t) * (1 - smoothstep(b - ramp, b + ramp, t))
+
+    # Transitions douces entre zones : l'eau translucide laisse voir le fond, sans marches.
+    depth = 1.5 + 3.5 * window(t_near, 50, 92) - 0.9 * window(t_near, 100, 124)
+    lake_w = smoothstep(-6, 6, d_river - d_lake)
+    depth = depth * (1 - lake_w) + 3.0 * lake_w
     bed = -depth * smoothstep(0, 4, -d)
     # Berges : montée douce, puis sol de forêt ondulé.
     rng = np.random.default_rng(3)
