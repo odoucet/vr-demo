@@ -9,3 +9,105 @@ assets:
   timeline_offset_s: 20
   sequencer: pipeline/sequencer.yaml
   licence: Compte Suno payant au moment de la génération (droits d'usage commercial de l'offre payante)
+- id: sfx/amb-clapotis
+  type: sound
+  file: audio/sfx/amb-clapotis.ogg
+  source: 'Freesound #758858 « Small Boat Wake on River lapping under Wooden Boardwalk » par Alex_hears_things'
+  url: https://freesound.org/people/Alex_hears_things/sounds/758858/
+  licence: http://creativecommons.org/publicdomain/zero/1.0/
+  credit: Small Boat Wake on River lapping under Wooden Boardwalk by Alex_hears_things (freesound.org)
+  format: aperçu OGG ~192 kb/s (original à récupérer via OAuth pour le master)
+  beats:
+  - S1-NOIR
+  - S2-PONTON
+  script: pipeline/audio/freesound.py pick amb-clapotis 758858
+- id: sfx/amb-ponton-brume
+  type: sound
+  file: audio/sfx/amb-ponton-brume.ogg
+  source: 'Freesound #845441 « Madrugada,pajaros_Laguna de Ubaque,feb2026 » par nicotep'
+  url: https://freesound.org/people/nicotep/sounds/845441/
+  licence: http://creativecommons.org/publicdomain/zero/1.0/
+  credit: Madrugada,pajaros_Laguna de Ubaque,feb2026 by nicotep (freesound.org)
+  format: aperçu OGG ~192 kb/s (original à récupérer via OAuth pour le master)
+  beats:
+  - S2-PONTON
+  script: pipeline/audio/freesound.py pick amb-ponton-brume 845441
+- id: sfx/sfx-roseaux
+  type: sound
+  file: audio/sfx/sfx-roseaux.ogg
+  source: 'Freesound #843069 « A light breeze, the rustle of reeds. The rustle of dry grass » par ReflektWave'
+  url: https://freesound.org/people/ReflektWave/sounds/843069/
+  licence: http://creativecommons.org/publicdomain/zero/1.0/
+  credit: A light breeze, the rustle of reeds. The rustle of dry grass by ReflektWave (freesound.org)
+  format: aperçu OGG ~192 kb/s (original à récupérer via OAuth pour le master)
+  beats:
+  - S2-PONTON
+  script: pipeline/audio/freesound.py pick sfx-roseaux 843069
+- id: sfx/amb-riviere-foret
+  type: sound
+  file: audio/sfx/amb-riviere-foret.ogg
+  source: 'Freesound #577623 « forest with small river birds and nature field recording » par Garuda1982'
+  url: https://freesound.org/people/Garuda1982/sounds/577623/
+  licence: http://creativecommons.org/publicdomain/zero/1.0/
+  credit: forest with small river birds and nature field recording by Garuda1982 (freesound.org)
+  format: aperçu OGG ~192 kb/s (original à récupérer via OAuth pour le master)
+  beats:
+  - S3-ABYSSE
+  - S4-GUE
+  script: pipeline/audio/freesound.py pick amb-riviere-foret 577623
+- id: sfx/sfx-gue-eau
+  type: sound
+  file: audio/sfx/sfx-gue-eau.ogg
+  source: 'Freesound #342932 « Wading in Shallow Water.wav » par ryansitz'
+  url: https://freesound.org/people/ryansitz/sounds/342932/
+  licence: http://creativecommons.org/publicdomain/zero/1.0/
+  credit: Wading in Shallow Water.wav by ryansitz (freesound.org)
+  format: aperçu OGG ~192 kb/s (original à récupérer via OAuth pour le master)
+  beats:
+  - S4-GUE
+  script: pipeline/audio/freesound.py pick sfx-gue-eau 342932
+- id: sfx/amb-sous-racines
+  type: sound
+  file: audio/sfx/amb-sous-racines.ogg
+  source: 'Freesound #870748 « Drips, Giant Cave Drips, Slow » par CHallSmith'
+  url: https://freesound.org/people/CHallSmith/sounds/870748/
+  licence: http://creativecommons.org/publicdomain/zero/1.0/
+  credit: Drips, Giant Cave Drips, Slow by CHallSmith (freesound.org)
+  format: aperçu OGG ~192 kb/s (original à récupérer via OAuth pour le master)
+  beats:
+  - S5-RACINES
+  script: pipeline/audio/freesound.py pick amb-sous-racines 870748
+- id: sfx/amb-foret-nuit
+  type: sound
+  file: audio/sfx/amb-foret-nuit.ogg
+  source: 'Freesound #466954 « Night close to a river, crickets and frogs, waterfall in background (on the left)
+    » par felix.blume'
+  url: https://freesound.org/people/felix.blume/sounds/466954/
+  licence: http://creativecommons.org/publicdomain/zero/1.0/
+  credit: Night close to a river, crickets and frogs, waterfall in background (on the left) by felix.blume (freesound.org)
+  format: aperçu OGG ~192 kb/s (original à récupérer via OAuth pour le master)
+  beats:
+  - S6-LUNE
+  script: pipeline/audio/freesound.py pick amb-foret-nuit 466954
+- id: sfx/amb-lac-nuit
+  type: sound
+  file: audio/sfx/amb-lac-nuit.ogg
+  source: 'Freesound #412941 « Lake at night 2.aif » par i_luv_soundz'
+  url: https://freesound.org/people/i_luv_soundz/sounds/412941/
+  licence: http://creativecommons.org/publicdomain/zero/1.0/
+  credit: Lake at night 2.aif by i_luv_soundz (freesound.org)
+  format: aperçu OGG ~192 kb/s (original à récupérer via OAuth pour le master)
+  beats:
+  - S7-LAC
+  script: pipeline/audio/freesound.py pick amb-lac-nuit 412941
+- id: sfx/sfx-barque-bois
+  type: sound
+  file: audio/sfx/sfx-barque-bois.ogg
+  source: 'Freesound #177680 « Thailand jungle night crickets from boat +wood creaks, water gurgles.flac » par kyles'
+  url: https://freesound.org/people/kyles/sounds/177680/
+  licence: http://creativecommons.org/publicdomain/zero/1.0/
+  credit: Thailand jungle night crickets from boat +wood creaks, water gurgles.flac by kyles (freesound.org)
+  format: aperçu OGG ~192 kb/s (original à récupérer via OAuth pour le master)
+  beats:
+  - all
+  script: pipeline/audio/freesound.py pick sfx-barque-bois 177680

@@ -1,0 +1,19 @@
+# Emplacements des outils sur le poste de production (chemins Windows).
+unreal:
+  root: E:/installsjeux/UE_5.8          # UE 5.8.3, plateforme Android installée
+  editor: Engine/Binaries/Win64/UnrealEditor.exe
+  editor_cmd: Engine/Binaries/Win64/UnrealEditor-Cmd.exe
+  project: Unreal/Barque.uproject       # relatif au dépôt
+  mcp_url: http://127.0.0.1:8000/mcp
+comfyui:
+  url: http://127.0.0.1:8188
+  root: G:/ComfyUI_windows_portable/ComfyUI
+blender:
+  exe: null                             # non installé (SUIVI.md, D9)
+android:
+  # Versions exigées par UE 5.8 (Engine/Config/Android/Android_SDK.json) ; installation : SUIVI.md, D10.
+  platforms: android-36
+  build_tools: 36.0.0
+  cmake: 3.22.1
+  ndk: 27.2.12479018
+  sdk_root: null

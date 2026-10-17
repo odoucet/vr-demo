@@ -22,12 +22,22 @@ STAGES = [
     ("music", "analyse de structure de la musique", [PY, "pipeline/audio/structure.py"], None),
     ("layout", "tracé de la rivière et trajectoire", [PY, "pipeline/layout/river.py"], None),
     ("cameras", "caméras de revue", [PY, "pipeline/review/cameras.py"], None),
+    ("unreal-project", "projet Unreal et configuration", [PY, "pipeline/unreal/create_project.py"], None),
+    ("unreal-probe", "vérification du projet en headless", [PY, "pipeline/unreal/run.py", "pipeline/unreal/scripts/probe.py"], "unreal"),
     # À venir : assets (image → 3D, ComfyUI), blender (nettoyage, LOD, FBX), unreal (projet, niveau,
     # séquence, import), review (shoot.py). Ajoutés au fur et à mesure qu'ils existent.
 ]
 
+def _tool_exists(name):
+    sys.path.insert(0, str(ROOT / "pipeline"))
+    import tools
+    if name == "unreal":
+        return tools.unreal("editor_cmd").exists()
+    return False
+
+
 TOOLS = {
-    "unreal": lambda: os.environ.get("UE_EDITOR_CMD") and Path(os.environ["UE_EDITOR_CMD"]).exists(),
+    "unreal": lambda: _tool_exists("unreal"),
     "blender": lambda: os.environ.get("BLENDER_EXE") and Path(os.environ["BLENDER_EXE"]).exists(),
     "comfyui": lambda: shutil.which("curl") and subprocess.run(
         ["curl", "-s", "-m", "3", "-o", os.devnull, "http://127.0.0.1:8188/system_stats"]).returncode == 0,

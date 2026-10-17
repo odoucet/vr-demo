@@ -20,16 +20,17 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 | D4 | Échelles réelles | barque 3,5 m · abysses 15 m · troupeau 2,5 m au garrot · volante 40 m d'envergure · arche des racines 8 m au-dessus de l'eau | modifier les échelles, réimport | |
 | D5 | Coque de la barque | coque procédurale + accessoires en image → 3D (lanterne, perche, cordes) | régénérer depuis `barque-dessus` | |
 | D6 | Livraison sans accès aux PR | un commit par itération sur `main`, captures dans `review/iter-NNN/`, résumé ici | passage aux PR dès que `gh` est connecté | |
-| D7 | Sons Freesound | premier candidat pertinent par besoin, provisoire | `freesound.py pick <besoin> <id>` | |
+| D7 | Sons Freesound (9 ambiances et bruitages, tous CC0) | un candidat retenu par besoin d'après titre et fiabilité, sans écoute : `audio/sfx/*.ogg` ; alternatives dans `audio/sfx/candidates/README.md` | `freesound.py pick <besoin> <id>` | |
 | D8 | Cadrages des caméras de revue | `pipeline/review/cameras.yaml` actuel | éditer le YAML | |
 | D9 | M'autoriser à installer Blender portable (sans droits admin, sur G:) | j'attends ; nettoyage des maillages via les nœuds ComfyUI en attendant | — | |
+| D10 | M'autoriser à installer les outils Android en ligne de commande (`cmdline-tools`, SDK, NDK, JDK portable dans `G:\android\`, variables d'environnement utilisateur), versions lues dans UE 5.8 | j'attends (Docker écarté : UE Windows ne peut pas utiliser un SDK Linux en conteneur) | — | |
 
 ## 🔴 Bloquants
 
 | # | Blocage | Bloque | Ce qu'il faut | Contournement en cours |
 |---|---|---|---|---|
-| B1 | Unreal Engine 5.8 non installé, MCP indisponible | J1, J2 et suivants, `shoot.py` | installer UE 5.8 avec la plateforme Android, me donner le chemin, lancer le MCP | tout ce qui est hors moteur est préparé : tracé, caméras, vidéo de test, assets, sons |
-| B2 | Outils Android (SDK, NDK, JDK) absents | APK Quest (J1) | installer les versions exigées par UE 5.8 | aucun |
+| B1 | MCP Unreal pas encore déclaré à Claude Code (UE 5.8.3 installé, projet `Unreal/Barque.uproject` créé, MCP en démarrage automatique) | exploration interactive (la voie headless fonctionne sans) | ouvrir le projet dans l'éditeur, puis `claude mcp add --transport http unreal http://127.0.0.1:8000/mcp` et relancer la session | scripts headless via `pipeline/unreal/run.py` |
+| B2 | Outils Android (SDK, NDK, JDK) absents | APK Quest (J1) | accord D10 (je l'installe moi-même après UE), ou installation par Olivier | aucun |
 
 ## 🟠 Importants (contournés)
 
@@ -54,6 +55,8 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 
 ## Fait récemment
 
+- Projet Unreal créé par script (Quest 3 + PC VR, MCP), exécution headless depuis WSL.
+- 9 sons Freesound CC0 retenus provisoirement, tracés dans le manifeste.
 - Vidéos de test J1 (4096/30, 5760/30, 4096/60), synchronisation par flash et bip.
 - Tracé de la rivière et trajectoire de la barque, 18 caméras de revue, `pipeline/build.py`.
 - Comparatif image → 3D TRELLIS.2 / Pixal3D sur 7 assets (`review/3d/`).
