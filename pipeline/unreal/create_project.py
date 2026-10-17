@@ -64,6 +64,10 @@ r.Mobile.UseHWsRGBEncoding=True
 
 [/Script/WindowsTargetPlatform.WindowsTargetSettings]
 DefaultGraphicsRHI=DefaultGraphicsRHI_DX12
+; SM6 (compilateur DXC) au lieu de SM5 (FXC) : FXC plante sur un matériau de visualisation du moteur
+; (CustomDepthWorldUnits), recompilé à chaque image d'un rendu Movie Render Queue (0,2 image/s).
+-D3D12TargetedShaderFormats=PCD3D_SM5
++D3D12TargetedShaderFormats=PCD3D_SM6
 
 [/Script/AndroidRuntimeSettings.AndroidRuntimeSettings]
 PackageName=com.odoucet.barque
@@ -117,6 +121,11 @@ Description=Balade VR contemplative, 4 min, Quest 3 et PC VR
 """
 
 EDITOR_USER_INI = """\
+; Pas de ralentissement quand la fenêtre n'est pas au premier plan : l'éditeur travaille sans écran
+; (scripts à distance) et le rendu Movie Render Queue en processus séparé relit ce réglage (0,2 image/s sinon).
+[/Script/UnrealEd.EditorPerformanceSettings]
+bThrottleCPUWhenNotForeground=False
+
 [/Script/ModelContextProtocolEngine.ModelContextProtocolSettings]
 bAutoStartServer=True
 ServerPortNumber=8000

@@ -12,7 +12,7 @@ Tous les prompts de génération externe (Midjourney, Suno). Olivier génère, l
   Noter l'URL ou le code `--sref` dans `assets/manifest.yaml`. Partir de `--sw 100` et descendre
   (50, puis 25) si le style écrase le sujet. Adapter les paramètres à la version de Midjourney utilisée.
 - **Nom de fichier = identifiant.** Déposer chaque image retenue dans `refs/inbox/` sous l'identifiant
-  donné ci-dessous (ex. `barque-dessus.png`). Les scripts du pipeline travaillent par identifiant : on peut
+  donné ci-dessous (ex. `barque-top.png`). Les scripts du pipeline travaillent par identifiant : on peut
   remplacer une seule image et ne régénérer que ce qui en dépend.
 - Les vues `-profil` et `-dessus` servent à la reconstruction multi-vues. Midjourney ne garantit pas la
   cohérence entre deux images : si les vues ne collent pas, une seule vue 3/4 suffit, l'agent génère les
@@ -57,7 +57,7 @@ Déjà générés : S2, S5, S6, S7. **Manquent : S1, S3, S4.**
 ## Barque — le décor principal (le spectateur y est assis 4 min)
 
 - `barque` — `--ar 1:1 --style raw` : `small weathered wooden rowboat, hand-built, curved planks, a hanging paper lantern on a bent pole at the bow, rope coils, three-quarter view, [peint-3d]`
-- `barque-dessus` — `--ar 1:1 --style raw` : `small weathered wooden rowboat seen from directly above, interior fully visible: two wooden bench seats, worn floor planks, a coiled rope, oarlocks, the base of a bent lantern pole at the bow, bow pointing up, top-down view from directly above, orthographic, [peint-3d]`
+- `barque-top` — `--ar 1:1 --style raw` : `small weathered wooden rowboat seen from directly above, interior fully visible: two wooden bench seats, worn floor planks, a coiled rope, oarlocks, the base of a bent lantern pole at the bow, bow pointing up, top-down view from directly above, orthographic, [peint-3d]`
 - `barque-profil` — `--ar 16:9 --style raw` : `small weathered wooden rowboat, hand-built, curved planks, a hanging paper lantern on a bent pole at the bow, strict side view, orthographic, perfectly horizontal, [peint-3d]`
 - `barque-interieur` — `--ar 16:9` (concept, pas pour la 3D : référence de la vue du spectateur) : `first-person view sitting at the stern of a small wooden rowboat looking toward the bow, worn plank floor and bench seat in the foreground, a coiled rope, a paper lantern hanging from a bent pole at the bow glowing warm, calm river and misty forest ahead at dusk, [style]`
 

@@ -23,9 +23,14 @@ STAGES = [
     ("layout", "tracé de la rivière et trajectoire", [PY, "pipeline/layout/river.py"], None),
     ("cameras", "caméras de revue", [PY, "pipeline/review/cameras.py"], None),
     ("unreal-project", "projet Unreal et configuration", [PY, "pipeline/unreal/create_project.py"], None),
-    ("unreal-probe", "vérification du projet en headless", [PY, "pipeline/unreal/run.py", "pipeline/unreal/scripts/probe.py"], "unreal"),
-    # À venir : assets (image → 3D, ComfyUI), blender (nettoyage, LOD, FBX), unreal (projet, niveau,
-    # séquence, import), review (shoot.py). Ajoutés au fur et à mesure qu'ils existent.
+    ("unreal-probe", "vérification du projet", [PY, "pipeline/unreal/run.py", "pipeline/unreal/scripts/probe.py"], "unreal"),
+    ("music-wav", "musique en WAV pour Unreal", [PY, "pipeline/audio/prepare_music.py"], None),
+    ("greybox-geometry", "géométrie du greybox (terrain, arche, forêt)", [PY, "pipeline/layout/greybox_geometry.py"], None),
+    ("unreal-greybox", "niveau greybox", [PY, "pipeline/unreal/run.py", "pipeline/unreal/scripts/greybox.py"], "unreal"),
+    ("unreal-animatic", "séquence de l'animatic", [PY, "pipeline/unreal/run.py", "pipeline/unreal/scripts/animatic.py"], "unreal"),
+    ("unreal-j1", "scène de test J1 (sphère 360 stéréo)", [PY, "pipeline/unreal/run.py", "pipeline/unreal/scripts/j1_spike.py"], "unreal"),
+    # Non lancées par défaut (longues ou dépendantes d'Olivier) : review/shoot.py (éditeur ouvert),
+    # review/animatic.py (rendu MRQ), comfy/image_to_3d.py (GPU), unreal/package_android.py (APK).
 ]
 
 def _tool_exists(name):

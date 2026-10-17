@@ -111,3 +111,59 @@ assets:
   beats:
   - all
   script: pipeline/audio/freesound.py pick sfx-barque-bois 177680
+- id: greybox/Terrain
+  type: mesh
+  placeholder: true
+  file: Unreal/Content/Greybox/SM_Terrain.uasset
+  source: 'procédural : terrain en champ de hauteurs (lit, gué, lac, île)'
+  script: pipeline/layout/greybox_geometry.py puis pipeline/unreal/scripts/greybox.py
+  licence: généré par le pipeline
+  generated: '2026-10-17'
+- id: greybox/ArcheRacines
+  type: mesh
+  placeholder: true
+  file: Unreal/Content/Greybox/SM_ArcheRacines.uasset
+  source: 'procédural : arche des racines (demi-ellipse tubulaire, 8 m)'
+  script: pipeline/layout/greybox_geometry.py puis pipeline/unreal/scripts/greybox.py
+  licence: généré par le pipeline
+  generated: '2026-10-17'
+- id: greybox/Foret
+  type: mesh
+  placeholder: true
+  file: Unreal/Content/Greybox/SM_Foret.uasset
+  source: 'procédural : arbres stylisés (tronc + houppier coniques), trouée de S6'
+  script: pipeline/layout/greybox_geometry.py puis pipeline/unreal/scripts/greybox.py
+  licence: généré par le pipeline
+  generated: '2026-10-17'
+- id: greybox/ArbreColossal
+  type: mesh
+  placeholder: true
+  file: Unreal/Content/Greybox/SM_ArbreColossal.uasset
+  source: 'procédural : arbre colossal (cônes)'
+  script: pipeline/layout/greybox_geometry.py puis pipeline/unreal/scripts/greybox.py
+  licence: généré par le pipeline
+  generated: '2026-10-17'
+- id: greybox/ArbreLanternes
+  type: mesh
+  placeholder: true
+  file: Unreal/Content/Greybox/SM_ArbreLanternes.uasset
+  source: 'procédural : arbre aux lanternes (cônes)'
+  script: pipeline/layout/greybox_geometry.py puis pipeline/unreal/scripts/greybox.py
+  licence: généré par le pipeline
+  generated: '2026-10-17'
+- id: greybox/Eau
+  type: mesh
+  placeholder: true
+  file: Unreal/Content/Greybox/SM_Eau.uasset
+  source: 'procédural : plan d''eau translucide'
+  script: pipeline/layout/greybox_geometry.py puis pipeline/unreal/scripts/greybox.py
+  licence: généré par le pipeline
+  generated: '2026-10-17'
+- id: greybox/creatures-blocs
+  type: placeholder
+  placeholder: true
+  file: Unreal/Content/Maps/Barque_Greybox.umap (acteurs GB_Abysses, GB_Troupeau0-4, GB_Volante, GB_Lune, GB_Lanterne*)
+  source: formes de base Unreal (sphères, cubes, cylindres) aux échelles de SUIVI.md D4
+  script: pipeline/unreal/scripts/greybox.py
+  licence: contenu moteur Unreal
+  generated: '2026-10-17'
