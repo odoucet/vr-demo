@@ -107,12 +107,68 @@ MATS = {
     "Lune": material("Lune", (14.0, 13.5, 12.0), emissive=True),
     "Lanterne": material("Lanterne", (6.0, 2.5, 0.6), emissive=True),
     "LanternePapier": material("LanternePapier", (1.1, 0.55, 0.22), emissive=True),
-    "Luciole": material("Luciole", (4.0, 5.0, 1.2), emissive=True),
-    "Roseau": material("Roseau", (0.045, 0.075, 0.025), roughness=0.9),
-    "Nenuphar": material("Nenuphar", (0.06, 0.20, 0.07), roughness=0.6),
+    "Luciole": None,      # matériau animé, voir firefly_material()
+    "Roseau": material("Roseau", (0.045, 0.075, 0.025), roughness=0.95, specular=0.1),
+    "Nenuphar": material("Nenuphar", (0.06, 0.20, 0.07), roughness=0.85, specular=0.1),
 }
+
+
+FIREFLY_CODE_WPO = """float ph = UV.x * 6.2832;
+return Amp * float3(sin(T * 0.61 + ph), cos(T * 0.47 + ph * 1.7), 0.6 * sin(T * 0.83 + UV.y * 6.2832));"""
+FIREFLY_CODE_BLINK = """float b = 0.5 + 0.5 * sin(T * (1.1 + UV.y) + UV.x * 40.0);
+return 0.25 + 0.75 * b * b;"""
+
+
+def firefly_material(color=(4.0, 5.0, 1.2), amp_cm=30.0):
+    """Lucioles : émissif non éclairé qui clignote, sommets déplacés en WPO (dérive lente, phase par luciole
+    lue dans l'UV). Animation entièrement dans le shader : rien à évaluer sur le CPU du Quest."""
+    path = f"{GB}/M_GB_Luciole"
+    digest = spec_digest("luciole-v2", color, amp_cm, FIREFLY_CODE_WPO, FIREFLY_CODE_BLINK)
+    existing = eal.load_asset(path) if eal.does_asset_exist(path) else None
+    if up_to_date(existing, digest):
+        return existing
+    mat = existing or tools.create_asset("M_GB_Luciole", GB, unreal.Material, unreal.MaterialFactoryNew())
+    mel.delete_all_material_expressions(mat)
+    mat.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_UNLIT)
+    mat.set_editor_property("two_sided", True)
+    t = mel.create_material_expression(mat, unreal.MaterialExpressionTime, -900, 0)
+    uv = mel.create_material_expression(mat, unreal.MaterialExpressionTextureCoordinate, -900, 150)
+    amp = mel.create_material_expression(mat, unreal.MaterialExpressionConstant, -900, 300)
+    amp.set_editor_property("r", amp_cm)
+
+    def custom(code, out_type, names, x, y):
+        node = mel.create_material_expression(mat, unreal.MaterialExpressionCustom, x, y)
+        node.set_editor_property("code", code)
+        node.set_editor_property("output_type", out_type)
+        inputs = []
+        for n in names:
+            ci = unreal.CustomInput()
+            ci.set_editor_property("input_name", n)
+            inputs.append(ci)
+        node.set_editor_property("inputs", inputs)
+        return node
+
+    wpo = custom(FIREFLY_CODE_WPO, unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["T", "UV", "Amp"], -600, 200)
+    blink = custom(FIREFLY_CODE_BLINK, unreal.CustomMaterialOutputType.CMOT_FLOAT1, ["T", "UV"], -600, 0)
+    for node in (wpo, blink):
+        mel.connect_material_expressions(t, "", node, "T")
+        mel.connect_material_expressions(uv, "", node, "UV")
+    mel.connect_material_expressions(amp, "", wpo, "Amp")
+    col = mel.create_material_expression(mat, unreal.MaterialExpressionConstant3Vector, -600, -150)
+    col.set_editor_property("constant", unreal.LinearColor(*color, 1.0))
+    mul = mel.create_material_expression(mat, unreal.MaterialExpressionMultiply, -300, -50)
+    mel.connect_material_expressions(col, "", mul, "A")
+    mel.connect_material_expressions(blink, "", mul, "B")
+    mel.connect_material_property(mul, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
+    mel.connect_material_property(wpo, "", unreal.MaterialProperty.MP_WORLD_POSITION_OFFSET)
+    mel.recompile_material(mat)
+    mark_saved(mat, digest)
+    return mat
+
+
+MATS["Luciole"] = firefly_material()
 MESH_MATS = {"Terrain": "Terrain", "ArcheRacines": "Bois", "Foret": "Foret", "ArbreColossal": "Bois", "ArbreLanternes": "Foret",
-             "Lucioles": "Luciole", "Roseaux": "Roseau", "Nenuphars": "Nenuphar"}
+             "Lucioles": "Luciole", "LuciolesBerges": "Luciole", "Roseaux": "Roseau", "Nenuphars": "Nenuphar"}
 
 
 # --- Maillages depuis greybox.json -------------------------------------------------------------------------
@@ -130,7 +186,8 @@ def build_mesh(name, data, uv_scale_cm=400.0):
     # UV fournis avec les sommets (projection plane, 1 répétition par uv_scale_cm) : un maillage statique
     # sans canal UV fait planter l'éditeur à la construction (assertion NumUVs > 0).
     k = 100.0 / uv_scale_cm
-    buffers.uv0 = [unreal.Vector2D(v[0] * k, -v[1] * k) for v in data["vertices"]]
+    buffers.uv0 = ([unreal.Vector2D(*uv) for uv in data["uv"]] if "uv" in data else
+                   [unreal.Vector2D(v[0] * k, -v[1] * k) for v in data["vertices"]])
     dm.append_buffers_to_mesh(buffers)
     dm.recompute_normals(unreal.GeometryScriptCalculateNormalsOptions())
     if eal.does_asset_exist(path):

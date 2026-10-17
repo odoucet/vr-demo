@@ -27,8 +27,11 @@ def smoothstep(a, b, x):
     return t * t * (3 - 2 * t)
 
 
-def mesh_dict(verts, tris):
-    return {"vertices": np.round(np.asarray(verts, float), 3).tolist(), "triangles": np.asarray(tris, int).tolist()}
+def mesh_dict(verts, tris, uv=None):
+    d = {"vertices": np.round(np.asarray(verts, float), 3).tolist(), "triangles": np.asarray(tris, int).tolist()}
+    if uv is not None:      # UV explicites (sinon projection plane à l'import) : ici, phase d'animation par objet
+        d["uv"] = np.round(np.asarray(uv, float), 4).tolist()
+    return d
 
 
 def polyline_distance(px, py, xs, ys):
@@ -222,18 +225,40 @@ def lily_pads(river, seed=9):
     return mesh_dict(verts, tris)
 
 
-def fireflies(n=400, size=0.07, extent=(28.0, 22.0, 7.0), seed=11):
-    """Nuage de lucioles (octaèdres), centré sur l'origine, animé par la séquence (envol de S5/S6)."""
-    rng = np.random.default_rng(seed)
-    verts, tris = [], []
-    pts = rng.normal(0, 1, (n, 3)) * np.array(extent) / 3
-    for c in pts:
+def octahedra(centers, size, rng):
+    """Octaèdres (lucioles) ; les 6 sommets de chacun partagent un UV aléatoire = phase de vol et de clignotement
+    lue par le matériau (dérive en WPO, aucun coût CPU)."""
+    verts, tris, uv = [], [], []
+    for c in centers:
         r = size * rng.uniform(0.6, 1.4)
         base = len(verts)
         verts += [c + d for d in (np.array(v) * r for v in ((1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1)))]
         tris += [[base + a, base + b, base + c_] for a, b, c_ in
                  ((0, 2, 4), (2, 1, 4), (1, 3, 4), (3, 0, 4), (2, 0, 5), (1, 2, 5), (3, 1, 5), (0, 3, 5))]
-    return mesh_dict(verts, tris)
+        uv += [rng.uniform(0, 1, 2).tolist()] * 6
+    return mesh_dict(verts, tris, uv)
+
+
+def fireflies(n=400, size=0.07, extent=(28.0, 22.0, 7.0), seed=11):
+    """Nuage de lucioles, centré sur l'origine, animé par la séquence (envol de S5/S6)."""
+    rng = np.random.default_rng(seed)
+    return octahedra(rng.normal(0, 1, (n, 3)) * np.array(extent) / 3, size, rng)
+
+
+def bank_fireflies(river, per_sample=2, size=0.06, seed=13):
+    """Lucioles éparses au-dessus des berges et de l'eau près des rives, de S2 à la fin (0:20-4:00)."""
+    rng = np.random.default_rng(seed)
+    pts = []
+    for p in river["samples"]:
+        if p["t"] < 20 or p["t"] % 2:
+            continue
+        h0 = math.radians(p["heading_deg"])
+        nx, ny = -math.sin(h0), math.cos(h0)
+        for _ in range(per_sample * 2):
+            off = rng.choice([-1, 1]) * (p["width_m"] / 2 + rng.uniform(-2.5, 4.0))
+            pts.append([p["x"] + nx * off + rng.uniform(-1, 1), p["y"] + ny * off + rng.uniform(-1, 1),
+                        rng.uniform(0.4, 2.8)])
+    return octahedra(np.array(pts), size, rng)
 
 
 def main():
@@ -251,6 +276,7 @@ def main():
             "ArbreColossal": colossal_tree(river),
             "ArbreLanternes": lantern_tree(river),
             "Lucioles": fireflies(),
+            "LuciolesBerges": bank_fireflies(river),
             "Roseaux": reeds(river, field, bounds),
             "Nenuphars": lily_pads(river),
         },
