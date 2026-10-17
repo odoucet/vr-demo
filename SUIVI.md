@@ -29,7 +29,6 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 
 | # | Blocage | Bloque | Ce qu'il faut | Contournement en cours |
 |---|---|---|---|---|
-| B1 | MCP Unreal pas encore déclaré à Claude Code (UE 5.8.3 installé, projet `Unreal/Barque.uproject` créé, MCP en démarrage automatique) | exploration interactive (la voie headless fonctionne sans) | ouvrir le projet dans l'éditeur, puis `claude mcp add --transport http unreal http://127.0.0.1:8000/mcp` et relancer la session | scripts headless via `pipeline/unreal/run.py` |
 | B2 | Outils Android (SDK, NDK, JDK) absents | APK Quest (J1) | accord D10 (je l'installe moi-même après UE), ou installation par Olivier | aucun |
 
 ## 🟠 Importants (contournés)
@@ -41,6 +40,7 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 | I3 | Blender absent | nœuds de maillage ComfyUI (décimation, UV), import GLB dans UE | D9, ou installation par Olivier |
 | I4 | Pas de création de PR (connecteur GitHub sans accès, `gh` non connecté) | D6 | `gh auth login`, ou installer l'application GitHub de Claude sur le dépôt |
 | I5 | Musique en MP3 185 kb/s | MP3 utilisé tel quel | export WAV depuis Suno |
+| I7 | Le MCP n'exécute pas de Python arbitraire (orchestration en bac à sable) : les constructions de scène passent par les scripts headless, qui ne doivent pas tourner sur le projet pendant que l'éditeur le modifie | si l'éditeur est ouvert, je n'écris que par le MCP ou je diffère ; fermer l'éditeur avant un `build.py` complet | activer l'exécution Python à distance de l'éditeur (à tester) |
 | I6 | Freesound : seuls les aperçus OGG sont accessibles sans OAuth | aperçus utilisés pour le prototype | connexion OAuth pour les originaux (au master) |
 
 ## 🟢 Mineurs
@@ -55,6 +55,7 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 
 ## Fait récemment
 
+- MCP Unreal opérationnel : ~20 jeux d'outils (scène, acteurs, assets, matériaux, PCG, Niagara, journaux), capture du viewport (`pipeline/unreal/mcp.py capture`).
 - Projet Unreal créé par script (Quest 3 + PC VR, MCP), exécution headless depuis WSL.
 - 9 sons Freesound CC0 retenus provisoirement, tracés dans le manifeste.
 - Vidéos de test J1 (4096/30, 5760/30, 4096/60), synchronisation par flash et bip.

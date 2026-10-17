@@ -3,6 +3,7 @@
     python pipeline/unreal/mcp.py toolsets
     python pipeline/unreal/mcp.py describe <toolset>
     python pipeline/unreal/mcp.py call <toolset> <tool> '{"arg": 1}'
+    python pipeline/unreal/mcp.py capture sortie.png [x y z pitch yaw roll]   # capture du viewport (cm, degrés)
 
 Règle du projet : le MCP sert à explorer. Toute modification retenue est reportée dans un script.
 """
@@ -51,6 +52,25 @@ class Session:
         return self.tool("call_tool", {"toolset_name": toolset, "tool_name": tool, "arguments": arguments or {}})
 
 
+APP = "EditorToolset.EditorAppToolset"
+
+
+def capture(session, dest, pose=None):
+    """Capture du viewport de l'éditeur vers un PNG. Sans pose : caméra actuelle du viewport.
+    L'outil exige tous ses paramètres, même ceux documentés comme facultatifs."""
+    import base64
+    if pose is None:
+        cam = json.loads(text(session.call(APP, "GetCameraTransform")))["returnValue"]
+    else:
+        x, y, z, pitch, yaw, roll = pose
+        cam = {"location": {"x": x, "y": y, "z": z}, "rotation": {"pitch": pitch, "yaw": yaw, "roll": roll}}
+    cam["scale"] = {"x": 1, "y": 1, "z": 1}
+    off = {"gridSpacing": 0, "gridExtent": 0, "gridHeight": 0, "maxLabelDistance": 0, "maxLabels": 0}
+    data = json.loads(text(session.call(APP, "CaptureViewport", {"captureTransform": cam, "annotations": off})))
+    Path(dest).write_bytes(base64.b64decode(data["returnValue"]["image"]["data"]))
+    return dest
+
+
 def text(result):
     return "\n".join(c.get("text", json.dumps(c)) for c in result.get("content", []))
 
@@ -62,5 +82,8 @@ if __name__ == "__main__":
         print(text(s.tool("list_toolsets")))
     elif cmd == "describe":
         print(text(s.tool("describe_toolset", {"toolset_name": sys.argv[2]})))
+    elif cmd == "capture":
+        pose = [float(v) for v in sys.argv[3:9]] if len(sys.argv) >= 9 else None
+        print(capture(s, sys.argv[2], pose))
     elif cmd == "call":
         print(text(s.call(sys.argv[2], sys.argv[3], json.loads(sys.argv[4]) if len(sys.argv) > 4 else {})))
