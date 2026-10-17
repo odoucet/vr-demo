@@ -39,10 +39,10 @@
    "x": 54.999,
    "y": 0.078,
    "z": 1.1,
-   "yaw_deg": 2.16,
-   "pitch_deg": -35,
+   "yaw_deg": 77.16,
+   "pitch_deg": -30,
    "fov_deg": 90,
-   "note": "regard dans l'eau translucide"
+   "note": "regard dans l'eau translucide, par-dessus le bord gauche"
   },
   {
    "id": "S3-ABYSSE-B",
@@ -50,10 +50,10 @@
    "x": 69.848,
    "y": 2.039,
    "z": 1.1,
-   "yaw_deg": 12.89,
-   "pitch_deg": -70,
+   "yaw_deg": -67.11,
+   "pitch_deg": -35,
    "fov_deg": 90,
-   "note": "la créature passe sous la barque"
+   "note": "la créature passe sous la barque (vue par-dessus le bord droit)"
   },
   {
    "id": "S3-ABYSSE-C",

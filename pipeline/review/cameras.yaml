@@ -10,8 +10,8 @@ cameras:
     B: {t: 22, look_at: ponton, pitch: -5, note: "le ponton qui s'éloigne"}
     C: {t: 35, yaw: 70, pitch: -10, note: "roseaux qui frôlent la barque"}
   S3-ABYSSE:
-    A: {t: 55, yaw: 0, pitch: -35, note: "regard dans l'eau translucide"}
-    B: {t: 70, yaw: 0, pitch: -70, note: "la créature passe sous la barque"}
+    A: {t: 55, yaw: 75, pitch: -30, note: "regard dans l'eau translucide, par-dessus le bord gauche"}
+    B: {t: 70, yaw: -80, pitch: -35, note: "la créature passe sous la barque (vue par-dessus le bord droit)"}
     C: {t: 82, yaw: 150, pitch: -25, note: "elle s'éloigne derrière"}
   S4-GUE:
     A: {t: 100, yaw: 0, pitch: 0, note: "le gué s'ouvre"}

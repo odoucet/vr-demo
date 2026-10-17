@@ -6,9 +6,10 @@
 Part du template officiel Comfy-Org (pipeline/comfy/workflows/3d_pixal3d_trellis2_image_to_model.ui.json),
 converti en format API au lancement, puis ajusté : modèles bf16, texture 2048 (Quest), seeds fixes,
 turntable 4 vues. Sorties dans assets/3d/<nom>/<modèle>-s<seed>/ : model.glb, textures PBR,
-turntable_*.png et turntable.jpg (planche 2×2). Idempotent : un dossier déjà complet est sauté.
+turntable_*.png et turntable.jpg (planche 2×2). Idempotent : un dossier déjà complet pour la même image source (empreinte SHA-1) est sauté.
 """
 import argparse
+import hashlib
 import json
 import sys
 import time
@@ -86,8 +87,11 @@ def contact_sheet(paths, dest, label):
 def run(src, model, seed, texture_size, decimate, info):
     name = Path(src).stem
     out = OUT / name / f"{model}-s{seed}"
-    if (out / "model.glb").exists() and (out / "turntable.jpg").exists():
-        print(f"{out.relative_to(ROOT)} déjà présent, ignoré.")
+    digest = hashlib.sha1(Path(src).read_bytes()).hexdigest()[:12]
+    done = out / "params.json"
+    if (out / "model.glb").exists() and (out / "turntable.jpg").exists() and done.exists() \
+            and json.loads(done.read_text(encoding="utf-8")).get("source_sha1") == digest:
+        print(f"{out.relative_to(ROOT)} déjà à jour, ignoré.")
         return out
     out.mkdir(parents=True, exist_ok=True)
     image = client.upload_image(src)
@@ -113,7 +117,7 @@ def run(src, model, seed, texture_size, decimate, info):
             shots.append(client.download(files[0], out / f"turntable_{yaw:03d}.png"))
     if len(shots) == 4:
         contact_sheet(shots, out / "turntable.jpg", f"{name} — {model} — seed {seed}")
-    meta = {"source": str(Path(src).resolve().relative_to(ROOT)), "model": MODELS[model], "seed": seed,
+    meta = {"source": str(Path(src).resolve().relative_to(ROOT)), "source_sha1": digest, "model": MODELS[model], "seed": seed,
             "texture_size": texture_size, "target_faces": decimate, "seconds": round(time.time() - t0),
             "workflow": str(TEMPLATE.relative_to(ROOT)), "script": "pipeline/comfy/image_to_3d.py"}
     (out / "params.json").write_text(json.dumps(meta, indent=2, ensure_ascii=False), encoding="utf-8")

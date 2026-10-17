@@ -43,9 +43,14 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 
 ## 🟢 Mineurs
 
+- 17/10 au soir : j'ai fait planter l'éditeur une fois (maillage sans UV, corrigé) ; la fenêtre du rapport de plantage Unreal peut être restée ouverte.
+- Greybox très sombre (crépuscule sans exposition automatique) : lisible pour le timing, l'éclairage définitif viendra avec le look (J3).
+
 - Clé Freesound collée dans la conversation : risque faible, à régénérer si tu préfères.
 
 ## À vérifier au casque
+
+- **J2 (greybox)** : échelle de la barque (bloc 3,5 × 1,3 m), hauteur des yeux 1,10 m, confort de la dérive et des virages, lisibilité du passage sous la barque (S3), distance du troupeau (14 m, S4), passage sous l'arche (8 m, S5).
 
 - **J1 (APK `builds/android/`)** : la vidéo s'affiche ; « AVANT » devant ; la stéréo n'est pas inversée (« ŒIL GAUCHE » ne doit être lu que de l'œil gauche) ; les repères 1,5 m / 3 m / 10 m / ∞ paraissent à ces distances ; le cube rouge clignote en même temps que le flash blanc et le bip ; fluidité (72 Hz) en 4096 px. Point technique incertain : sélection de l'œil (`ResolvedView.StereoPassIndex`) avec le multiview mobile.
 
@@ -55,6 +60,8 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 
 ## Fait récemment
 
+- **Itération 1 du greybox (J2)** : `review/iter-001/planche.jpg` — 18 caméras de revue (`pipeline/review/shoot.py`), niveau `Barque_Greybox`, séquence `LS_Animatic`.
+- Barque régénérée en 3D depuis tes nouvelles images peintes (`review/3d/comparaison.jpg`).
 - Premier APK Quest empaqueté sans erreur (`python pipeline/unreal/package_android.py`, 7 min 30).
 - Scène de test J1 et script d'empaquetage Android (`pipeline/unreal/scripts/j1_spike.py`, `package_android.py`) ; scripts exécutés dans l'éditeur ouvert (Python à distance).
 - Outils Android installés dans `G:\android\` (SDK, NDK r27c, JDK 21), validés par Unreal : `pipeline/unreal/setup_android.py`.
@@ -72,5 +79,5 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 |---|---|
 | J0 Bible de style | prompts prêts ; attend les images d'Olivier (I1, D1) |
 | J1 Spike vidéo 360 + Quest | scène J1_Spike construite par script (sphère 360 stéréo + séquence + témoin de synchro), matériau validé dans l'éditeur ; **APK prêt : `builds/android/Barque-arm64.apk`** (485 Mo) ; attend le test au casque (go / no-go) |
-| J2 Greybox + animatic | données prêtes (tracé, caméras, séquencier), UE et MCP opérationnels ; greybox à construire |
+| J2 Greybox + animatic | greybox construit par script (terrain, eau translucide, arche, forêt, lac, lune, blocs des créatures) ; séquence LS_Animatic calée sur la musique ; 18 captures `review/iter-001/` ; rendu vidéo de l'animatic en cours |
 | J3 à J6 | non commencés |
