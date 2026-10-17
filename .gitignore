@@ -1,0 +1,40 @@
+# --- Unreal Engine ---
+Unreal/Binaries/
+Unreal/Intermediate/
+Unreal/Saved/
+Unreal/DerivedDataCache/
+Unreal/Build/
+Unreal/.vs/
+Unreal/.idea/
+Unreal/*.sln
+Unreal/*.VC.db
+Unreal/*.VC.opendb
+Unreal/Plugins/*/Binaries/
+Unreal/Plugins/*/Intermediate/
+
+# --- Blender ---
+*.blend[0-9]
+*.blend@
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+
+# --- Pipeline : état local et sorties intermédiaires ---
+pipeline/gpu.lock
+audio/music/ace/
+*.tmp
+*.log
+
+# --- Windows / WSL / éditeurs ---
+*:Zone.Identifier
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/
+.idea/
+
+# --- Sorties régénérables par script (essais image → 3D) ---
+assets/3d/

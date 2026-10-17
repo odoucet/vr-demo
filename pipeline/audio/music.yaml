@@ -1,0 +1,75 @@
+# Musique générée par ACE-Step 1.5 XL (ComfyUI local).
+#
+# Brouillon rapide puis rendu soigné : le LM 4B compose (codes audio 5 Hz, fixés par sa seed),
+# le DiT fait le rendu. On explore N seeds LM avec le DiT turbo, on fige la seed retenue,
+# puis on la rend avec le DiT sft. Même texte + même seed LM = même composition.
+#
+# Structure dérivée du séquencier de CLAUDE.md. À 72 BPM en 4/4, une mesure dure 3,333 s :
+# chaque beat tombe sur une barre entière (9 / 12 / 12 / 12 / 12 / 9 mesures).
+# S1-NOIR (0:00-0:20) est le clapotis seul : la musique démarre à S2 (offset_s).
+
+name: barque-des-lucioles
+offset_s: 20          # position de la musique dans la timeline de la démo
+end_s: 240            # fin de la démo (fondu de S7 compris)
+bpm: 72
+timesignature: "4"
+keyscale: D major
+language: en
+
+# Le style est décrit par ses caractéristiques : jamais de nom de studio ni de compositeur.
+style: >-
+  Instrumental cinematic orchestral score for a hand-drawn 1980s Japanese animated film,
+  contemplative and nostalgic, warm felt piano, lyrical solo flute and oboe, harp arpeggios,
+  soft string orchestra, celesta and glockenspiel sparkles, gentle pentatonic melody,
+  dreamy and serene, slow tempo, wide natural concert hall reverb, analog warmth,
+  no vocals, no drums
+
+# energy : intensité cible relative (1 = très calme, 5 = sommet), utilisée pour noter les brouillons.
+sections:
+  - id: S2-PONTON
+    start: 20
+    energy: 1
+    tag: Intro - solo felt piano, sparse and misty, soft sustained string pad, very quiet
+  - id: S3-ABYSSE
+    start: 50
+    energy: 2
+    tag: Verse 1 - deep low strings and contrabass, shimmering celesta, mysterious and slow, a vast presence gliding beneath
+  - id: S4-GUE
+    start: 90
+    energy: 3
+    tag: Verse 2 - main theme on flute, warm pizzicato strings in a gentle walking rhythm, golden and tender
+  - id: S5-RACINES
+    start: 130
+    energy: 4
+    tag: Build - flowing harp arpeggios, strings swelling, glittering glockenspiel, rising wonder
+  - id: S6-LUNE
+    start: 170
+    energy: 5
+    tag: Climax - full orchestra, soaring main theme on strings and horns, majestic and luminous
+  - id: S7-LAC
+    start: 210
+    energy: 1
+    tag: Outro - main theme returns on solo piano and music box, slowing down, fading into silence
+
+# Paramètres d'échantillonnage du LM (= la composition). Communs au brouillon et au rendu.
+lm:
+  cfg_scale: 2.0
+  temperature: 0.85
+  top_p: 0.9
+  top_k: 0
+  min_p: 0.0
+
+text_encoders: [qwen_0.6b_ace15.safetensors, qwen_4b_ace15.safetensors]
+vae: ace_1.5_vae.safetensors
+
+# Réglages des templates officiels Comfy-Org (audio_ace_step1_5_xl_turbo / _sft).
+draft:
+  model: acestep_v1.5_xl_turbo_bf16.safetensors
+  steps: 8
+  cfg: 1.0
+  shift: 3.0
+render:
+  model: acestep_v1.5_xl_sft_bf16.safetensors
+  steps: 50
+  cfg: 7.0
+  shift: 3.0

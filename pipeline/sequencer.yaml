@@ -1,0 +1,49 @@
+# Séquencier de la démo, calé sur la musique (source de vérité des temps).
+# music_s = temps dans le morceau ; temps démo = offset_s + music_s.
+# Recalage du 2026-10-17 sur « Luminous Wonder » (Suno), d'après pipeline/audio/structure.py.
+
+music:
+  file: audio/music/Luminous Wonder.mp3
+  offset_s: 20          # la musique démarre à S2 ; S1 = clapotis seul
+  duration_s: 219.97    # fin de la démo à 3:59.97
+  tempo_bpm: 72         # détecté à 143,6 (double temps)
+
+beats:
+  - id: S1-NOIR
+    music_s: -20        # 0:00 démo, avant la musique
+    note: Noir, clapotis seul.
+  - id: S2-PONTON
+    music_s: 0          # 0:20
+    note: Intro calme et sombre (824 Hz de brillance), départ du ponton dans la brume.
+  - id: S3-ABYSSE
+    music_s: 24.0       # 0:44
+    note: Entrée des graves (10 % → 14 %) ; l'ombre géante glisse sous la barque.
+  - id: S4-GUE
+    music_s: 77.9       # 1:37.9
+    note: >-
+      Frontière la plus nette de la première moitié ; plus de graves (19 %) et plus brillant : arrivée du
+      troupeau. Alternative : 50.9 (1:10.9) pour équilibrer S3/S4 (27 s / 57 s au lieu de 54 s / 30 s).
+  - id: S5-RACINES
+    music_s: 107.8      # 2:07.8
+    note: Partie la plus brillante de la montée, puis respiration sombre à 124.8 (passage sous les racines).
+  - id: S6-LUNE
+    music_s: 137.8      # 2:37.8
+    note: >-
+      Modulation (changement de tonalité, plus forte frontière du morceau) : envol des lucioles vers la
+      trouée, puis sommet 160.8-181.7 pour la créature devant la lune.
+  - id: S7-LAC
+    music_s: 181.7      # 3:21.7
+    note: Outro calme (-30 dB) ; lac miroir et arbre aux lanternes.
+
+# Points d'accroche à l'intérieur des beats (pour l'animatic et les repères sonores).
+events:
+  - id: racines-ombre
+    music_s: 124.8      # 2:24.8 : creux sombre, la barque passe sous l'arche
+  - id: lucioles-envol
+    music_s: 137.8      # 2:37.8 : modulation
+  - id: creature-lune
+    music_s: 160.8      # 3:00.8 : début du sommet (-18,6 dB)
+  - id: lanternes-reveal
+    music_s: 203.7      # 3:43.7 : dernière montée, note grave tenue (50 % de graves)
+  - id: fondu-noir
+    music_s: 217.0      # 3:57 : extinction rapide (-24 → -51 dB en 2 s), pas de long fondu

@@ -1,0 +1,11 @@
+assets:
+- id: music/luminous-wonder
+  type: music
+  file: audio/music/Luminous Wonder.mp3
+  source: Suno, généré par Olivier (compte ezameku) le 2026-10-17
+  url: https://suno.com/song/7104ca84-856a-411e-b8a8-4605e8a1e1f3
+  prompt: PROMPTS.md, section Musique (structure confirmée par les métadonnées ID3)
+  format: MP3 185 kb/s, 48 kHz stéréo, 219,97 s ; export WAV à venir (fourni par Olivier) pour le master final
+  timeline_offset_s: 20
+  sequencer: pipeline/sequencer.yaml
+  licence: Compte Suno payant au moment de la génération (droits d'usage commercial de l'offre payante)
