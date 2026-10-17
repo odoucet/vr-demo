@@ -10,12 +10,13 @@ et PC VR (forward shading, instanced stereo, MSAA) ; éclairage statique autoris
 coupés ; serveur MCP d'Unreal démarré automatiquement avec l'éditeur.
 """
 import json
+import subprocess
 import sys
 import uuid
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from tools import ROOT, project  # noqa: E402
+from tools import CONFIG, ROOT, project  # noqa: E402
 
 PLUGINS = [
     "PythonScriptPlugin", "EditorScriptingUtilities",       # pilotage par script
@@ -89,6 +90,24 @@ ServerUrlPath=/mcp
 """
 
 
+def engine_association():
+    """Identifiant du moteur tel que Windows le connaît. Un moteur installé hors Epic Launcher est enregistré
+    dans HKCU\\Software\\Epic Games\\Unreal Engine\\Builds sous un GUID : écrire « 5.8 » ferait alors
+    proposer une conversion du projet à chaque ouverture."""
+    root = CONFIG["unreal"]["root"].replace("\\", "/").rstrip("/").lower()
+    ps = ("(Get-ItemProperty 'HKCU:\\Software\\Epic Games\\Unreal Engine\\Builds' -ErrorAction SilentlyContinue)"
+          ".PSObject.Properties | Where-Object { $_.Name -like '{*' } | ForEach-Object { $_.Name + '|' + $_.Value }")
+    try:
+        out = subprocess.run(["powershell.exe", "-NoProfile", "-Command", ps], capture_output=True, text=True, timeout=60).stdout
+    except (OSError, subprocess.TimeoutExpired):
+        out = ""
+    for line in out.splitlines():
+        guid, _, path = line.strip().partition("|")
+        if path.replace("\\", "/").rstrip("/").lower() == root:
+            return guid
+    return "5.8"
+
+
 def write(path, text):
     path.parent.mkdir(parents=True, exist_ok=True)
     if path.exists() and path.read_text(encoding="utf-8") == text:
@@ -103,7 +122,7 @@ def main():
     project_id = uuid.uuid5(uuid.NAMESPACE_URL, "github.com/odoucet/vr-demo").hex.upper()
     descriptor = {
         "FileVersion": 3,
-        "EngineAssociation": "5.8",
+        "EngineAssociation": engine_association(),
         "Category": "",
         "Description": "La barque des lucioles",
         "Plugins": [{"Name": p, "Enabled": True} for p in PLUGINS],
