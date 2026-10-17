@@ -40,3 +40,9 @@ desktop.ini
 assets/3d/
 assets/spike/
 audio/sfx/candidates/
+
+# Vidéos copiées dans le projet pour l'empaquetage (régénérables)
+Unreal/Content/Movies/
+
+# Builds (APK, exécutables)
+builds/

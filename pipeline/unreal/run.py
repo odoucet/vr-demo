@@ -32,8 +32,8 @@ def run_live(script, timeout=5.0):
         "import os, runpy\n"
         f"os.environ['BARQUE_ROOT'] = r'{to_windows(ROOT)}'\n"
         f"runpy.run_path(r'{to_windows(Path(script).resolve())}', run_name='__main__')\n", encoding="utf-8")
-    proc = subprocess.run([str(UE_PYTHON), to_windows(CLIENT), to_windows(PLUGIN_PY), to_windows(wrapper), str(timeout)],
-                          capture_output=True, text=True, errors="replace", cwd="/mnt/c")
+    proc = subprocess.run([str(UE_PYTHON), "-X", "utf8", to_windows(CLIENT), to_windows(PLUGIN_PY), to_windows(wrapper), str(timeout)],
+                          capture_output=True, text=True, encoding="utf-8", errors="replace", cwd="/mnt/c")
     if proc.returncode == 2:
         return None
     lines = [l for l in proc.stdout.splitlines() if not l.startswith("BARQUE_REMOTE_STATUS")]

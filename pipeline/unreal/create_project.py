@@ -30,6 +30,10 @@ PLUGINS = [
 ]
 
 ENGINE_INI = """\
+[/Script/EngineSettings.GameMapsSettings]
+; Carte de démarrage du jeu : scène de test J1 tant que la démo n'existe pas
+GameDefaultMap=/Game/Maps/J1_Spike.J1_Spike
+
 [/Script/HardwareTargeting.HardwareTargetingSettings]
 TargetedHardwareClass=Mobile
 AppliedTargetedHardwareClass=Mobile
