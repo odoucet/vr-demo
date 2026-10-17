@@ -47,9 +47,28 @@ def pose_at(t):
 
 
 # --- Matériaux -----------------------------------------------------------------------------------------
+def spec_digest(*spec):
+    import hashlib
+    return hashlib.sha1(repr(spec).encode()).hexdigest()[:12]
+
+
+def up_to_date(asset, digest):
+    return asset is not None and eal.get_metadata_tag(asset, "source_sha1") == digest
+
+
+def mark_saved(asset, digest):
+    """Enregistre l'empreinte de la définition et sauvegarde l'asset (reconstruit seulement s'il a changé)."""
+    eal.set_metadata_tag(asset, "source_sha1", digest)
+    eal.save_loaded_asset(asset)
+
+
 def material(name, color, emissive=False, roughness=0.9, specular=None, opacity=None):
     path = f"{GB}/M_GB_{name}"
-    mat = eal.load_asset(path) if eal.does_asset_exist(path) else tools.create_asset(f"M_GB_{name}", GB, unreal.Material, unreal.MaterialFactoryNew())
+    digest = spec_digest(name, color, emissive, roughness, specular, opacity)
+    existing = eal.load_asset(path) if eal.does_asset_exist(path) else None
+    if up_to_date(existing, digest):
+        return existing
+    mat = existing or tools.create_asset(f"M_GB_{name}", GB, unreal.Material, unreal.MaterialFactoryNew())
     mel.delete_all_material_expressions(mat)
     c = mel.create_material_expression(mat, unreal.MaterialExpressionConstant3Vector, -400, 0)
     c.set_editor_property("constant", unreal.LinearColor(*color, 1.0))
@@ -73,6 +92,7 @@ def material(name, color, emissive=False, roughness=0.9, specular=None, opacity=
             mel.connect_material_property(op, "", unreal.MaterialProperty.MP_OPACITY)
     mat.set_editor_property("two_sided", True)
     mel.recompile_material(mat)
+    mark_saved(mat, digest)
     return mat
 
 
@@ -317,8 +337,12 @@ if os.path.exists(SKY_PNG):
         sky_tex = eal.load_asset(f"{GB}/ciel")
         eal.set_metadata_tag(sky_tex, "source_sha1", sky_digest)
         eal.save_loaded_asset(sky_tex)
+    SKY_WATER_VERSION = "ciel-eau-v1"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
     sky_mat_path = f"{GB}/M_GB_CielPeint"
-    sky_mat = eal.load_asset(sky_mat_path) if eal.does_asset_exist(sky_mat_path) else tools.create_asset("M_GB_CielPeint", GB, unreal.Material, unreal.MaterialFactoryNew())
+    sky_mat = eal.load_asset(sky_mat_path) if eal.does_asset_exist(sky_mat_path) else None
+    rebuild_sky_water = not up_to_date(sky_mat, spec_digest(SKY_WATER_VERSION, sky_digest))
+    sky_mat = sky_mat or tools.create_asset("M_GB_CielPeint", GB, unreal.Material, unreal.MaterialFactoryNew())
+if os.path.exists(SKY_PNG) and rebuild_sky_water:
     mel.delete_all_material_expressions(sky_mat)
     sky_mat.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_UNLIT)
     sky_mat.set_editor_property("is_sky", True)
@@ -354,7 +378,7 @@ if os.path.exists(SKY_PNG):
     mel.connect_material_expressions(cp, "", mul, "B")
     mel.connect_material_property(mul, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
     mel.recompile_material(sky_mat)
-    MATS["CielPeint"] = sky_mat
+    mark_saved(sky_mat, spec_digest(SKY_WATER_VERSION, sky_digest))
     # Eau : reflet du ciel peint (texture lue dans la direction réfléchie, sans réflexions temps réel, peu coûteux
     # sur Quest) + Fresnel : miroir vers l'horizon, transparente en regardant vers le bas (S3 : la créature dessous).
     water = eal.load_asset(f"{GB}/M_GB_Eau")
@@ -403,6 +427,9 @@ if os.path.exists(SKY_PNG):
     mel.connect_material_expressions(wfr, "", wop, "Alpha")
     mel.connect_material_property(wop, "", unreal.MaterialProperty.MP_OPACITY)
     mel.recompile_material(water)
+    eal.save_loaded_asset(water)
+if os.path.exists(SKY_PNG):
+    MATS["CielPeint"] = sky_mat
     sky_sphere = place_mesh(SPHERE, "GB_CielPeint", "CielPeint", unreal.Vector(10000, 0, 0), scale=(10000, 10000, 10000))
     sky_sphere.static_mesh_component.set_editor_property("cast_shadow", False)
 
