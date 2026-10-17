@@ -1,0 +1,45 @@
+# Tracé de la rivière et trajectoire de la barque (proposition, à valider sur la carte review/layout/carte.png).
+#
+# La barque avance à vitesse constante pendant toute la démo, y compris pendant le noir de S1 :
+# l'accélération du départ est ainsi cachée dans le noir, et à 0:20 on longe déjà le ponton.
+# La trajectoire est décrite par sa courbure (virages doux, transitions progressives) ; la position de
+# chaque beat découle du séquencier : distance = vitesse × temps.
+
+speed_mps: 1.0          # vitesse de dérive constante (m/s) : 240 s → 240 m
+min_radius_m: 40        # rayon de virage minimal (confort : vitesse de rotation ≤ 1,5 °/s à 1 m/s)
+ramp_s: 8               # durée des transitions de courbure (évite les à-coups de rotation)
+sample_m: 1.0           # pas d'échantillonnage du tracé exporté
+
+# Virages, en temps démo (s). curvature = 1/rayon, positif = vers la gauche.
+bends:
+  - {from: 52, to: 76, curvature: 0.0125, note: "S3 : courbe douce à gauche, l'eau s'éclaircit"}
+  - {from: 131, to: 141, curvature: -0.02, note: "S5 : virage à droite pour s'aligner sous l'arche"}
+  - {from: 162, to: 184, curvature: 0.015, note: "S6 : la trouée s'ouvre, cap sur la lune"}
+  - {from: 206, to: 220, curvature: -0.0125, note: "S7 : entrée dans le lac, l'île aux lanternes se découvre à droite"}
+
+# Largeur de rivière (m) par plage de temps démo ; interpolée entre les points.
+width:
+  - {t: 0, w: 14}       # ponton, roseaux proches
+  - {t: 44, w: 16}
+  - {t: 90, w: 22}
+  - {t: 100, w: 30}     # gué : large et peu profond
+  - {t: 126, w: 26}
+  - {t: 138, w: 12}     # resserrement sous les racines
+  - {t: 152, w: 12}
+  - {t: 165, w: 20}
+  - {t: 200, w: 24}
+  - {t: 212, w: 34}     # embouchure ; au-delà, c'est le lac (ci-dessous)
+  - {t: 240, w: 34}
+
+# Lac de S7 : disque centré sur un point relatif à la barque à l'instant t.
+lake: {t: 225, ahead_m: 50, side_m: -8, radius_m: 60}
+
+# Repères de mise en scène (distance devant / à côté de la barque à l'instant donné).
+# ahead_m : distance devant la barque ; side_m : décalage latéral (+ gauche, − droite).
+landmarks:
+  - {id: ponton, t: 20, ahead_m: 3, side_m: -9, note: "à l'ouverture du fondu, le ponton est juste à droite"}
+  - {id: abysses-passage, t: 70, ahead_m: 0, side_m: 0, note: "la créature passe sous la barque, perpendiculaire"}
+  - {id: troupeau-gue, t: 112, ahead_m: 14, side_m: 0, note: "le troupeau traverse 14 m devant, de droite à gauche"}
+  - {id: arche-racines, t: 144.8, ahead_m: 0, side_m: 0, note: "la barque passe sous l'arche à 2:24.8 (creux sombre)"}
+  - {id: creature-lune, t: 180.8, ahead_m: 300, side_m: 0, note: "la lune et la créature, droit devant au sommet"}
+  - {id: ile-lanternes, t: 223.7, ahead_m: 60, side_m: -25, note: "l'arbre aux lanternes, devant à droite"}

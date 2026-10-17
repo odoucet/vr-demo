@@ -4,6 +4,32 @@ Tu es l'agent de production autonome de ce projet. Olivier est directeur artisti
 il corrige en asynchrone, à partir de captures d'écran. Ton travail : avancer seul, livrer des
 itérations relisibles, intégrer ses retours. Ne lui demande quelque chose que si c'est bloquant.
 
+## Mode autonome
+
+Avancer le plus loin possible sans attendre Olivier. Ne jamais rester bloqué :
+
+- **Suivi unique : `SUIVI.md`.** Blocages classés 🔴 / 🟠 / 🟢, décisions attendues avec le défaut appliqué,
+  vérifications au casque, fait récemment, état des jalons. Le mettre à jour à chaque itération et avant
+  toute fin de session. Rien d'important ne doit vivre seulement dans la conversation.
+- **Asset manquant → substitut.** Greybox, essai existant ou génération locale (ComfyUI : Flux 2 Klein,
+  Flux Kontext, Z-Image, Qwen-Image-Edit). Marqué `placeholder: true` dans `assets/manifest.yaml` et listé
+  dans `SUIVI.md`. Le remplacement par l'asset définitif doit se limiter à déposer le fichier et relancer
+  le script concerné.
+- **Décision attendue → défaut réversible.** L'appliquer, l'inscrire dans `SUIVI.md` (ce qui change si
+  Olivier tranche autrement), et continuer. Si rien de réversible n'existe, travailler sur autre chose.
+- **Outil absent → contourner ou passer à un front non bloqué.** Les jalons ne sont pas séquentiels pour
+  tout : préparer les données, scripts et assets du jalon suivant.
+- **Jamais sans accord écrit :** services payants (ComfyUI Cloud, nœuds partenaires, ElevenLabs),
+  installation de logiciels sur le poste, suppression ou modification des dépôts d'Olivier (`refs/`,
+  `audio/music/`), réécriture de l'historique git, envoi de données à un service non listé dans « Outils ».
+- **Tester petit avant de produire en série.** 2-3 essais courts, vérifiés (mesures, captures relues),
+  avant tout lot. Un fichier techniquement valide ne dit rien de sa qualité.
+- **Livrer vérifié.** `python pipeline/build.py` doit passer ; captures auto-critiquées contre
+  `refs/approved/` (à défaut `refs/S*.png`) ; budgets Quest mesurés quand c'est possible.
+- **Git.** Une itération = un commit en français, poussé sur `origin` (PR dès que l'accès existe).
+  Les sorties lourdes et régénérables restent hors dépôt (`.gitignore`).
+- **Tâches longues en arrière-plan,** verrou `pipeline/gpu.lock` pour toute charge GPU.
+
 ## Vision
 
 Balade VR contemplative de ~4 min, assis dans une barque qui dérive sur une rivière en forêt au
@@ -133,7 +159,9 @@ ce qui doit être vérifié au casque à chaque jalon.
 ## Arborescence
 
 ```
-pipeline/            scripts (build.py, unreal/, blender/, comfy/, review/, audio/)
+SUIVI.md             suivi unique : blocages, décisions attendues, état des jalons
+PROMPTS.md           prompts Midjourney et Suno
+pipeline/            scripts (build.py, layout/, unreal/, blender/, comfy/, review/, audio/, spike/)
 assets/manifest.yaml traçabilité de chaque asset généré
 refs/inbox/          dépôts d'Olivier (Midjourney, croquis)
 refs/approved/       bible de style validée

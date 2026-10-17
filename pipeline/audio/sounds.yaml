@@ -1,0 +1,44 @@
+# Besoins sonores couverts par Freesound (ambiances et bruitages de décor).
+# Les repères sonores des créatures (2-3 s avant l'apparition) sont traités à part : génération locale.
+# licence : cc0 (défaut) ou cc0+ccby (CC-BY toléré, crédit obligatoire dans le manifeste).
+
+candidates: 4          # nombre de candidats par besoin
+max_duration: 300      # au-delà, téléchargement lourd pour rien (boucler en jeu)
+# Requêtes courtes : Freesound exige tous les mots, une phrase longue ne trouve rien.
+sounds:
+  - id: amb-clapotis
+    beats: [S1-NOIR, S2-PONTON]
+    query: water lapping boat
+    min_duration: 30
+  - id: amb-ponton-brume
+    beats: [S2-PONTON]
+    query: lake morning birds
+    min_duration: 60
+  - id: sfx-roseaux
+    beats: [S2-PONTON]
+    query: reeds rustling
+    min_duration: 3
+  - id: amb-riviere-foret
+    beats: [S3-ABYSSE, S4-GUE]
+    query: forest river birds
+    min_duration: 60
+  - id: sfx-gue-eau
+    beats: [S4-GUE]
+    query: wading water
+    min_duration: 5
+  - id: amb-sous-racines
+    beats: [S5-RACINES]
+    query: cave drips
+    min_duration: 30
+  - id: amb-foret-nuit
+    beats: [S6-LUNE]
+    query: night crickets frogs
+    min_duration: 60
+  - id: amb-lac-nuit
+    beats: [S7-LAC]
+    query: lake night crickets
+    min_duration: 60
+  - id: sfx-barque-bois
+    beats: [all]
+    query: boat creak wood
+    min_duration: 3

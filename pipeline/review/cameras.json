@@ -1,0 +1,202 @@
+{
+ "cameras": [
+  {
+   "id": "S2-PONTON-A",
+   "t": 22,
+   "x": 22.0,
+   "y": 0.0,
+   "z": 1.1,
+   "yaw_deg": 0.0,
+   "pitch_deg": 0,
+   "fov_deg": 90,
+   "note": "départ dans la brume"
+  },
+  {
+   "id": "S2-PONTON-B",
+   "t": 22,
+   "x": 22.0,
+   "y": 0.0,
+   "z": 1.1,
+   "yaw_deg": -83.66,
+   "pitch_deg": -5,
+   "fov_deg": 90,
+   "note": "le ponton qui s'éloigne"
+  },
+  {
+   "id": "S2-PONTON-C",
+   "t": 35,
+   "x": 35.0,
+   "y": 0.0,
+   "z": 1.1,
+   "yaw_deg": 70.0,
+   "pitch_deg": -10,
+   "fov_deg": 90,
+   "note": "roseaux qui frôlent la barque"
+  },
+  {
+   "id": "S3-ABYSSE-A",
+   "t": 55,
+   "x": 54.999,
+   "y": 0.078,
+   "z": 1.1,
+   "yaw_deg": 2.16,
+   "pitch_deg": -35,
+   "fov_deg": 90,
+   "note": "regard dans l'eau translucide"
+  },
+  {
+   "id": "S3-ABYSSE-B",
+   "t": 70,
+   "x": 69.848,
+   "y": 2.039,
+   "z": 1.1,
+   "yaw_deg": 12.89,
+   "pitch_deg": -70,
+   "fov_deg": 90,
+   "note": "la créature passe sous la barque"
+  },
+  {
+   "id": "S3-ABYSSE-C",
+   "t": 82,
+   "x": 81.38,
+   "y": 5.347,
+   "z": 1.1,
+   "yaw_deg": 167.19,
+   "pitch_deg": -25,
+   "fov_deg": 90,
+   "note": "elle s'éloigne derrière"
+  },
+  {
+   "id": "S4-GUE-A",
+   "t": 100,
+   "x": 98.576,
+   "y": 10.667,
+   "z": 1.1,
+   "yaw_deg": 17.19,
+   "pitch_deg": 0,
+   "fov_deg": 90,
+   "note": "le gué s'ouvre"
+  },
+  {
+   "id": "S4-GUE-B",
+   "t": 112,
+   "x": 110.04,
+   "y": 14.213,
+   "z": 1.1,
+   "yaw_deg": 17.19,
+   "pitch_deg": 0,
+   "fov_deg": 90,
+   "note": "le troupeau traverse devant"
+  },
+  {
+   "id": "S4-GUE-C",
+   "t": 122,
+   "x": 119.593,
+   "y": 17.168,
+   "z": 1.1,
+   "yaw_deg": 62.19,
+   "pitch_deg": 0,
+   "fov_deg": 90,
+   "note": "les derniers rejoignent la rive"
+  },
+  {
+   "id": "S5-RACINES-A",
+   "t": 132,
+   "x": 129.158,
+   "y": 20.086,
+   "z": 1.1,
+   "yaw_deg": 15.63,
+   "pitch_deg": 10,
+   "fov_deg": 90,
+   "note": "l'arche approche"
+  },
+  {
+   "id": "S5-RACINES-B",
+   "t": 144.8,
+   "x": 141.763,
+   "y": 22.192,
+   "z": 1.1,
+   "yaw_deg": 5.73,
+   "pitch_deg": 65,
+   "fov_deg": 90,
+   "note": "sous l'arche, creux sombre"
+  },
+  {
+   "id": "S5-RACINES-C",
+   "t": 158,
+   "x": 154.897,
+   "y": 23.509,
+   "z": 1.1,
+   "yaw_deg": 5.73,
+   "pitch_deg": 30,
+   "fov_deg": 90,
+   "note": "envol des lucioles (modulation)"
+  },
+  {
+   "id": "S6-LUNE-A",
+   "t": 165,
+   "x": 161.851,
+   "y": 24.301,
+   "z": 1.1,
+   "yaw_deg": 8.33,
+   "pitch_deg": 20,
+   "fov_deg": 90,
+   "note": "la trouée s'ouvre"
+  },
+  {
+   "id": "S6-LUNE-B",
+   "t": 180.8,
+   "x": 177.07,
+   "y": 28.408,
+   "z": 1.1,
+   "yaw_deg": 22.04,
+   "pitch_deg": 25,
+   "fov_deg": 90,
+   "note": "la créature devant la lune"
+  },
+  {
+   "id": "S6-LUNE-C",
+   "t": 195,
+   "x": 190.019,
+   "y": 34.232,
+   "z": 1.1,
+   "yaw_deg": -5.36,
+   "pitch_deg": 15,
+   "fov_deg": 90,
+   "note": "elle s'éloigne"
+  },
+  {
+   "id": "S7-LAC-A",
+   "t": 205,
+   "x": 199.111,
+   "y": 38.397,
+   "z": 1.1,
+   "yaw_deg": 24.38,
+   "pitch_deg": 0,
+   "fov_deg": 90,
+   "note": "embouchure du lac"
+  },
+  {
+   "id": "S7-LAC-B",
+   "t": 223.7,
+   "x": 216.772,
+   "y": 44.448,
+   "z": 1.1,
+   "yaw_deg": -7.91,
+   "pitch_deg": 5,
+   "fov_deg": 90,
+   "note": "l'arbre aux lanternes se révèle"
+  },
+  {
+   "id": "S7-LAC-C",
+   "t": 236,
+   "x": 228.674,
+   "y": 47.551,
+   "z": 1.1,
+   "yaw_deg": 14.61,
+   "pitch_deg": -15,
+   "fov_deg": 90,
+   "note": "lac miroir, reflets, avant le fondu"
+  }
+ ]
+}

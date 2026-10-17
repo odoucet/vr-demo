@@ -1,0 +1,31 @@
+# Caméras de revue fixes : 3 par beat, toujours au même cadrage et au même instant.
+# Position : la barque à l'instant t, yeux à 1,10 m. Direction : yaw relatif au cap de la barque
+# (0 = droit devant, + = vers la gauche) et pitch (+ = vers le haut), ou look_at = un repère de river.yaml.
+# Choix éditorial : modifier ici, puis `python pipeline/review/cameras.py`.
+
+fov_deg: 90
+cameras:
+  S2-PONTON:
+    A: {t: 22, yaw: 0, pitch: 0, note: "départ dans la brume"}
+    B: {t: 22, look_at: ponton, pitch: -5, note: "le ponton qui s'éloigne"}
+    C: {t: 35, yaw: 70, pitch: -10, note: "roseaux qui frôlent la barque"}
+  S3-ABYSSE:
+    A: {t: 55, yaw: 0, pitch: -35, note: "regard dans l'eau translucide"}
+    B: {t: 70, yaw: 0, pitch: -70, note: "la créature passe sous la barque"}
+    C: {t: 82, yaw: 150, pitch: -25, note: "elle s'éloigne derrière"}
+  S4-GUE:
+    A: {t: 100, yaw: 0, pitch: 0, note: "le gué s'ouvre"}
+    B: {t: 112, look_at: troupeau-gue, pitch: 0, note: "le troupeau traverse devant"}
+    C: {t: 122, yaw: 45, pitch: 0, note: "les derniers rejoignent la rive"}
+  S5-RACINES:
+    A: {t: 132, yaw: 0, pitch: 10, note: "l'arche approche"}
+    B: {t: 144.8, yaw: 0, pitch: 65, note: "sous l'arche, creux sombre"}
+    C: {t: 158, yaw: 0, pitch: 30, note: "envol des lucioles (modulation)"}
+  S6-LUNE:
+    A: {t: 165, yaw: 0, pitch: 20, note: "la trouée s'ouvre"}
+    B: {t: 180.8, look_at: creature-lune, pitch: 25, note: "la créature devant la lune"}
+    C: {t: 195, yaw: -30, pitch: 15, note: "elle s'éloigne"}
+  S7-LAC:
+    A: {t: 205, yaw: 0, pitch: 0, note: "embouchure du lac"}
+    B: {t: 223.7, look_at: ile-lanternes, pitch: 5, note: "l'arbre aux lanternes se révèle"}
+    C: {t: 236, yaw: 0, pitch: -15, note: "lac miroir, reflets, avant le fondu"}
