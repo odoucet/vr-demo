@@ -61,7 +61,7 @@ sets:
       - [erable, "maple tree with a dense round crown of layered leaf clusters, some warm orange leaves"]
       - [vieux-chene, "very old massive tree with a thick mossy trunk, exposed roots and a huge dark crown"]
       - [cedre, "cedar tree with flat horizontal layered tiers of dark foliage"]
-      - [aulne, "riverside alder tree leaning slightly, irregular crown of dense dark green leaves"]
+      - [aulne, "riverside alder tree leaning slightly, irregular crown of dense dark green leaves, no ground patch under it", {seed: 1199}]
       - [cerisier, "wild cherry tree with a rounded crown covered in pale pink blossoms among green leaves"]
       - [hetre, "tall beech tree with a smooth grey trunk and a large dome-shaped crown of bright leaves"]
       - [sapin-sombre, "tall dark spruce tree with a narrow pointed silhouette and dense drooping branches"]

@@ -100,6 +100,15 @@ alors que la scène est bien plus dense :
   maillage de la barque), le papier lumineux et le halo : ils restent solidaires (`review/iter-029/casque/`, 4 images à
   1,2 s d'écart).
 
+**Étape 3 (19/10)** — **arbre colossal entièrement peint** : tronc moussu en sprite (un tronc se voit pareil sous tous
+les angles), houppier en touffes peintes, rideaux de lianes, fougères et mousses au pied ; l'arche 3D des racines reste.
+Rochers géants moussus au bord de l'eau, souches géantes. Les bandes de lisière sont reculées à plus de 70 m (de près,
+elles se voyaient comme des panneaux plats là où la forêt s'ouvre).
+- **Incident casque (1 h 30)** : l'interface système du Quest plantait en boucle, plus aucune appli ne démarrait. Le journal
+  indiquait « Vulkan device creation failed ». Cause non établie. Une propriété de débogage que j'avais réglée la veille
+  (niveau GPU) était restée en place : je l'ai effacée, puis j'ai redémarré le casque. **Si le Quest refuse de démarrer
+  une appli, un redémarrage complet suffit.**
+
 ## ▶ APK de comparaison des arbres (installé au Quest, 18/10)
 
 La forêt change toutes les 12 s pendant toute la balade, avec une étiquette à la proue :
@@ -130,6 +139,12 @@ Dis-moi laquelle garder (ou un mélange : par exemple B au loin et C près de l'
 
 ## 🟠 Importants (contournés)
 
+- **Casque injoignable depuis le redémarrage du 19/10 à 1 h 35** (voir « Incident casque » plus haut). Il ne réapparaît
+  plus en USB (`adb devices` vide). Il attend peut-être qu'on le porte, qu'on accepte de nouveau le débogage USB ou qu'on
+  le rallume. La dernière version (`builds/android_greybox/Barque-arm64.apk`, avec l'arbre colossal peint) est empaquetée
+  mais n'est **ni installée ni mesurée au casque**. La version installée est la précédente (nuit lumineuse et lanterne),
+  mesurée à 72 i/s.
+
 | # | Manque | Contournement | Ce qui le lèverait |
 |---|---|---|---|
 | I1 | Images d'assets en style peint (en cours chez Olivier) | visuels provisoires générés en local, essais 3D actuels marqués `placeholder` | dépôt dans `refs/inbox/` sous l'identifiant de `PROMPTS.md` |
@@ -155,6 +170,11 @@ Dis-moi laquelle garder (ou un mélange : par exemple B au loin et C près de l'
 - Clé Freesound collée dans la conversation : risque faible, à régénérer si tu préfères.
 
 ## À vérifier au casque
+
+- **Scène en images peintes (19/10)** : les arbres et buissons peints restent-ils crédibles de près, au bord de l'eau
+  (relief plat, léger pivotement quand on tourne la tête) ? Densité des berges (trop de fleurs ?), hérons et
+  hirondelles (taille, vitesse), papillons, feuilles qui tombent, faune (cerfs, canards…), lueurs de nuit,
+  balancement de la lanterne (assez ? trop ?), arbre colossal peint.
 
 - **Corrections du 18/10 au soir (APK installé)** : pieux du ponton moins visibles à travers l'eau ? brume enfin perceptible, pas trop dense au départ ? plancher fixe ? lucioles de l'envol en courbes ? plus de voix à l'entrée du lac ? (volume du casque laissé à 1 par mes essais)
 - **J2 (greybox)** : fréquence d'image avec ~530 k triangles de décor et les textures (mesure à faire casque porté), lisibilité de l'eau et du sillage, chaleur de la lanterne, lucioles (taille, clignotement, dérive : agréables ou agaçantes ?), brume du départ (trop dense ?), échelle de la barque (3,5 m, franc-bord ~45 cm, place assise à 1,20 m derrière le centre), gêne de la lanterne de proue (D11), hauteur des yeux 1,10 m, confort de la dérive et des virages, lisibilité du passage sous la barque (S3), distance du troupeau (14 m, S4), passage sous l'arche (8 m, S5).
