@@ -100,6 +100,15 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 
 ## Fait récemment
 
+- **Retours du 18/10 après-midi** :
+  - **Lucioles en particules** : lueurs douces face à l'œil, qui s'allument une à une (berges à la fin du noir, nuage de l'envol en sortant de l'eau). Elles ne s'affichaient plus du tout dans les deux dernières versions : les carrés de taille nulle étaient supprimés à la construction du maillage. Corrigé et vérifié sur PC, **pas encore vu au casque** (pause demandée).
+  - **Ponton et arche des racines** : tes modèles 3D (TRELLIS.2 depuis `refs/ponton.png` et `refs/racine.png`) remplacent les cubes et le tube du greybox, avec le look peint et une teinte raccordée au décor.
+  - **Nénuphars** ronds, au bord irrégulier, avec l'encoche et le bord relevé, une teinte par feuille.
+  - **Eau dans la barque** : le cap de la barque n'arrivait sans doute pas au shader de l'eau (stocké dans la composante alpha d'un paramètre animé) ; il est maintenant dans une autre composante. Le plancher suit le contour réel de la coque à la ligne de flottaison (298 × 141 cm, calculé sur le maillage).
+  - **Arbres** : les niveaux de détail gardent toutes les touffes principales (seule la finesse change) et passent de l'un à l'autre par un fondu tramé au lieu d'un saut.
+  - Plus de fleurs sur les berges.
+- **Démo « HD » pour comparer** (`builds/android_hd/`, paquet `com.odoucet.barque.hd`, installée à côté de la normale) : arbres fins gardés bien plus loin, pas de culling, MSAA 4x. Mesure : 44-50 i/s en S2-S5, 58-68 en S6-S7 (`review/perf/hd-20261018-1543.png`). La version normale : 72 i/s, sauf S3 à 69,5 (`review/perf/greybox-20261018-1538.png`).
+- **Casque en pause à ta demande** (18/10 ~15:50) : plus aucune commande adb jusqu'à nouvel ordre. Le dernier APK normal (lucioles corrigées, ponton et racine) est construit mais **n'est pas installé**.
 - **Forêt instanciée à niveaux de détail** : 6 feuillus et 3 résineux en 3 niveaux (≈2 700 / 560 / 90 triangles pour un feuillu), 2 325 arbres avec taille, rotation et teinte propres. Le niveau fin est réservé aux arbres tout proches de la barque ; au-delà de 180 m, plus d'arbres (brume et lisière). Mesures A/B au casque : la forêt coûtait 6,8 ms par image avant réglage des niveaux. **72 Hz tenus sur toute la balade** (`review/perf/greybox-20261018-1507.png`), S2-S3 à la limite (GPU 96-97 %).
 - **Captures réelles au casque** : `pipeline/unreal/quest_shots.py` lance l'APK et capture la vue du casque aux moments clés (`review/iter-013/planche-casque.jpg`). C'est désormais la référence de revue ; à chaque run, la courbe FPS / GPU / CPU est dans `review/perf/`.
 - **Piège réglé** : un matériau doit déclarer son usage « maillages instanciés », sinon le jeu empaqueté affiche le matériau par défaut (arbres gris au casque, alors que le rendu PC était correct).

@@ -24,6 +24,10 @@ VARIANTS = {
     "j1": ("/Game/Maps/J1_Spike.J1_Spike", "com.odoucet.barque", "android"),
     "greybox": ("/Game/Maps/Barque_Greybox.Barque_Greybox", "com.odoucet.barque.greybox", "android_greybox"),
     "j1b": ("/Game/Maps/J1b_StereoLayer.J1b_StereoLayer", "com.odoucet.barque.j1b", "android_j1b"),
+    # Démo « HD » demandée par Olivier (comparer beaucoup plus de polygones à ~25 i/s) : arbres fins gardés bien plus
+    # loin, pas de culling des arbres, MSAA 4x. Même contenu que greybox, autres réglages.
+    "hd": ("/Game/Maps/Barque_Greybox.Barque_Greybox", "com.odoucet.barque.hd", "android_hd",
+           "foliage.LODDistanceScale=8;foliage.CullDistanceScale=20;r.MSAACount=4;r.StaticMeshLODDistanceScale=0.2"),
 }
 
 
@@ -32,11 +36,12 @@ def main():
     ap.add_argument("--config", default="Development", choices=["Development", "Shipping"])
     ap.add_argument("--variant", default="j1", choices=list(VARIANTS))
     args = ap.parse_args()
-    default_map, package_name, out_name = VARIANTS[args.variant]
+    default_map, package_name, out_name, *extra = VARIANTS[args.variant]
     OUT = OUT_ROOT / out_name
     OUT.mkdir(parents=True, exist_ok=True)
     # Écrit la configuration de la variante, empaquette, puis restaure la configuration par défaut (J1).
-    env = dict(os.environ, BARQUE_DEFAULT_MAP=default_map, BARQUE_PACKAGE_NAME=package_name)
+    env = dict(os.environ, BARQUE_DEFAULT_MAP=default_map, BARQUE_PACKAGE_NAME=package_name,
+               BARQUE_EXTRA_CVARS=extra[0] if extra else "")
     subprocess.run([sys.executable, str(ROOT / "pipeline/unreal/create_project.py")], env=env, check=True)
     try:
         package(args, OUT)

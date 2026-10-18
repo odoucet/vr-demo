@@ -1,0 +1,10 @@
+Mesure : hd-20261018-1543.log, 264 échantillons (1/s), chargement estimé à 0.0 s
+
+beat          FPS min  FPS moy  images perdues  GPU % max  CPU % max
+S1-NOIR             0     23.9             601         99         95  ⚠
+S2-PONTON          36     44.6             707         99         45  ⚠
+S3-ABYSSE          36     43.5            1638         99         55  ⚠
+S4-GUE             42     46.5             809         99         39  ⚠
+S5-RACINES         43     49.8             711         99         43  ⚠
+S6-LUNE            53     58.4             663         99         48  ⚠
+S7-LAC             61     68.1             201         99         49  ⚠

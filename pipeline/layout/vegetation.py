@@ -136,13 +136,13 @@ def main():
         h0 = math.radians(p["heading_deg"])
         nx, ny = -math.sin(h0), math.cos(h0)
         for side in (1, -1):
-            for _ in range(3):                                       # fougères et massifs de fleurs
+            for _ in range(4):                                       # fougères et massifs de fleurs
                 off = side * (p["width_m"] / 2 + rng.uniform(1.0, 9))
                 px, py = p["x"] + nx * off + rng.uniform(-0.5, 0.5), p["y"] + ny * off + rng.uniform(-0.5, 0.5)
                 z, d = F.at(px, py)
                 if z is None or d < 0.6 or excluded(px, py):
                     continue
-                if rng.uniform() < 0.6:
+                if rng.uniform() < 0.45:
                     P.fern(chunk(px, py), px, py, z, rng.uniform(0.5, 1.1), rng, COL["herbe"][rng.integers(3)] * 0.85)
                 else:
                     P.flower_patch(chunk(px, py), px, py, z, rng, COL["fleurs"][rng.integers(4)])
@@ -173,7 +173,7 @@ def main():
                 px, py = p["x"] + nx * off, p["y"] + ny * off
                 z, d = F.at(px, py)
                 if z is not None and d > 0.8 and not excluded(px, py):
-                    fl = COL["fleurs"][rng.integers(4)] if rng.uniform() < 0.35 else None
+                    fl = COL["fleurs"][rng.integers(4)] if rng.uniform() < 0.55 else None
                     P.bush(chunk(px, py), px, py, z, rng.uniform(0.9, 2.2), rng, COL["feuillage"][rng.integers(5)], fl)
             if rng.uniform() < 0.25:                                  # rocher au bord de l'eau
                 off = side * (p["width_m"] / 2 + rng.uniform(-0.8, 1.5))

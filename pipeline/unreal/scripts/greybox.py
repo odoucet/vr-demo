@@ -105,7 +105,9 @@ def material(name, color, emissive=False, roughness=0.9, specular=None, opacity=
 MPC_PATH = f"{GB}/MPC_Ambiance"
 MPC_VECTORS = {"SoleilDir": (0.9, -0.4, 0.2), "Lumiere": (1.0, 0.95, 0.85), "Ombre": (0.3, 0.35, 0.55),
                "CielAppoint": (0.1, 0.12, 0.2), "CielTeinte": (1.0, 1.0, 1.0), "Barque": (0.0, 0.0, 0.0)}
-MPC_DIGEST = spec_digest("mpc-v4", sorted(MPC_VECTORS))
+# CielLuminosite (ancien), apparition progressive des lucioles des berges et du nuage de l'envol
+MPC_SCALARS = {"CielLuminosite": 1.0, "LucioleFade": 1.0, "EnvolFade": 0.0}
+MPC_DIGEST = spec_digest("mpc-v5", sorted(MPC_VECTORS), sorted(MPC_SCALARS))
 
 
 def ambiance_mpc():
@@ -115,16 +117,19 @@ def ambiance_mpc():
         "MPC_Ambiance", GB, unreal.MaterialParameterCollection, unreal.MaterialParameterCollectionFactoryNew())
     if up_to_date(mpc, MPC_DIGEST):
         return mpc
-    sp = unreal.CollectionScalarParameter()
-    sp.set_editor_property("parameter_name", "CielLuminosite")
-    sp.set_editor_property("default_value", 1.0)
+    scalars = []
+    for name, v in MPC_SCALARS.items():
+        sp = unreal.CollectionScalarParameter()
+        sp.set_editor_property("parameter_name", name)
+        sp.set_editor_property("default_value", v)
+        scalars.append(sp)
     vps = []
     for name, v in MPC_VECTORS.items():
         vp = unreal.CollectionVectorParameter()
         vp.set_editor_property("parameter_name", name)
         vp.set_editor_property("default_value", unreal.LinearColor(*v, 1.0))
         vps.append(vp)
-    mpc.set_editor_property("scalar_parameters", [sp])
+    mpc.set_editor_property("scalar_parameters", scalars)
     mpc.set_editor_property("vector_parameters", vps)
     mark_saved(mpc, MPC_DIGEST)
     return mpc
@@ -249,9 +254,9 @@ col += rip * rip * (0.3 + 0.7 * fr) * (sky * 1.1 + Lumiere.rgb * 0.05) * (1.0 - 
 // écume le long des berges
 float foam = (1.0 - smoothstep(0.0, 0.05, shore)) * (0.55 + 0.45 * r2);
 col = lerp(col, Lumiere.rgb * 0.5 + sky * 0.35, foam * 0.75);
-// autour de la barque (B : x, y, lacet) : sillage en V, bourrelet d'écume le long de la coque, reflet de la
+// autour de la barque (B : x, y, lacet en z) : sillage en V, bourrelet d'écume le long de la coque, reflet de la
 // lanterne ; pas d'eau dans la coque
-float cb = cos(B.a), sb = sin(B.a);
+float cb = cos(B.z), sb = sin(B.z);
 float2 rel = WP.xy - B.xy;
 float lx = dot(rel, float2(cb, sb)), ly = dot(rel, float2(-sb, cb));
 float hull = (lx / 178.0) * (lx / 178.0) + (ly / 64.0) * (ly / 64.0);
@@ -312,8 +317,8 @@ float rim = pow(1.0 - saturate(dot(n, v)), 3.0) * saturate(dot(-v, l));
 col += albedo * Lumiere.rgb * rim * 0.8;
 // variation de la touche
 col *= 1.0 + (brush - 0.5) * 0.18;
-// lanterne de proue : lumière chaude de bougie qui vacille, sur tout ce qui l'entoure (B = barque : x, y, lacet)
-float cb = cos(B.a), sb = sin(B.a);
+// lanterne de proue : lumière chaude de bougie qui vacille, sur tout ce qui l'entoure (B = barque : x, y, lacet en z)
+float cb = cos(B.z), sb = sin(B.z);
 float3 lp = float3(B.x + cb * LANT_X, B.y + sb * LANT_X, LANT_Z);
 float dl = length(WP.xyz - lp);
 float flick = 0.86 + 0.1 * sin(T * 11.0) * sin(T * 6.7 + 1.3) + 0.04 * sin(T * 23.0);
@@ -382,18 +387,20 @@ WATER_MAP_TEX = look_texture("eau_carte", srgb=False)
 RIDES_TEX = look_texture("rides", srgb=False)
 
 
-def peint_material():
-    """M_Peint : couleur des sommets, ombrage deux tons ; voir PEINT_CODE."""
-    path = "/Game/Look/M_Peint"
+def peint_material(name="M_Peint", dithered=False):
+    """M_Peint : couleur des sommets, ombrage deux tons ; voir PEINT_CODE. dithered : fondu tramé entre niveaux de
+    détail (arbres instanciés : ils ne « se redessinent » plus d'un coup)."""
+    path = f"/Game/Look/{name}"
     brush = brush_texture()
     default_tex = look_texture("tex-mousse")
-    digest = spec_digest("peint-v12", PEINT_CODE, TRI_CODE, TOP_CODE, DETAIL_CODE, sorted(DETAIL_SCALARS.items()),
+    digest = spec_digest("peint-v13", dithered, PEINT_CODE, TRI_CODE, TOP_CODE, DETAIL_CODE, sorted(DETAIL_SCALARS.items()),
                          MPC_DIGEST, eal.get_metadata_tag(brush, "source_sha1"))
     existing = eal.load_asset(path) if eal.does_asset_exist(path) else None
     if up_to_date(existing, digest):
         return existing
-    mat = existing or tools.create_asset("M_Peint", "/Game/Look", unreal.Material, unreal.MaterialFactoryNew())
+    mat = existing or tools.create_asset(name, "/Game/Look", unreal.Material, unreal.MaterialFactoryNew())
     mel.delete_all_material_expressions(mat)
+    mat.set_editor_property("dithered_lod_transition", dithered)
     # forêt instanciée (HISM) : sans cet usage déclaré, le jeu empaqueté remplace le matériau par celui par défaut
     mat.set_editor_property("used_with_instanced_static_meshes", True)
     mat.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_UNLIT)
@@ -474,13 +481,14 @@ def peint_material():
     mel.connect_material_property(node, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
     mel.recompile_material(mat)
     if mel.get_statistics(mat).num_pixel_shader_instructions <= 0:
-        raise RuntimeError("M_Peint ne compile pas (voir l'éditeur de matériau)")
+        raise RuntimeError(f"{name} ne compile pas (voir l'éditeur de matériau)")
     mark_saved(mat, digest)
     return mat
 
 
 MATS = {
     "Peint": peint_material(),
+    "PeintArbreBase": peint_material("M_PeintArbre", dithered=True),
     "Terrain": material("Terrain", (0.16, 0.22, 0.08)),
     "Eau": material("Eau", (0.01, 0.025, 0.035), roughness=0.7, specular=0.08, opacity=0.55),
     "Bois": material("Bois", (0.18, 0.11, 0.06)),
@@ -496,17 +504,24 @@ MATS = {
 }
 
 
+# Lucioles en particules : carré orienté face à l'œil (vecteurs droite / haut de la vue), dérive lente propre à
+# chaque luciole (phase dans uv0), lueur douce dessinée dans le carré (coin dans uv1), clignotement, apparition
+# progressive (paramètre de collection animé par la séquence). Additif, sans écriture de profondeur.
 FIREFLY_CODE_WPO = """float ph = UV.x * 6.2832;
-return Amp * float3(sin(T * 0.61 + ph), cos(T * 0.47 + ph * 1.7), 0.6 * sin(T * 0.83 + UV.y * 6.2832));"""
-FIREFLY_CODE_BLINK = """float b = 0.5 + 0.5 * sin(T * (1.1 + UV.y) + UV.x * 40.0);
-return 0.25 + 0.75 * b * b;"""
+float3 drift = Amp * float3(sin(T * 0.61 + ph), cos(T * 0.47 + ph * 1.7), 0.6 * sin(T * 0.83 + UV.y * 6.2832));
+return drift + (Right.xyz * C.x + Up.xyz * C.y) * Size;"""
+FIREFLY_CODE_GLOW = """float d2 = dot(C, C);
+float b = 0.5 + 0.5 * sin(T * (1.1 + UV.y) + UV.x * 40.0);
+float blink = 0.2 + 0.8 * b * b;
+float core = exp(-d2 * 18.0);
+float halo = exp(-d2 * 3.5) * 0.35 * saturate(1.0 - d2);   // nul au bord du carré (sinon on voit le carré)
+return Col.rgb * (core + halo) * blink * saturate(Fade * 2.0 - UV.y);   // s'allument une à une"""
 
 
-def firefly_material(color=(4.0, 5.0, 1.2), amp_cm=30.0, name="Luciole"):
-    """Lucioles : émissif non éclairé qui clignote, sommets déplacés en WPO (dérive lente, phase par luciole
-    lue dans l'UV). Animation entièrement dans le shader : rien à évaluer sur le CPU du Quest."""
+def firefly_material(color=(4.0, 5.0, 1.2), amp_cm=30.0, name="Luciole", size_cm=14.0, fade="LucioleFade"):
+    """Lucioles : particules lumineuses face à l'œil, animées entièrement dans le shader (rien sur le CPU)."""
     path = f"{GB}/M_GB_{name}"
-    digest = spec_digest("luciole-v3", color, amp_cm, FIREFLY_CODE_WPO, FIREFLY_CODE_BLINK)
+    digest = spec_digest("luciole-v4", color, amp_cm, size_cm, fade, FIREFLY_CODE_WPO, FIREFLY_CODE_GLOW, MPC_DIGEST)
     existing = eal.load_asset(path) if eal.does_asset_exist(path) else None
     if up_to_date(existing, digest):
         return existing
@@ -514,45 +529,56 @@ def firefly_material(color=(4.0, 5.0, 1.2), amp_cm=30.0, name="Luciole"):
     mel.delete_all_material_expressions(mat)
     mat.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_UNLIT)
     mat.set_editor_property("float_precision_mode", unreal.MaterialFloatPrecisionMode.MFPM_FULL)   # Quest : pas de calcul en 16 bits
+    mat.set_editor_property("blend_mode", unreal.BlendMode.BLEND_ADDITIVE)
     mat.set_editor_property("two_sided", True)
-    t = mel.create_material_expression(mat, unreal.MaterialExpressionTime, -900, 0)
-    uv = mel.create_material_expression(mat, unreal.MaterialExpressionTextureCoordinate, -900, 150)
-    amp = mel.create_material_expression(mat, unreal.MaterialExpressionConstant, -900, 300)
-    amp.set_editor_property("r", amp_cm)
-
-    def custom(code, out_type, names, x, y):
-        node = mel.create_material_expression(mat, unreal.MaterialExpressionCustom, x, y)
-        node.set_editor_property("code", code)
-        node.set_editor_property("output_type", out_type)
-        inputs = []
-        for n in names:
-            ci = unreal.CustomInput()
-            ci.set_editor_property("input_name", n)
-            inputs.append(ci)
-        node.set_editor_property("inputs", inputs)
-        return node
-
-    wpo = custom(FIREFLY_CODE_WPO, unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["T", "UV", "Amp"], -600, 200)
-    blink = custom(FIREFLY_CODE_BLINK, unreal.CustomMaterialOutputType.CMOT_FLOAT1, ["T", "UV"], -600, 0)
-    for node in (wpo, blink):
-        mel.connect_material_expressions(t, "", node, "T")
-        mel.connect_material_expressions(uv, "", node, "UV")
-    mel.connect_material_expressions(amp, "", wpo, "Amp")
-    col = mel.create_material_expression(mat, unreal.MaterialExpressionConstant3Vector, -600, -150)
+    t = mel.create_material_expression(mat, unreal.MaterialExpressionTime, -1000, 0)
+    uv0 = mel.create_material_expression(mat, unreal.MaterialExpressionTextureCoordinate, -1000, 100)
+    uv1 = mel.create_material_expression(mat, unreal.MaterialExpressionTextureCoordinate, -1000, 200)
+    uv1.set_editor_property("coordinate_index", 1)
+    consts = {}
+    for i, (n, v) in enumerate((("Amp", amp_cm), ("Size", size_cm))):
+        consts[n] = mel.create_material_expression(mat, unreal.MaterialExpressionConstant, -1000, 300 + 80 * i)
+        consts[n].set_editor_property("r", v)
+    col = mel.create_material_expression(mat, unreal.MaterialExpressionConstant3Vector, -1000, 500)
     col.set_editor_property("constant", unreal.LinearColor(*color, 1.0))
-    mul = mel.create_material_expression(mat, unreal.MaterialExpressionMultiply, -300, -50)
-    mel.connect_material_expressions(col, "", mul, "A")
-    mel.connect_material_expressions(blink, "", mul, "B")
-    mel.connect_material_property(mul, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
+    axes = []
+    for i, v in enumerate(((1, 0, 0), (0, 1, 0))):                     # droite et haut de la vue, en monde
+        c = mel.create_material_expression(mat, unreal.MaterialExpressionConstant3Vector, -1000, 600 + 100 * i)
+        c.set_editor_property("constant", unreal.LinearColor(*v, 1.0))
+        tr = mel.create_material_expression(mat, unreal.MaterialExpressionTransform, -800, 600 + 100 * i)
+        tr.set_editor_property("transform_source_type", unreal.MaterialVectorCoordTransformSource.TRANSFORMSOURCE_VIEW)
+        tr.set_editor_property("transform_type", unreal.MaterialVectorCoordTransform.TRANSFORM_WORLD)
+        mel.connect_material_expressions(c, "", tr, "")
+        axes.append(tr)
+    fd = mel.create_material_expression(mat, unreal.MaterialExpressionCollectionParameter, -1000, 800)
+    fd.set_editor_property("collection", MPC)
+    fd.set_editor_property("parameter_name", fade)
+    wpo = custom_node(mat, FIREFLY_CODE_WPO, unreal.CustomMaterialOutputType.CMOT_FLOAT3,
+                      ["T", "UV", "C", "Amp", "Size", "Right", "Up"], -500, 300)
+    glow = custom_node(mat, FIREFLY_CODE_GLOW, unreal.CustomMaterialOutputType.CMOT_FLOAT3,
+                       ["T", "UV", "C", "Col", "Fade"], -500, 0)
+    for node in (wpo, glow):
+        mel.connect_material_expressions(t, "", node, "T")
+        mel.connect_material_expressions(uv0, "", node, "UV")
+        mel.connect_material_expressions(uv1, "", node, "C")
+    mel.connect_material_expressions(consts["Amp"], "", wpo, "Amp")
+    mel.connect_material_expressions(consts["Size"], "", wpo, "Size")
+    mel.connect_material_expressions(axes[0], "", wpo, "Right")
+    mel.connect_material_expressions(axes[1], "", wpo, "Up")
+    mel.connect_material_expressions(col, "", glow, "Col")
+    mel.connect_material_expressions(fd, "", glow, "Fade")
+    mel.connect_material_property(glow, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
     mel.connect_material_property(wpo, "", unreal.MaterialProperty.MP_WORLD_POSITION_OFFSET)
     mel.recompile_material(mat)
+    if mel.get_statistics(mat).num_pixel_shader_instructions <= 0:
+        raise RuntimeError(f"M_GB_{name} ne compile pas")
     mark_saved(mat, digest)
     return mat
 
 
 MATS["Luciole"] = firefly_material()
 # nuage de l'envol : grandes boucles irrégulières propres à chaque luciole (la trajectoire du nuage était trop droite)
-MATS["LucioleEnvol"] = firefly_material(amp_cm=260.0, name="LucioleEnvol")
+MATS["LucioleEnvol"] = firefly_material(amp_cm=260.0, name="LucioleEnvol", size_cm=16.0, fade="EnvolFade")
 
 FLICKER = "(0.86 + 0.1 * sin(T * 11.0) * sin(T * 6.7 + 1.3) + 0.04 * sin(T * 23.0))"
 
@@ -599,23 +625,23 @@ SURFACES = {
     "PeintRoche": ("tex-roche", None, 140.0, 0.7, 0.35),
     "PeintTerrain": ("tex-terre", "tex-herbe", 350.0, 0.7, 0.4),
     "PeintPlanches": ("tex-planches", None, 90.0, 0.7, 0.5),
-    "PeintArbre": ("tex-mousse", None, 240.0, 0.75, 0.45, 0.45),      # arbres instanciés : teinte par arbre
-    "PeintTronc": ("tex-ecorce", None, 150.0, 0.7, 0.3, 0.25),
+    "PeintArbre": ("tex-mousse", None, 240.0, 0.75, 0.45, 0.45, "PeintArbreBase"),   # arbres instanciés : teinte par arbre
+    "PeintTronc": ("tex-ecorce", None, 150.0, 0.7, 0.3, 0.25, "PeintArbreBase"),
 }
 
 
-def surface_instance(name, tex1, tex2, scale, strength, mix, vary=0.0):
+def surface_instance(name, tex1, tex2, scale, strength, mix, vary=0.0, parent="Peint"):
     path = f"/Game/Look/MI_{name}"
     t1 = look_texture(tex1)
     t2 = look_texture(tex2) if tex2 else t1
-    digest = spec_digest("mi-v2", eal.get_metadata_tag(MATS["Peint"], "source_sha1"), tex1, tex2, scale, strength, mix, vary,
+    digest = spec_digest("mi-v3", eal.get_metadata_tag(MATS[parent], "source_sha1"), parent, tex1, tex2, scale, strength, mix, vary,
                          eal.get_metadata_tag(t1, "source_sha1"), eal.get_metadata_tag(t2, "source_sha1"))
     mi = eal.load_asset(path) if eal.does_asset_exist(path) else None
     if up_to_date(mi, digest):
         return mi
     mi = mi or tools.create_asset(f"MI_{name}", "/Game/Look", unreal.MaterialInstanceConstant,
                                   unreal.MaterialInstanceConstantFactoryNew())
-    mi.set_editor_property("parent", MATS["Peint"])
+    mi.set_editor_property("parent", MATS[parent])
     mel.set_material_instance_texture_parameter_value(mi, "Detail", t1)
     mel.set_material_instance_texture_parameter_value(mi, "Detail2", t2)
     for k, v in (("DetailScale", scale), ("DetailStrength", strength), ("ColorMix", mix), ("Blend2", 1.0 if tex2 else 0.0),
@@ -649,6 +675,8 @@ def build_mesh(name, data, uv_scale_cm=400.0):
     k = 100.0 / uv_scale_cm
     buffers.uv0 = ([unreal.Vector2D(*uv) for uv in data["uv"]] if "uv" in data else
                    [unreal.Vector2D(v[0] * k, -v[1] * k) for v in data["vertices"]])
+    if "uv1" in data:                                  # second canal (coins des particules de lucioles)
+        buffers.uv1 = [unreal.Vector2D(*uv) for uv in data["uv1"]]
     # Look peint : couleur par sommet (sRGB → linéaire), alpha = occlusion ; normales choisies si fournies
     # (feuillages sphériques), sinon recalculées.
     srgb = lambda c: ((c + 0.055) / 1.055) ** 2.4 if c > 0.04045 else c / 12.92     # noqa: E731
@@ -780,13 +808,8 @@ def oriented(t, ahead_m, side_m, z_m=0.0):
     return ue(x, y, z_m), unreal.Rotator(0, 0, ue_yaw(p["heading_deg"]))
 
 
-# Ponton : tablier de 6,5 m × 2 m depuis la berge droite (à 7 m de l'axe) vers la trajectoire, sur pilotis.
-pm = MARKS["ponton"]
-for i, side in enumerate((-8.5, -6.0, -3.5)):
-    loc, rot = oriented(pm["t"], pm["ahead_m"], side, 0.0)
-    place_mesh(CYL, f"GB_PontonPieu{i}", "Bois", unreal.Vector(loc.x, loc.y, -50), rot, (0.25, 0.25, 2.2))
-loc, rot = oriented(pm["t"], pm["ahead_m"], -6.0, 0.75)
-deck = place_mesh(CUBE, "GB_PontonTablier", "Bois", loc, unreal.Rotator(0, 0, rot.yaw + 90), (6.5, 2.0, 0.15))
+# Ponton et arche des racines : modèles 3D (images d'Olivier refs/ponton.png, refs/racine.png → TRELLIS.2),
+# placés plus bas, après l'import des modèles (place_props).
 
 # Barque : racine invisible (animée par la séquence, porte la caméra) + modèle 3D attaché.
 # Modèle : assets/3d/barque/trellis2-s42 (image refs/barque.png, repère standard). Mesures à l'import :
@@ -827,6 +850,48 @@ def import_glb(rel_glb, dest_dir, max_tris=None):
     return mesh
 
 
+def hull_floor(model):
+    """Plancher à la forme exacte de la coque à la ligne de flottaison : sommets du maillage de la barque entre
+    -10 et +15 cm autour de l'eau, ramenés dans le repère de la barque, enveloppe convexe réduite de 4 %, posée
+    à +3 cm. Opaque, il cache l'eau à l'intérieur de la coque (retour d'Olivier : l'eau passait sous le plancher
+    elliptique, trop petit)."""
+    dm = unreal.DynamicMesh()
+    unreal.GeometryScript_AssetUtils.copy_mesh_from_static_mesh_v2(model, dm, unreal.GeometryScriptCopyMeshFromAssetOptions(), unreal.GeometryScriptMeshReadLOD())
+    vl = unreal.GeometryScript_MeshQueries.get_all_vertex_positions(dm, True)
+    vl = next(x for x in (vl if isinstance(vl, tuple) else (vl,)) if type(x).__name__ == "GeometryScriptVectorList")
+    pts = []
+    for v in unreal.GeometryScript_List.convert_vector_list_to_array(vl):
+        x, y, z = v.x * BOAT_SCALE, v.y * BOAT_SCALE, v.z * BOAT_SCALE_Z + BOAT_Z
+        bx, by = y, -x                                   # rotation de -90° (relative_rotation du modèle)
+        if -10.0 <= z <= 15.0:
+            pts.append((round(bx, 1), round(by, 1)))
+    pts = sorted(set(pts))
+    if len(pts) < 3:
+        return FLOOR_MESH
+
+    def cross(o, a, b):
+        return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+    lower, upper = [], []
+    for p_ in pts:
+        while len(lower) >= 2 and cross(lower[-2], lower[-1], p_) <= 0:
+            lower.pop()
+        lower.append(p_)
+    for p_ in reversed(pts):
+        while len(upper) >= 2 and cross(upper[-2], upper[-1], p_) <= 0:
+            upper.pop()
+        upper.append(p_)
+    hull = lower[:-1] + upper[:-1]
+    cx, cy = sum(p_[0] for p_ in hull) / len(hull), sum(p_[1] for p_ in hull) / len(hull)
+    ring = [[(cx + (x - cx) * 0.96) / 100.0, -(cy + (y - cy) * 0.96) / 100.0, 0.03] for x, y in hull]
+    verts = [[cx / 100.0, -cy / 100.0, 0.03]] + ring
+    n = len(ring)
+    data = {"vertices": verts, "triangles": [[0, 1 + k, 1 + (k + 1) % n] for k in range(n)],
+            "normals": [[0, 0, 1]] * len(verts), "color": [0.32, 0.22, 0.14, 0.8]}
+    unreal.log(f"Plancher de la coque : {n} points, {max(p_[0] for p_ in hull) - min(p_[0] for p_ in hull):.0f} × "
+               f"{max(p_[1] for p_ in hull) - min(p_[1] for p_ in hull):.0f} cm")
+    return build_mesh("PlancherCoque", data)
+
+
 def boat_mesh():
     return import_glb("barque/trellis2-s42", BOAT_DIR, 30000)
 
@@ -856,7 +921,7 @@ if model is not None:
     paper.static_mesh_component.set_editor_property("cast_shadow", False)
     # Plancher de la barque : planches opaques juste au-dessus de la ligne de flottaison, dans la coque ; l'eau
     # ne se voit plus à l'intérieur même si le masque du shader de l'eau échoue (retour d'Olivier).
-    fl = place_mesh(FLOOR_MESH, "PlancherBarque", "PeintPlanches", boat.get_actor_location())
+    fl = place_mesh(hull_floor(model), "PlancherBarque", "PeintPlanches", boat.get_actor_location())
     fl.attach_to_actor(boat, "", unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, False)
     fl.root_component.set_editor_property("relative_location", unreal.Vector(0, 0, 0))
     fl.root_component.set_editor_property("relative_rotation", unreal.Rotator(0, 0, 0))
@@ -934,7 +999,7 @@ if os.path.exists(SKY_PNG):
         sky_tex = eal.load_asset(f"{GB}/ciel")
         eal.set_metadata_tag(sky_tex, "source_sha1", sky_digest)
         eal.save_loaded_asset(sky_tex)
-    SKY_WATER_VERSION = "ciel-eau-v6"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
+    SKY_WATER_VERSION = "ciel-eau-v7"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
     sky_mat_path = f"{GB}/M_GB_CielPeint"
     sky_mat = eal.load_asset(sky_mat_path) if eal.does_asset_exist(sky_mat_path) else None
     rebuild_sky_water = not up_to_date(sky_mat, spec_digest(SKY_WATER_VERSION, sky_digest, MPC_DIGEST, WATER_CODE,
@@ -1058,7 +1123,7 @@ return float3(wave * W * 0.04 * (1.0 - a), 0, wave * W * 0.09 * lat + sin(T * 0.
 }
 
 
-def peint_tex_material(name, texture, anim=None, box=None, glow=None):
+def peint_tex_material(name, texture, anim=None, box=None, glow=None, tint=None):
     """Look peint pour un modèle texturé (créatures, barque) : couleur de la texture, même ombrage deux tons
     que M_Peint. anim : animation procédurale (ANIM_CODES) ; glow : teinte de bioluminescence (abysses)."""
     path = f"/Game/Look/{name}"
@@ -1066,7 +1131,7 @@ def peint_tex_material(name, texture, anim=None, box=None, glow=None):
     if box is not None:
         box_def = "".join(f"#define {k} {v:.3f}\n" for k, v in zip(("BXN", "BXX", "BYN", "BYX", "BZN", "BZX"), box))
     anim_code = box_def + ANIM_CODES[anim] if anim else None
-    digest = spec_digest("peint-tex-v4", PEINT_CODE, MPC_DIGEST, texture.get_path_name(), anim_code, glow)
+    digest = spec_digest("peint-tex-v5", PEINT_CODE, MPC_DIGEST, texture.get_path_name(), anim_code, glow, tint)
     existing = eal.load_asset(path) if eal.does_asset_exist(path) else None
     if up_to_date(existing, digest):
         return existing
@@ -1078,7 +1143,9 @@ def peint_tex_material(name, texture, anim=None, box=None, glow=None):
     tex = mel.create_material_expression(mat, unreal.MaterialExpressionTextureSample, -1300, -200)
     tex.set_editor_property("texture", texture)
     # la texture est déjà décodée (linéaire) : on la réencode pour le code commun, qui décode les couleurs sRGB
-    enc = custom_node(mat, "return pow(max(C, 0.0), 1.0 / 2.2);", unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["C"], -1100, -200)
+    tn = tint or (1.0, 1.0, 1.0)                     # teinte (raccord avec la palette du décor)
+    enc = custom_node(mat, f"return pow(max(C * float3({tn[0]}, {tn[1]}, {tn[2]}), 0.0), 1.0 / 2.2);",
+                      unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["C"], -1100, -200)
     mel.connect_material_expressions(tex, "RGB", enc, "C")
     one = mel.create_material_expression(mat, unreal.MaterialExpressionConstant, -1100, -100)
     one.set_editor_property("r", 1.0)
@@ -1129,7 +1196,7 @@ def peint_tex_material(name, texture, anim=None, box=None, glow=None):
     return mat
 
 
-def painted_model(model, name, anim=None, glow=None):
+def painted_model(model, name, anim=None, glow=None, tint=None):
     """Remplace les matériaux glTF du modèle par le look peint (texture de couleur conservée)."""
     b = model.get_bounding_box()
     box = (b.min.x, b.max.x, b.min.y, b.max.y, b.min.z, b.max.z)
@@ -1142,7 +1209,7 @@ def painted_model(model, name, anim=None, glow=None):
         if tex is None:
             mats.append(None)
             continue
-        mats.append(peint_tex_material(f"M_Peint_{name}{i}", tex, anim, box, glow))
+        mats.append(peint_tex_material(f"M_Peint_{name}{i}", tex, anim, box, glow, tint))
     return mats
 
 
@@ -1182,6 +1249,54 @@ if model is not None:      # la barque prend aussi le look peint
     for i, pm in enumerate(painted_model(model, "Barque")):
         if pm is not None:
             hull.static_mesh_component.set_material(i, pm)
+
+# --- Ponton et arche des racines (modèles 3D, look peint) -------------------------------------------------------
+def place_model(model, label, loc, yaw, size_cm, z_base_cm, painted_name, tint=None):
+    """Pose un modèle importé : mis à l'échelle sur sa boîte (size_cm = (x, y, z), None = proportionnel),
+    base posée à z_base_cm, tourné de yaw ; look peint (texture conservée)."""
+    b = model.get_bounding_box()
+    ext = (b.max.x - b.min.x, b.max.y - b.min.y, b.max.z - b.min.z)
+    sc = [size_cm[i] / ext[i] if size_cm[i] else None for i in range(3)]
+    ref = next(v for v in sc if v)
+    sc = [v or ref for v in sc]
+    a = actors.spawn_actor_from_object(model, unreal.Vector(loc.x, loc.y, z_base_cm - b.min.z * sc[2]), unreal.Rotator(0, 0, yaw))
+    tag(a, label)
+    a.set_actor_scale3d(unreal.Vector(*sc))
+    a.static_mesh_component.set_collision_enabled(unreal.CollisionEnabled.NO_COLLISION)
+    for i, pm_ in enumerate(painted_model(model, painted_name, tint=tint)):
+        if pm_ is not None:
+            a.static_mesh_component.set_material(i, pm_)
+    return a
+
+
+pm = MARKS["ponton"]
+pose_p = pose_at(pm["t"])
+across_yaw = -pose_p["heading_deg"] - 90.0               # axe X du modèle en travers de la rivière
+ponton = import_glb("ponton/trellis2-s42", "/Game/Assets/Ponton", 15000)
+if ponton is not None:
+    # trois travées de 2,2 m depuis la berge droite vers la trajectoire, tablier à 0,9 m, pieds dans l'eau
+    for i, side in enumerate((-7.7, -5.5, -3.3)):
+        loc, _ = oriented(pm["t"], pm["ahead_m"], side, 0.0)
+        place_model(ponton, f"GB_Ponton{i}", loc, across_yaw + (180.0 if i % 2 else 0.0), (225.0, 200.0, 200.0), -110.0, "Ponton",
+                    tint=(0.85, 0.72, 0.58))
+else:                                                   # repli : pilotis et tablier
+    for i, side in enumerate((-8.5, -6.0, -3.5)):
+        loc, rot = oriented(pm["t"], pm["ahead_m"], side, 0.0)
+        place_mesh(CYL, f"GB_PontonPieu{i}", "Bois", unreal.Vector(loc.x, loc.y, -50), rot, (0.25, 0.25, 2.2))
+    loc, rot = oriented(pm["t"], pm["ahead_m"], -6.0, 0.75)
+    place_mesh(CUBE, "GB_PontonTablier", "Bois", loc, unreal.Rotator(0, 0, rot.yaw + 90), (6.5, 2.0, 0.15))
+
+am = MARKS["arche-racines"]
+pose_a = pose_at(am["t"])
+racine = import_glb("racine/trellis2-s42", "/Game/Assets/Racine", 30000)
+if racine is not None:
+    # l'arche enjambe la rivière (largeur + 9 m), haute de 11 m : ~6-7 m de passage sous la boucle
+    loc, _ = oriented(am["t"], 0.0, 0.0, 0.0)
+    place_model(racine, "GB_ArcheRacinesModele", loc, -pose_a["heading_deg"] - 90.0,
+                ((pose_a["width_m"] + 9.0) * 100.0, None, 1100.0), -80.0, "Racine", tint=(0.42, 0.34, 0.24))   # écorce sombre moussue (S5)
+    for a in actors.get_all_level_actors():
+        if a.get_actor_label() == "GB_ArcheRacines":       # l'ancien tube
+            actors.destroy_actor(a)
 
 # Lumière de crépuscule, ciel, brume.
 sun = tag(actors.spawn_actor_from_class(unreal.DirectionalLight, unreal.Vector(0, 0, 3000), unreal.Rotator(0, -8, ue_yaw(start["heading_deg"]) + 150)), "Soleil")

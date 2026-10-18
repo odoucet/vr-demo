@@ -364,6 +364,8 @@ def broadleaf_plan(rng, leaf, trunk, height=PROTO_HEIGHT):
 
 # par niveau : (subdivision des touffes de niveau 0..3 ou None si absentes, côtés du tronc, branches)
 # (mesure au casque du 18/10 : la forêt instanciée coûtait 6,8 ms ; LOD1 allégé, LOD0 réservé aux arbres tout proches)
+# Niveaux cohérents (retour d'Olivier : on voyait les arbres « se redessiner ») : les touffes principales restent à
+# tous les niveaux, seule leur finesse baisse ; les petites touffes disparaissent seulement de loin.
 LOD_SPEC = {0: ((2, 1, 1, 0), 8, True), 1: ((1, 0, 0, None), 6, True), 2: ((0, 0, None, None), 4, False)}
 
 
@@ -373,7 +375,7 @@ def build_broadleaf(mesh, plan, lod):
     z0, z1 = c[2] - r, c[2] + r * 1.2
     cylinder(mesh, [0, 0, -0.3], [c[0], c[1], c[2] - r * 0.2], h * 0.035, h * 0.022, plan["trunk"], sides=sides)
     rng = np.random.default_rng(7)                    # ondulation identique d'un niveau à l'autre
-    blobs = plan["blobs"] if lod < 2 else plan["blobs"][:4]
+    blobs = plan["blobs"]
     for center, radii, col, level in blobs:
         sd = subs[level]
         if sd is None:

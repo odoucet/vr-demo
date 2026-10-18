@@ -168,6 +168,12 @@ def write(path, text):
     return True
 
 
+def extra_cvars():
+    """Variables console propres à une variante d'APK (BARQUE_EXTRA_CVARS="a=1;b=2"), ex. la démo « HD »."""
+    pairs = [kv.strip() for kv in os.environ.get("BARQUE_EXTRA_CVARS", "").split(";") if kv.strip()]
+    return ("\n[SystemSettings]\n; variante d'empaquetage\n" + "\n".join(pairs) + "\n") if pairs else ""
+
+
 def main():
     uproject = project()
     base = uproject.parent
@@ -185,7 +191,7 @@ def main():
         # Variante d'empaquetage (package_android.py --variant) : carte de démarrage et nom de paquet.
         (base / "Config" / "DefaultEngine.ini", ENGINE_INI.format(
             default_map=os.environ.get("BARQUE_DEFAULT_MAP", "/Game/Maps/J1_Spike.J1_Spike"),
-            package_name=os.environ.get("BARQUE_PACKAGE_NAME", "com.odoucet.barque"))),
+            package_name=os.environ.get("BARQUE_PACKAGE_NAME", "com.odoucet.barque")) + extra_cvars()),
         (base / "Config" / "DefaultGame.ini", GAME_INI.format(project_id=project_id)),
         (base / "Config" / "DefaultEditorPerProjectUserSettings.ini", EDITOR_USER_INI),
     ] if write(p, t)]

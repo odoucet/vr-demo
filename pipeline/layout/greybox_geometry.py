@@ -197,37 +197,54 @@ def reeds(river, field, bounds, seed=5):
 
 
 def lily_pads(river, seed=9):
-    """Nénuphars (S3) : disques posés sur l'eau entre 0:48 et 1:30, à plus de 2 m de la trajectoire."""
+    """Nénuphars (S3) : feuilles rondes au bord irrégulier, avec l'encoche en V et le bord légèrement relevé,
+    une teinte par feuille ; posées sur l'eau entre 0:48 et 1:30, à plus de 2 m de la trajectoire."""
     rng = np.random.default_rng(seed)
+    base = np.array(look()["nenuphar"])
     s = [p for p in river["samples"] if 48 <= p["t"] <= 90]
-    verts, tris = [], []
+    verts, tris, colors = [], [], []
+    seg = 20
     for p in s:
         h0 = math.radians(p["heading_deg"])
         nx, ny = -math.sin(h0), math.cos(h0)
         for _ in range(7):
             off = rng.choice([-1, 1]) * rng.uniform(2.0, p["width_m"] / 2 - 0.5)
             cx, cy, r = p["x"] + nx * off, p["y"] + ny * off, rng.uniform(0.25, 0.6)
+            notch = rng.uniform(0, 2 * math.pi)
+            col = np.clip(base * rng.uniform(0.8, 1.2) + rng.uniform(-0.03, 0.03, 3), 0, 1)
             b = len(verts)
             verts.append([cx, cy, 0.03])
-            for k in range(8):
-                a = 2 * math.pi * k / 8
-                verts.append([cx + r * math.cos(a), cy + r * math.sin(a), 0.03])
-            tris.extend([[b, b + 1 + k, b + 1 + (k + 1) % 8] for k in range(7)])   # encoche : 7 secteurs sur 8
-    return mesh_dict(verts, tris)
+            colors.append(list(col) + [1.0])
+            for k in range(seg + 1):                                   # de bord d'encoche à bord d'encoche
+                a = notch + 0.32 + (2 * math.pi - 0.64) * k / seg
+                rr = r * (1 + 0.05 * math.sin(k * 2.7 + cx))
+                verts.append([cx + rr * math.cos(a), cy + rr * math.sin(a), 0.045])
+                colors.append(list(col * 1.08) + [1.0])
+            tris.extend([[b, b + 1 + k, b + 2 + k] for k in range(seg)])
+    m = mesh_dict(verts, tris)
+    m["colors"] = np.round(np.asarray(colors), 3).tolist()
+    return m
 
 
 def octahedra(centers, size, rng):
-    """Octaèdres (lucioles) ; les 6 sommets de chacun partagent un UV aléatoire = phase de vol et de clignotement
-    lue par le matériau (dérive en WPO, aucun coût CPU)."""
-    verts, tris, uv = [], [], []
+    """Lucioles en « particules » : un petit carré par luciole, ses 4 sommets au même point ; le matériau l'oriente
+    face à l'œil et y dessine une lueur douce (uv1 = coin du carré). uv0 = phase aléatoire (vol, clignotement).
+    (Nom conservé : c'étaient des octaèdres, trouvés trop « losanges » au casque.)"""
+    verts, tris, uv, uv1 = [], [], [], []
     for c in centers:
-        r = size * rng.uniform(0.6, 1.4)
         base = len(verts)
-        verts += [c + d for d in (np.array(v) * r for v in ((1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1)))]
-        tris += [[base + a, base + b, base + c_] for a, b, c_ in
-                 ((0, 2, 4), (2, 1, 4), (1, 3, 4), (3, 0, 4), (2, 0, 5), (1, 2, 5), (3, 1, 5), (0, 3, 5))]
-        uv += [rng.uniform(0, 1, 2).tolist()] * 6
-    return mesh_dict(verts, tris, uv)
+        # coins écartés de 5 mm : un carré d'aire nulle est supprimé à la construction du maillage (triangles
+        # dégénérés) ; la taille visible est donnée par le shader
+        e = 0.005
+        verts += [[c[0] - e, c[1] - e, c[2]], [c[0] + e, c[1] - e, c[2]], [c[0] + e, c[1] + e, c[2]], [c[0] - e, c[1] + e, c[2]]]
+        ph = rng.uniform(0, 1, 2).tolist()
+        uv += [ph] * 4
+        uv1 += [[-1, -1], [1, -1], [1, 1], [-1, 1]]
+        tris += [[base, base + 1, base + 2], [base, base + 2, base + 3]]
+    m = mesh_dict(verts, tris, uv)
+    m["uv1"] = uv1
+    m["normals"] = [[0, 0, 1]] * len(verts)
+    return m
 
 
 def fireflies(n=400, size=0.07, extent=(28.0, 22.0, 7.0), seed=11):
@@ -271,7 +288,7 @@ def main():
     }
     # Couleur unique (look peint) pour les maillages sans couleurs par sommet ; alpha = occlusion.
     L = look()
-    for name, key, ao in (("ArcheRacines", "ecorce_colossal", 0.8), ("Roseaux", "roseau", 0.9), ("Nenuphars", "nenuphar", 1.0)):
+    for name, key, ao in (("ArcheRacines", "ecorce_colossal", 0.8), ("Roseaux", "roseau", 0.9)):
         data["meshes"][name]["color"] = L[key] + [ao]
     OUT.write_text(json.dumps(data, separators=(",", ":")), encoding="utf-8")
     for name, m in data["meshes"].items():

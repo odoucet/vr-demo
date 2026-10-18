@@ -219,10 +219,17 @@ if mpc is not None:
         for t in (t_in, max(t_in, t_out)):
             for name, v in values.items():
                 msec.add_color_parameter_key(name, frame(t), unreal.LinearColor(*v, 1.0))
+    # Apparition progressive des lucioles (retour d'Olivier : « elles apparaissent d'un coup ») : celles des berges
+    # s'allument une à une pendant 10 s à la fin du noir, le nuage de l'envol en 6 s quand il sort de l'eau.
+    t_env_fade = 137.8 + MUSIC_OFFSET
+    for t, v in ((0.0, 0.0), (MUSIC_OFFSET - 2.0, 0.0), (MUSIC_OFFSET + 8.0, 1.0)):
+        msec.add_scalar_parameter_key("LucioleFade", frame(t), v)
+    for t, v in ((0.0, 0.0), (t_env_fade - 0.5, 0.0), (t_env_fade + 6.0, 1.0)):
+        msec.add_scalar_parameter_key("EnvolFade", frame(t), v)
     # Barque (x, y cm, z = 0, lacet en radians) pour les shaders : lumière de la lanterne sur le décor et l'eau,
     # sillage et masque de l'eau dans la coque.
     for t, (bx, by, _), yaw in boat_keys:
-        msec.add_color_parameter_key("Barque", frame(t), unreal.LinearColor(bx, by, 0.0, math.radians(yaw)))
+        msec.add_color_parameter_key("Barque", frame(t), unreal.LinearColor(bx, by, math.radians(yaw), 1.0))   # lacet en z : l'alpha n'était pas transmis
 
 # Brume par beat (pipeline/style/ambiance.json, partagé avec le rendu offline du lointain) : couleur et densité
 # tenues pendant le beat, fondu de fondu_s centré sur le début de chaque beat.
