@@ -75,25 +75,51 @@ def generate(name, kind, seed, dest):
     return dest
 
 
+def bleed(arr, opaque=250):
+    """Couleur du feuillage propagée sous la transparence : chaque pixel non opaque prend la couleur du pixel opaque
+    le plus proche (le filtrage et les mipmaps ne ramènent plus le gris du fond d'origine au bord des arbres)."""
+    from scipy import ndimage
+    solid = arr[..., 3] >= opaque
+    if not solid.any():
+        return arr
+    _, (iy, ix) = ndimage.distance_transform_edt(~solid, return_indices=True)
+    out = arr.copy()
+    out[..., :3] = arr[iy, ix, :3]
+    return out
+
+
+def clean(im):
+    """Détourage repris (retour d'Olivier : « on le voit un peu ») : restes de fond gris clair ou de nuages retirés
+    (couleurs peu saturées et claires), alpha rogné d'un pixel, puis couleurs propagées sous la transparence."""
+    from scipy import ndimage
+    arr = np.asarray(im.convert("RGBA")).astype(np.float32)
+    rgb, a = arr[..., :3], arr[..., 3] / 255.0
+    mx, mn = rgb.max(axis=2), rgb.min(axis=2)
+    sat = (mx - mn) / np.maximum(mx, 1.0)
+    a[(sat < 0.14) & (mx > 150)] = 0.0
+    a = ndimage.grey_erosion(a, size=3)
+    arr[..., 3] = a * 255.0
+    return Image.fromarray(bleed(arr.astype(np.uint8)), "RGBA")
+
+
 def atlas(paths):
     """Atlas 2048 × 2048 : une case par arbre, l'arbre mis à l'échelle dans la case, pied en bas au centre ; les
-    couleurs débordent sous le masque (pas de liseré gris au filtrage)."""
-    sheet = Image.new("RGBA", (CELL[0] * ATLAS_COLS, CELL[1] * ATLAS_ROWS), (0, 0, 0, 0))
+    couleurs débordent sous le masque (pas de liseré gris au filtrage ni dans les mipmaps)."""
+    sheet = np.zeros((CELL[1] * ATLAS_ROWS, CELL[0] * ATLAS_COLS, 4), np.uint8)
     info = []
     for i, p in enumerate(paths):
-        im = Image.open(p).convert("RGBA")
+        im = clean(Image.open(p))
         k = min(CELL[0] / im.width, CELL[1] / im.height) * 0.98
         im = im.resize((max(1, round(im.width * k)), max(1, round(im.height * k))), Image.LANCZOS)
         cx, cy = (i % ATLAS_COLS) * CELL[0], (i // ATLAS_COLS) * CELL[1]
         ox, oy = cx + (CELL[0] - im.width) // 2, cy + CELL[1] - im.height
-        # fond de la case : couleur moyenne du feuillage (évite le gris aux bords filtrés et dans les mips)
-        mean = np.asarray(im)[..., :3][np.asarray(im)[..., 3] > 128].mean(axis=0)
-        sheet.paste(Image.new("RGBA", CELL, (*mean.astype(int).tolist(), 0)), (cx, cy))
-        sheet.alpha_composite(im, (ox, oy))
+        cell = np.zeros((CELL[1], CELL[0], 4), np.uint8)
+        cell[oy - cy:oy - cy + im.height, ox - cx:ox - cx + im.width] = np.asarray(im)
+        sheet[cy:cy + CELL[1], cx:cx + CELL[0]] = bleed(cell)
         # largeur / hauteur relatives de l'arbre dans sa case (le maillage du plan prend ces proportions)
-        info.append({"name": p.stem, "u0": ox / sheet.width, "u1": (ox + im.width) / sheet.width,
-                     "v0": oy / sheet.height, "v1": (oy + im.height) / sheet.height, "aspect": im.width / im.height})
-    sheet.save(OUT.parent / "arbres_atlas.png")        # importé par greybox.py (look_texture)
+        info.append({"name": p.stem, "u0": ox / sheet.shape[1], "u1": (ox + im.width) / sheet.shape[1],
+                     "v0": oy / sheet.shape[0], "v1": (oy + im.height) / sheet.shape[0], "aspect": im.width / im.height})
+    Image.fromarray(sheet, "RGBA").save(OUT.parent / "arbres_atlas.png")   # importé par greybox.py (look_texture)
     (OUT / "arbres_atlas.json").write_text(json.dumps(info, indent=1), encoding="utf-8")
     print(f"→ assets/textures/arbres_atlas.png ({len(paths)} arbres)")
 

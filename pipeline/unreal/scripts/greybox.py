@@ -873,7 +873,11 @@ float k = 1.0 / fill[cell];
 float3 lw = LW.xyz;                                  // position du sommet dans le repère de l'instance, en monde
 float3 pivot = WP.xyz - lw;                          // pied de l'arbre
 float sx = length(SX.xyz);                           // échelle horizontale de l'instance
-float2 d = normalize(Cam.xy - pivot.xy + float2(1e-3, 0.0));
+// tous les plans parallèles au plan de la vue (axe avant du casque, le même pour les deux yeux) : ils ne se croisent
+// plus (retour d'Olivier : « redessiné par bandes verticales » quand chaque plan visait l'œil) ; tête baissée,
+// repli doux sur la direction de l'œil
+float2 dp = normalize(Cam.xy - pivot.xy + float2(1e-3, 0.0));
+float2 d = normalize(-F.xy + dp * 0.15);
 float2 right = float2(-d.y, d.x);
 float3 p = pivot + float3(right * LP.x * sx * k, lw.z * k);
 return p - WP.xyz;"""
@@ -886,7 +890,7 @@ return c;"""
 def billboard_material(atlas_tex, fill):
     path = f"{GB}/M_GB_ArbrePeint"
     code = BILLBOARD_CODE % {"fill": ", ".join(f"{f:.3f}" for f in fill)}
-    digest = spec_digest("arbre-peint-v1", code, BILLBOARD_UV_CODE % {}, BILLBOARD_COLOR_CODE, MPC_DIGEST,
+    digest = spec_digest("arbre-peint-v2", code, BILLBOARD_UV_CODE % {}, BILLBOARD_COLOR_CODE, MPC_DIGEST,
                          eal.get_metadata_tag(atlas_tex, "source_sha1"))
     mat = eal.load_asset(path) if eal.does_asset_exist(path) else None
     if up_to_date(mat, digest):
@@ -915,8 +919,14 @@ def billboard_material(atlas_tex, fill):
     tx.set_editor_property("transform_type", unreal.MaterialVectorCoordTransform.TRANSFORM_WORLD)
     mel.connect_material_expressions(one, "", tx, "")
     cam = mel.create_material_expression(mat, unreal.MaterialExpressionCameraPositionWS, -1400, 400)
-    wpo = custom_node(mat, code, unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["C", "WP", "LP", "LW", "SX", "Cam"], -900, 200)
-    for pin, src in (("C", cdat), ("WP", wp), ("LP", lp), ("LW", tl), ("SX", tx), ("Cam", cam)):
+    fwd = mel.create_material_expression(mat, unreal.MaterialExpressionConstant3Vector, -1400, 500)
+    fwd.set_editor_property("constant", unreal.LinearColor(0, 0, 1, 0))
+    fw = mel.create_material_expression(mat, unreal.MaterialExpressionTransform, -1200, 500)   # axe avant de la vue
+    fw.set_editor_property("transform_source_type", unreal.MaterialVectorCoordTransformSource.TRANSFORMSOURCE_VIEW)
+    fw.set_editor_property("transform_type", unreal.MaterialVectorCoordTransform.TRANSFORM_WORLD)
+    mel.connect_material_expressions(fwd, "", fw, "")
+    wpo = custom_node(mat, code, unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["C", "WP", "LP", "LW", "SX", "Cam", "F"], -900, 200)
+    for pin, src in (("C", cdat), ("WP", wp), ("LP", lp), ("LW", tl), ("SX", tx), ("Cam", cam), ("F", fw)):
         mel.connect_material_expressions(src, "", wpo, pin)
     mel.connect_material_property(wpo, "", unreal.MaterialProperty.MP_WORLD_POSITION_OFFSET)
     uv0 = mel.create_material_expression(mat, unreal.MaterialExpressionTextureCoordinate, -1400, 600)
@@ -948,7 +958,13 @@ if VEG.get("billboards") and os.path.exists(ATLAS_JSON):
     with open(ATLAS_JSON, encoding="utf-8") as f:
         _cells = json.load(f)
     _fill = [(c["v1"] - c["v0"]) * 2.0 for c in _cells] + [1.0] * (8 - len(_cells))
-    MATS["ArbrePeint"] = billboard_material(look_texture("arbres_atlas"), _fill)
+    _atlas = look_texture("arbres_atlas")
+    # mipmaps : couverture alpha préservée (sinon les arbres s'amincissent et se trouent au loin, test alpha à 0,5)
+    if not _atlas.get_editor_property("do_scale_mips_for_alpha_coverage"):
+        _atlas.set_editor_property("do_scale_mips_for_alpha_coverage", True)
+        _atlas.set_editor_property("alpha_coverage_thresholds", unreal.Vector4(0, 0, 0, 0.5))
+        eal.save_loaded_asset(_atlas)
+    MATS["ArbrePeint"] = billboard_material(_atlas, _fill)
     # plan de 7 × 14 m (case 512 × 1024 de l'atlas), pied au centre du bord bas ; mis à l'échelle par instance
     BB_MESH = build_mesh("ArbrePeintPlan", {"vertices": [[-3.5, 0, 0], [3.5, 0, 0], [3.5, 0, 14.0], [-3.5, 0, 14.0]],
                                             "triangles": [[0, 1, 2], [0, 2, 3]], "normals": [[0, -1, 0]] * 4,
