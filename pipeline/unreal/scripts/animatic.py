@@ -157,11 +157,26 @@ if not STEMS:
     audio.set_sound(music)
     audio.set_range(frame(MUSIC_OFFSET).value, end)
 
-# Fondus : noir pendant S1, fondu d'entrée en 2 s, fondu de sortie sur l'extinction de la musique.
+# Fondus : noir pendant S1, fondu d'entrée en 2,5 s, fondu de sortie sur l'extinction de la musique (événement
+# « fondu-noir » du séquencier). Piste de fondu pour Movie Render Queue ; au casque (pas de post-traitement),
+# même courbe sur la sphère noire devant les yeux (MPC Fondu, clés plus bas).
+with open(os.path.join(ROOT, "pipeline", "sequencer.yaml"), encoding="utf-8") as f:
+    _seqdef = f.read()                                      # pas de module yaml dans le Python d'Unreal
+
+
+def _event_s(eid, default):
+    import re
+    m = re.search(r"id:\s*" + re.escape(eid) + r"\s*\n\s*music_s:\s*([\d.]+)", _seqdef)
+    return MUSIC_OFFSET + (float(m.group(1)) if m else default)
+
+
+T_FADE_OUT = _event_s("fondu-noir", 216.7)
+T_REVEAL = _event_s("lanternes-reveal", 206.7)
+FADE_KEYS = [(0, 1.0), (MUSIC_OFFSET, 1.0), (MUSIC_OFFSET + 2.5, 0.0), (T_FADE_OUT, 0.0), (DURATION - 0.3, 1.0)]
 fade = seq.add_track(unreal.MovieSceneFadeTrack).add_section()
 fade.set_range(0, end)
 fc = fade.get_all_channels()[0]
-for t, v in [(0, 1.0), (MUSIC_OFFSET, 1.0), (MUSIC_OFFSET + 2.5, 0.0), (DURATION - 3.0, 0.0), (DURATION, 1.0)]:
+for t, v in FADE_KEYS:
     fc.add_key(frame(t), v, interpolation=LIN)
 
 # Créatures : trajectoires calculées sur le tracé et le terrain (pipeline/layout/creatures.py). Clés en mètres
@@ -187,13 +202,23 @@ def visible_between(label, t0, t1):
     actor = by_label.get(label)
     if actor is None:
         return
+    visible_windows(label, [(t0, t1)])
+
+
+def visible_windows(label, windows):
+    """Acteur affiché seulement pendant les intervalles (t0, t1) donnés, caché le reste du temps."""
+    actor = by_label.get(label)
+    if actor is None:
+        return
     vis = seq.add_possessable(actor).add_track(unreal.MovieSceneVisibilityTrack).add_section()
     vis.set_range(0, end)
     ch = vis.get_all_channels()[0]
-    ch.add_key(frame(0), False)
-    ch.add_key(frame(max(t0, 0.0)), True)
-    if t1 < DURATION:
-        ch.add_key(frame(t1), False)
+    if windows[0][0] > 0.0:
+        ch.add_key(frame(0), False)
+    for t0, t1 in windows:
+        ch.add_key(frame(max(t0, 0.0)), True)
+        if t1 < DURATION:
+            ch.add_key(frame(t1), False)
 
 
 # Décor caché par la brume dense de S1-S2 (densité 0,2 : rien de visible au-delà de ~40 m) : les tronçons
@@ -237,6 +262,13 @@ for k in range(0, 51, 2):
     swarm.append((t_env + k, (cx + math.cos(ang) * rad, cy + math.sin(ang) * rad, z), yaw0 + k * 4.0))
 swarm.append((DURATION, swarm[-1][1][:2] + (12000.0,), swarm[-1][2]))
 transform_track(by_label["GB_Lucioles"], swarm, scale=(1.0, 1.0, 1.0), interp=SMOOTH)
+# nuée du lac : affichée seulement pour le final, monte lentement de 4 m
+if "GB_LuciolesLac" in by_label:
+    transform_track(by_label["GB_LuciolesLac"], [(0.0, (0.0, 0.0, 0.0), 0.0), (T_REVEAL - 4.0, (0.0, 0.0, 0.0), 0.0),
+                                                 (DURATION, (0.0, 0.0, 400.0), 0.0)], interp=SMOOTH)
+    visible_between("GB_LuciolesLac", T_REVEAL - 4.5, DURATION + 1)
+# sphère de fondu : affichée seulement pendant les fondus (une surface translucide plein écran coûte même transparente)
+visible_windows("GB_Fondu", [(0.0, MUSIC_OFFSET + 2.6), (T_FADE_OUT - 0.1, DURATION + 1)])
 visible_between("GB_Lucioles", t_env - 0.5, DURATION + 1)
 
 # Crépuscule → nuit : luminosité du ciel peint (MPC_Ambiance.CielLuminosite), pleine en S2-S4, baisse sous les
@@ -269,6 +301,11 @@ if mpc is not None:
         msec.add_scalar_parameter_key("LucioleFade", frame(t), v)
     for t, v in ((0.0, 0.0), (t_env_fade - 0.5, 0.0), (t_env_fade + 6.0, 1.0)):
         msec.add_scalar_parameter_key("EnvolFade", frame(t), v)
+    # final : la nuée du lac s'allume en 10 s sur la dernière montée de la musique (événement lanternes-reveal)
+    for t, v in ((0.0, 0.0), (T_REVEAL - 4.0, 0.0), (T_REVEAL + 6.0, 1.0)):
+        msec.add_scalar_parameter_key("FinaleFade", frame(t), v)
+    for t, v in FADE_KEYS:
+        msec.add_scalar_parameter_key("Fondu", frame(t), v)
     # créature des abysses : s'éteint en filant devant la barque, avant de quitter le chenal profond
     t_ab = MARKS["abysses-passage"]["t"]
     for t, v in ((0.0, 1.0), (t_ab + 4.0, 1.0), (t_ab + 11.0, 0.0), (DURATION, 0.0)):
@@ -406,6 +443,7 @@ settings = player.get_editor_property("playback_settings")
 settings.set_editor_property("auto_play", True)
 settings.set_editor_property("disable_camera_cuts", True)    # en jeu : la vue est celle du casque (JoueurVR)
 settings.set_editor_property("disable_movement_input", True)
+settings.set_editor_property("pause_at_end", True)           # reste au noir final (sinon l'état initial revient)
 player.set_editor_property("playback_settings", settings)
 
 eal.save_loaded_asset(seq)

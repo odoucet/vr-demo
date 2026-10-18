@@ -269,6 +269,27 @@ def bank_fireflies(river, per_sample=2, size=0.06, seed=13):
     return octahedra(np.array(pts), size, rng)
 
 
+def lake_fireflies(river, n_path=800, n_tree=160, size=0.07, seed=17):
+    """Final (S7) : nuée de lucioles autour de la barque sur le lac et dans l'arbre de l'île, à la place des
+    lanternes (retour d'Olivier : trop loin pour qu'on voie leur forme ; les lucioles autour du joueur sont le moment
+    préféré). Elles s'allument une à une (FinaleFade) et la nuée monte lentement (séquence)."""
+    rng = np.random.default_rng(seed)
+    path = [p for p in river["samples"] if p["t"] >= 196]
+    pts = []
+    for _ in range(n_path):
+        p = path[rng.integers(len(path))]
+        h0 = math.radians(p["heading_deg"])
+        off = rng.choice([-1, 1]) * (1.4 + 11.0 * rng.uniform() ** 1.6)    # serrées autour de la barque
+        fwd = rng.uniform(-2, 2)
+        pts.append([p["x"] + math.cos(h0) * fwd - math.sin(h0) * off, p["y"] + math.sin(h0) * fwd + math.cos(h0) * off,
+                    rng.uniform(0.2, 3.8)])
+    isl = next(m for m in river["landmarks"] if m["id"] == "ile-lanternes")
+    for _ in range(n_tree):
+        a, r = rng.uniform(0, 2 * math.pi), math.sqrt(rng.uniform(0.02, 1)) * 14
+        pts.append([isl["x"] + r * math.cos(a), isl["y"] + r * math.sin(a), rng.uniform(3, 15)])
+    return octahedra(np.array(pts), size, rng)
+
+
 def main():
     river = json.loads(RIVER.read_text(encoding="utf-8"))
     terrain_mesh, bounds, field = terrain(river)
@@ -282,6 +303,7 @@ def main():
                                       span=pose["width_m"] + 10, height=ARCH_HEIGHT_M),
             "Lucioles": fireflies(),
             "LuciolesBerges": bank_fireflies(river),
+            "LuciolesLac": lake_fireflies(river),
             "Roseaux": reeds(river, field, bounds),
             "Nenuphars": lily_pads(river),
         },

@@ -58,6 +58,8 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 | D12 | Placement des stems autour de la barque | stems Suno déposés le 18/10, placés selon `pipeline/audio/stems.yaml` | déposer les stems dans `audio/music/stems/` (créer le dossier), puis `python pipeline/build.py stems` : placement automatique autour de la barque (`pipeline/audio/stems.yaml` : piano devant à droite, cordes larges derrière, basses sous la barque, bois devant à gauche en hauteur, cuivres au loin, celesta au-dessus) | |
 | D13 | Versionner tes nouveaux fichiers audio (`audio/music/Luminous Wonder.wav` + 10 stems, ~460 Mo) | non versionnés (quota LFS GitHub) ; l'ancien MP3 supprimé de ton côté n'est pas non plus retiré du dépôt | je les ajoute au dépôt (LFS) et retire le MP3 | |
 | D14 | Marge de performance au Quest (S2 à 71,5 i/s, à la limite) | MSAA 2× gardé (bords nets) ; arbres lointains éclaircis | MSAA 1× : +2,7 ms de marge, bords crénelés qui scintillent ; ou alléger encore la végétation (moins de détail) ; ou plugin Meta XR pour demander le niveau GPU maximal (+10 %, installation à autoriser) | |
+| D15 | Élément visuel du final à la place des lanternes | nuée de lucioles autour de la barque et dans l'arbre de l'île | autre élément : fleurs lumineuses, lanternes flottantes près de la barque, reflet de lune… (`lake_fireflies` dans `greybox_geometry.py`) | |
+| D16 | Arbres (« le plus moche ») ou autre décor (statues géantes ?) | arbres actuels ; pistes à débattre (voir « Priorités ») | — | |
 | D9 | M'autoriser à installer Blender portable (sans droits admin, sur G:) | j'attends ; nettoyage des maillages via les nœuds ComfyUI en attendant | — | |
 
 ## 🔴 Bloquants
@@ -104,6 +106,13 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 
 ## Fait récemment
 
+- **Retours du 18/10 au soir (APK installé au Quest, captures `review/iter-021/planche-casque.jpg`)** :
+  - **Fondu au noir** : il n'était jamais rendu au casque, car la piste de fondu de la séquence passe par le post-traitement, absent sur Quest. Le fondu est maintenant fait par une sphère noire autour des yeux, dont l'opacité est animée. **S1 est enfin noir** jusqu'à 20 s, l'image s'ouvre en 2,5 s, et la fin passe au noir sur l'extinction de la musique. Vérifié par capture : noir à 242 s, l'appli reste sur le noir final.
+  - **Lanternes de l'arbre retirées** (D15) et remplacées par une **nuée de lucioles finale** : environ 800 lucioles serrées autour de la barque sur le lac, plus 160 dans l'arbre de l'île. Elles s'allument une à une sur la dernière montée de la musique et la nuée monte lentement.
+  - **Créature des abysses** : elle passe à ~5 m à droite de la barque, à 2 m sous la surface, au lieu de passer dessous, où la coque la cachait. L'eau s'éclaircit au-dessus d'elle. Vérifié par une capture dans l'éditeur, **à voir au casque** : regarder à droite vers 1:06-1:14.
+  - **Troupeau** : vitesse, écart et couloir propres à chaque bête.
+  - **Racines coupées sous l'eau** : l'absorption est plus forte (moitié de la couleur perdue en ~23 cm de trajet sous l'eau). Les bouts de racines et leur rencontre avec le fond ne se découpent plus. Les pieux du ponton s'effacent aussi plus vite.
+  - **Plancher** plus clair.
 - **Performance au Quest et reflet de la lisière (18/10, 19 h 45)** — **72 i/s de S3 à S7, 71,5 en S2** (regard droit devant, `review/perf/greybox-20261018-1943.png`). Avant : 62 en S2, 63 en S3. Captures au casque : `review/iter-019/planche-casque.jpg`.
   - **Piège de mesure** : le casque posé sur le bureau ne regarde pas toujours au même endroit. Tourné vers le ciel, il donne 72 i/s ; droit devant, 62 avec la même version. Je vérifie désormais le cadrage par une capture avant de comparer deux mesures.
   - **Diagnostic** avec le profileur GPU du casque (`ovrgpuprofiler`) : la scène est limitée par la géométrie (binning 4,5-4,9 ms par image) plus que par les pixels. Baisser la résolution ne change rien ; le MSAA coûte 3 ms.

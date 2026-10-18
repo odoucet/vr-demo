@@ -107,8 +107,10 @@ MPC_VECTORS = {"SoleilDir": (0.9, -0.4, 0.2), "Lumiere": (1.0, 0.95, 0.85), "Omb
                "CielAppoint": (0.1, 0.12, 0.2), "CielTeinte": (1.0, 1.0, 1.0), "Barque": (0.0, 0.0, 0.0),
                "AbyssPos": (0.0, 0.0, -10000.0)}
 # CielLuminosite (ancien), apparition progressive des lucioles des berges et du nuage de l'envol
-MPC_SCALARS = {"CielLuminosite": 1.0, "LucioleFade": 1.0, "EnvolFade": 0.0, "AbyssFade": 1.0}
-MPC_DIGEST = spec_digest("mpc-v6", sorted(MPC_VECTORS), sorted(MPC_SCALARS))
+MPC_SCALARS = {"CielLuminosite": 1.0, "LucioleFade": 1.0, "EnvolFade": 0.0, "AbyssFade": 1.0,
+               "FinaleFade": 0.0,    # nuée de lucioles du lac (S7)
+               "Fondu": 0.0}         # fondu au noir (1 = noir), sphère devant les yeux : pas de post-traitement sur Quest
+MPC_DIGEST = spec_digest("mpc-v7", sorted(MPC_VECTORS), sorted(MPC_SCALARS))
 
 
 def ambiance_mpc():
@@ -288,7 +290,7 @@ col += float3(%(cr).2f, %(cg).2f, %(cb).2f) * flick * (0.25 + 0.75 * rip) * 0.9 
 float2 da = WP.xy - Ab.xy;
 float halo = exp(-dot(da, da) / (420.0 * 420.0)) * saturate(1.0 + Ab.z / 900.0) * saturate(Af);
 col += float3(0.15, 1.6, 2.0) * 0.18 * halo * (0.6 + 0.4 * rip);
-float op = max(lerp(0.68, 0.97, fr), max(foam, boatfoam * 0.8));
+float op = max(lerp(0.68, 0.97, fr) * (1.0 - 0.55 * halo), max(foam, boatfoam * 0.8));   // eau plus claire au-dessus de la créature
 op *= smoothstep(0.9, 1.02, hull);
 return float4(col, op);""" % {"lantx": LANTERN_LOCAL[0], "cr": CANDLE_RGB[0], "cg": CANDLE_RGB[1], "cb": CANDLE_RGB[2], "x0": WATER_MAP["x0"], "y0": WATER_MAP["y0"], "size": WATER_MAP["size_m"], "drift": SKY_DRIFT,
    "lkx": RIVER["lake"]["x"] * 100, "lky": -RIVER["lake"]["y"] * 100, "lkr2": (RIVER["lake"]["radius_m"] * 100) ** 2}
@@ -350,7 +352,7 @@ float under = -WP.z;
 if (under > 0.0)
 {
     float lw = under * length(Cam.xyz - WP.xyz) / max(Cam.z - WP.z, 1.0);
-    float tr = exp(-lw * 0.014);
+    float tr = exp(-lw * 0.03);           // moitié à ~23 cm de trajet : bouts de racines et fond ne se découpent plus
     tr = tr * tr * (3.0 - 2.0 * tr);
     col = lerp((Lumiere.rgb * 0.5 + 0.2) * float3(0.02, 0.06, 0.07), col, tr);
 }
@@ -628,6 +630,7 @@ def firefly_material(color=(4.0, 5.0, 1.2), amp_cm=30.0, name="Luciole", size_cm
 MATS["Luciole"] = firefly_material()
 # nuage de l'envol : grandes boucles irrégulières propres à chaque luciole (la trajectoire du nuage était trop droite)
 MATS["LucioleEnvol"] = firefly_material(amp_cm=260.0, name="LucioleEnvol", size_cm=16.0, fade="EnvolFade")
+MATS["LucioleFinale"] = firefly_material(amp_cm=140.0, name="LucioleFinale", size_cm=15.0, fade="FinaleFade")
 
 FLICKER = "(0.86 + 0.1 * sin(T * 11.0) * sin(T * 6.7 + 1.3) + 0.04 * sin(T * 23.0))"
 
@@ -706,6 +709,7 @@ def surface_instance(name, tex1, tex2, scale, strength, mix, vary=0.0, parent="P
 for name, spec in SURFACES.items():
     MATS[name] = surface_instance(name, *spec)
 MESH_MATS = {"Terrain": "PeintTerrain", "ArcheRacines": "PeintBois", "Lucioles": "LucioleEnvol", "LuciolesBerges": "Luciole",
+             "LuciolesLac": "LucioleFinale",
              "Roseaux": "PeintSol", "Nenuphars": "Peint"}
 
 
@@ -802,7 +806,7 @@ for pname, lods in VEG.get("prototypes", {}).items():
                                                         [lods[f"lod{i}"].get(kind, lods["lod0"][kind]) for i in range(3)])
 
 FLOOR_MESH = build_mesh("PlancherBarque", {"vertices": _fv, "triangles": [[0, 1 + k, 1 + (k + 1) % 32] for k in range(32)],
-                                           "normals": [[0, 0, 1]] * len(_fv), "color": [0.32, 0.22, 0.14, 0.8]})
+                                           "normals": [[0, 0, 1]] * len(_fv), "color": [0.46, 0.33, 0.21, 0.95]})
 OBSOLETE = ["SM_Foret", "SM_ArbreColossal", "SM_ArbreLanternes", "M_GB_Foret"] + \
     [f"SM_{n}" for n in ("Lisiere", "ArbreColossalPeint", "ArbreLanternesPeint", "Collines")] + [f"SM_Vegetation{i:02d}" for i in range(12)] + \
     ["SM_Lisiere_feuillage", "SM_Lisiere_bois"]    # lisière découpée en 8 morceaux
@@ -837,6 +841,8 @@ def place_mesh(mesh, label, mat, loc=unreal.Vector(0, 0, 0), rot=unreal.Rotator(
 
 for name, mesh in MESHES.items():
     a = place_mesh(mesh, f"GB_{name}", MESH_MATS[name])
+    if name in ("Lucioles", "LuciolesLac"):                     # déplacés par la séquence
+        a.static_mesh_component.set_mobility(unreal.ComponentMobility.MOVABLE)
     if name == "Lucioles":
         a.set_actor_location(unreal.Vector(0, 0, -3000), False, False)   # sous le terrain jusqu'à l'envol (séquence)
 
@@ -948,7 +954,7 @@ def hull_floor(model):
     verts = [[cx / 100.0, -cy / 100.0, 0.03]] + ring
     n = len(ring)
     data = {"vertices": verts, "triangles": [[0, 1 + k, 1 + (k + 1) % n] for k in range(n)],
-            "normals": [[0, 0, 1]] * len(verts), "color": [0.32, 0.22, 0.14, 0.8]}
+            "normals": [[0, 0, 1]] * len(verts), "color": [0.46, 0.33, 0.21, 0.95]}
     unreal.log(f"Plancher de la coque : {n} points, {max(p_[0] for p_ in hull) - min(p_[0] for p_ in hull):.0f} × "
                f"{max(p_[1] for p_ in hull) - min(p_[1] for p_ in hull):.0f} cm")
     return build_mesh("PlancherCoque", data)
@@ -1030,6 +1036,43 @@ vr_cam.set_editor_property("lock_to_hmd", True)
 # la pose de la tête (origine LocalFloor, au sol sous le joueur, voir BP_Recentrage) remplace cette position.
 vr_cam.set_editor_property("relative_location", unreal.Vector(0, 0, EYE_CM))
 vr.attach_to_actor(boat, "", unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, False)
+
+
+def fade_material():
+    """Fondu au noir sans post-traitement (impossible sur Quest sans HDR mobile) : sphère noire translucide autour
+    des yeux, dessinée par-dessus tout (sans test de profondeur), opacité = MPC Fondu (animée par la séquence)."""
+    path = f"{GB}/M_GB_Fondu"
+    digest = spec_digest("fondu-v1", MPC_DIGEST)
+    mat = eal.load_asset(path) if eal.does_asset_exist(path) else None
+    if up_to_date(mat, digest):
+        return mat
+    mat = mat or tools.create_asset("M_GB_Fondu", GB, unreal.Material, unreal.MaterialFactoryNew())
+    mel.delete_all_material_expressions(mat)
+    mat.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_UNLIT)
+    mat.set_editor_property("blend_mode", unreal.BlendMode.BLEND_TRANSLUCENT)
+    mat.set_editor_property("two_sided", True)
+    mat.set_editor_property("disable_depth_test", True)
+    black = mel.create_material_expression(mat, unreal.MaterialExpressionConstant3Vector, -400, 0)
+    black.set_editor_property("constant", unreal.LinearColor(0, 0, 0, 1))
+    mel.connect_material_property(black, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
+    op = mel.create_material_expression(mat, unreal.MaterialExpressionCollectionParameter, -400, 200)
+    op.set_editor_property("collection", MPC)
+    op.set_editor_property("parameter_name", "Fondu")
+    mel.connect_material_property(op, "", unreal.MaterialProperty.MP_OPACITY)
+    mel.recompile_material(mat)
+    if mel.get_statistics(mat).num_pixel_shader_instructions <= 0:
+        raise RuntimeError("M_GB_Fondu ne compile pas")
+    mark_saved(mat, digest)
+    return mat
+
+
+MATS["Fondu"] = fade_material()
+fondu = place_mesh(SPHERE, "GB_Fondu", "Fondu", vr_cam.get_world_location(), scale=(0.4, 0.4, 0.4))   # 20 cm de rayon
+fondu.static_mesh_component.set_mobility(unreal.ComponentMobility.MOVABLE)   # sinon elle ne suit pas la caméra
+fondu.static_mesh_component.set_editor_property("translucency_sort_priority", 100)
+fondu.static_mesh_component.set_editor_property("cast_shadow", False)
+fondu.attach_to_component(vr_cam, "", unreal.AttachmentRule.SNAP_TO_TARGET, unreal.AttachmentRule.SNAP_TO_TARGET,
+                          unreal.AttachmentRule.KEEP_RELATIVE, False)
 cine = cam.get_cine_camera_component()
 cine.set_editor_property("current_focal_length", 12.0)    # ~ 90° horizontal sur capteur 16:9
 focus = cine.get_editor_property("focus_settings")
@@ -1061,7 +1104,7 @@ if os.path.exists(SKY_PNG):
         sky_tex = eal.load_asset(f"{GB}/ciel")
         eal.set_metadata_tag(sky_tex, "source_sha1", sky_digest)
         eal.save_loaded_asset(sky_tex)
-    SKY_WATER_VERSION = "ciel-eau-v12"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
+    SKY_WATER_VERSION = "ciel-eau-v13"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
     sky_mat_path = f"{GB}/M_GB_CielPeint"
     sky_mat = eal.load_asset(sky_mat_path) if eal.does_asset_exist(sky_mat_path) else None
     rebuild_sky_water = not up_to_date(sky_mat, spec_digest(SKY_WATER_VERSION, sky_digest, MPC_DIGEST, WATER_CODE,
@@ -1146,9 +1189,8 @@ if os.path.exists(SKY_PNG):
     sky_sphere = place_mesh(SPHERE, "GB_CielPeint", "CielPeint", unreal.Vector(10000, 0, 0), scale=(10000, 10000, 10000))
     sky_sphere.static_mesh_component.set_editor_property("cast_shadow", False)
 
-# Lanternes de l'arbre de S7 : suspendues sous le houppier (positions dans vegetation.json).
-for i, (x, y, z) in enumerate(VEG["lanternes"]):
-    place_mesh(SPHERE, f"GB_Lanterne{i:02d}", "Lanterne", ue(x, y, z), scale=(0.45, 0.45, 0.6))
+# Lanternes de l'arbre de S7 retirées (retour d'Olivier : trop loin, on ne voyait pas leur forme) : remplacées
+# par la nuée de lucioles du lac (LuciolesLac, greybox_geometry.py), qui monte autour de la barque et dans l'arbre.
 
 # Créatures : bloc animé par la séquence (repère : +X = sens du mouvement) + modèle 3D attaché s'il existe.
 # Modèles TRELLIS.2 : longueur sur +Y à l'import (1 unité = 100 cm), comme la barque → rotation -90°.

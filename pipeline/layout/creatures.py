@@ -4,8 +4,8 @@
 
 Repère du tracé (m, x avant au départ, y gauche, z haut), cap en degrés. Retours d'Olivier (2026-10-18) :
 - abysses : suit le chenal (et non plus en travers), plus vite que la barque : arrive de derrière, passe
-  sous la barque à t = 70 s, file devant, s'enfonce et s'éteint (paramètre AbyssFade) dans le chenal profond ;
-- troupeau : sort de la forêt à droite par un sentier creusé dans la berge, traverse le gué l'eau au poitrail
+  à ~5 m à droite de la barque à t = 70 s (dessous, la coque la cachait), file devant, s'enfonce et s'éteint (paramètre AbyssFade) dans le chenal profond ;
+- troupeau : vitesse, écart et couloir propres à chaque bête ; sort de la forêt à droite par un sentier creusé dans la berge, traverse le gué l'eau au poitrail
   et remonte sur la berge gauche ; la hauteur suit le terrain (plus de traversée « dans le sol ») ;
 - créature volante : passe lentement devant la lune puis continue son vol jusqu'à sortir du champ.
 Une clé par seconde (interpolation linéaire dans la séquence). Déterministe.
@@ -58,10 +58,13 @@ def main():
         lead = lead if t >= t0 - 16 else -24.0 - (t0 - 16 - t) * 1.0
         tau = t + lead
         x, y, h = path(tau)
-        wiggle = 0.8 * math.sin(t * 0.35)                       # léger serpentement dans le chenal
+        # passe à ~5 m à droite de la barque (retour d'Olivier : juste dessous, on ne la voyait plus, cachée par la
+        # coque) puis rejoint l'axe du chenal en filant devant ; léger serpentement
+        side = -5.0 * float(np.interp(t, [t0 - 14, t0 - 6, t0 + 6, t0 + 12], [0.3, 1.0, 1.0, 0.2]))
+        wiggle = side + 0.8 * math.sin(t * 0.35)
         x, y = x - math.sin(math.radians(h)) * wiggle, y + math.cos(math.radians(h)) * wiggle
         bed = ground(x, y)
-        depth = min(max(-3.2, bed + 1.4), -2.8)                 # jamais près de la surface ; sous le fond = cachée
+        depth = min(max(-2.0, bed + 1.2), -1.6)                 # près de la surface, sans jamais l'effleurer
         if t < t0 - 12:                                         # avant : sous le fond, invisible, puis remonte
             depth = np.interp(t, [t0 - 22, t0 - 12], [bed - 3.0, depth])
         if t > t0 + 4:                                          # s'enfonce doucement en s'éloignant
@@ -72,9 +75,12 @@ def main():
     hx, hy, ux, uy = herd_crossing(river)
     tm = marks["troupeau-gue"]["t"]
     heading = math.degrees(math.atan2(uy, ux))                  # vers la gauche du tracé
+    hrng = np.random.default_rng(7)                             # troupeau irrégulier (retour d'Olivier)
+    lag = 0.0
     for i in range(5):
-        lag, lane = i * 1.6, (i % 2) * 2.5 - 1.25
-        start, speed = -34.0, 1.8
+        lag += 0.0 if i == 0 else float(hrng.uniform(0.9, 2.8))     # écarts inégaux entre les bêtes
+        lane = float(hrng.uniform(-2.6, 2.6))
+        start, speed = -34.0 - float(hrng.uniform(0, 3)), float(hrng.uniform(1.45, 2.15))
         t_start = tm + lag + start / speed                      # au milieu du gué à t ≈ 112 s (+ décalage)
         keys = []
         for k in range(int(68 / speed) + 1):
