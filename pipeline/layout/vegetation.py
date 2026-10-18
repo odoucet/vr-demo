@@ -77,7 +77,15 @@ def main():
                 or math.hypot(x - isl["x"], y - isl["y"]) < 14
                 or (abs((x - hx) * huy - (y - hy) * hux) < 5 and abs((x - hx) * hux + (y - hy) * huy) < 60))   # sentier du troupeau
 
-    # --- Forêt : échantillonnage par cellules de 5 m, densité et détail selon la distance au parcours ---------
+    # --- Forêt : arbres instanciés (6 feuillus, 3 résineux, 3 niveaux de détail chacun), cellules de 4,2 m ----
+    protos = {}
+    for i in range(6):
+        prng = np.random.default_rng(100 + i)
+        protos[f"Feuillu{i}"] = ("feuillu", P.broadleaf_plan(prng, COL["feuillage"][i % 5], COL["tronc"]))
+    for i in range(3):
+        prng = np.random.default_rng(200 + i)
+        protos[f"Resineux{i}"] = ("resineux", P.conifer_plan(prng, COL["resineux"][i], COL["tronc"]))
+    instances = {k: [] for k in protos}
     trees = 0
     for x in np.arange(b["x0"], b["x1"], 4.2):
         for y in np.arange(b["y0"], b["y1"], 4.2):
@@ -88,14 +96,22 @@ def main():
             pd = path_dist(px, py)
             if pd > 45 and rng.uniform() < 0.55:      # au loin, la lisière (plus bas) prend le relais
                 continue
-            detail = 2 if pd < 14 else 1 if pd < 34 else 0
             h = rng.uniform(10, 20) * (1.15 if pd > 30 else 1.0)
-            m = chunk(px, py)
-            if rng.uniform() < 0.25:
-                P.conifer(m, px, py, z, h * 1.1, rng, COL["resineux"][rng.integers(3)], COL["tronc"], detail=min(detail, 1))
-            else:
-                P.broadleaf_tree(m, px, py, z, h, rng, COL["feuillage"][rng.integers(5)], COL["tronc"], detail=detail)
+            conifer = rng.uniform() < 0.25
+            name = f"Resineux{rng.integers(3)}" if conifer else f"Feuillu{rng.integers(6)}"
+            scale = h * (1.1 if conifer else 1.0) / P.PROTO_HEIGHT
+            instances[name].append([round(px, 2), round(py, 2), round(z - 0.1, 2), round(float(rng.uniform(0, 360)), 1),
+                                    round(scale * rng.uniform(0.95, 1.05), 3), round(scale, 3)])
             trees += 1
+    prototypes = {}
+    for name, (kind, plan) in protos.items():
+        prototypes[name] = {}
+        for lod in range(3):
+            bnd = P.Bundle()
+            (P.build_broadleaf if kind == "feuillu" else P.build_conifer)(bnd, plan, lod)
+            prototypes[name][f"lod{lod}"] = {k: m.to_dict() for k, m in bnd.parts.items() if m.triangles}
+        print(f"  {name:10s} LOD " + " / ".join(str(sum(len(m['triangles']) for m in prototypes[name][f'lod{l}'].values()))
+                                                for l in range(3)) + f" triangles, {len(instances[name])} instances")
 
     # --- Lisière : masses de feuillage en bord de terrain, qui ferment le monde ---------------------------------
     edge = P.Bundle()
@@ -277,9 +293,10 @@ def main():
         for kind, m in bnd.parts.items():
             if m.triangles:
                 meshes[f"{k}_{kind}"] = m
-    print(f"  {'total':22s} {total:8d} triangles ({trees} arbres)")
+    print(f"  {'total':22s} {total:8d} triangles hors arbres ({trees} arbres instanciés)")
     OUT.write_text(json.dumps({"units": "m", "meshes": {k: m.to_dict() for k, m in meshes.items()},
-                               "lanternes": lanterns}), encoding="utf-8")
+                               "lanternes": lanterns, "prototypes": prototypes, "instances": instances}),
+                   encoding="utf-8")
     print(f"→ {OUT.relative_to(ROOT)} ({OUT.stat().st_size / 1e6:.1f} Mo)")
 
 

@@ -318,3 +318,103 @@ def pebbles(mesh, x, y, z, rng, color, count=3, spread=0.8):
     for _ in range(count):
         s = rng.uniform(0.08, 0.25)
         rock(mesh, x + rng.normal(0, spread), y + rng.normal(0, spread), z - s * 0.2, s, rng, color, subdiv=0)
+
+
+# --- Arbres instanciés à niveaux de détail (LOD) ---------------------------------------------------------------
+# Un « plan » de houppier tiré une fois (troncs, touffes, petites touffes) puis construit à trois niveaux de détail :
+# même silhouette générale, de plus en plus simplifiée. Les arbres sont posés en instances (variation de taille, de
+# rotation et de teinte par instance), Unreal choisit le niveau selon la taille à l'écran.
+PROTO_HEIGHT = 14.0
+
+
+def broadleaf_plan(rng, leaf, trunk, height=PROTO_HEIGHT):
+    crown_r = height * rng.uniform(0.29, 0.35)
+    crown_c = np.array([rng.normal(0, 0.03) * height, rng.normal(0, 0.03) * height, height - crown_r * 0.9])
+    col = jitter(leaf, rng, 0.06)
+    plan = {"crown_c": crown_c, "crown_r": crown_r, "trunk": jitter(trunk, rng), "height": height, "blobs": [],
+            "branches": []}
+    plan["blobs"].append((crown_c, np.array([crown_r] * 3), col, 0))
+    for _ in range(rng.integers(7, 10)):                                   # touffes principales
+        d = rng.normal(0, 1, 3)
+        d[2] = d[2] * 0.6 - 0.15
+        d /= np.linalg.norm(d)
+        r = crown_r * rng.uniform(0.45, 0.68)
+        plan["blobs"].append((crown_c + d * crown_r * rng.uniform(0.6, 0.85), np.array([r, r, r * 0.85]),
+                              jitter(col, rng, 0.05), 1))
+    for _ in range(rng.integers(12, 16)):                                  # touffes de surface
+        d = rng.normal(0, 1, 3)
+        d[2] = abs(d[2]) * 0.8 - 0.15
+        d /= np.linalg.norm(d)
+        r = crown_r * rng.uniform(0.2, 0.32)
+        plan["blobs"].append((crown_c + d * crown_r * rng.uniform(0.95, 1.12), np.array([r, r, r * 0.8]),
+                              jitter(col, rng, 0.07), 2))
+    for _ in range(rng.integers(22, 30)):                                  # petites touffes (gros plan seulement)
+        d = rng.normal(0, 1, 3)
+        d[2] = abs(d[2]) * 0.9 - 0.2
+        d /= np.linalg.norm(d)
+        r = crown_r * rng.uniform(0.08, 0.14)
+        plan["blobs"].append((crown_c + d * crown_r * rng.uniform(1.1, 1.28), np.array([r, r, r * 0.8]),
+                              jitter(col, rng, 0.09), 3))
+    for _ in range(4):
+        a = rng.uniform(0, 2 * math.pi)
+        tip = crown_c + np.array([math.cos(a), math.sin(a), 0]) * crown_r * 0.75 - [0, 0, crown_r * 0.3]
+        plan["branches"].append(tip)
+    return plan
+
+
+# par niveau : (subdivision des touffes de niveau 0..3 ou None si absentes, côtés du tronc, branches)
+# (mesure au casque du 18/10 : la forêt instanciée coûtait 6,8 ms ; LOD1 allégé, LOD0 réservé aux arbres tout proches)
+LOD_SPEC = {0: ((2, 1, 1, 0), 8, True), 1: ((1, 0, 0, None), 6, True), 2: ((0, 0, None, None), 4, False)}
+
+
+def build_broadleaf(mesh, plan, lod):
+    subs, sides, branches = LOD_SPEC[lod]
+    c, r, h = plan["crown_c"], plan["crown_r"], plan["height"]
+    z0, z1 = c[2] - r, c[2] + r * 1.2
+    cylinder(mesh, [0, 0, -0.3], [c[0], c[1], c[2] - r * 0.2], h * 0.035, h * 0.022, plan["trunk"], sides=sides)
+    rng = np.random.default_rng(7)                    # ondulation identique d'un niveau à l'autre
+    blobs = plan["blobs"] if lod < 2 else plan["blobs"][:4]
+    for center, radii, col, level in blobs:
+        sd = subs[level]
+        if sd is None:
+            continue
+        blob(mesh, center, radii, col, rng, subdiv=sd, normal_center=c, ao=(z0, z1, 0.4))
+    if branches:
+        for tip in plan["branches"]:
+            cylinder(mesh, [0, 0, c[2] - r * 0.9], tip, h * 0.012, h * 0.005, plan["trunk"], sides=4)
+
+
+def conifer_plan(rng, leaf, trunk, height=PROTO_HEIGHT):
+    return {"height": height, "col": jitter(leaf, rng, 0.06), "trunk": jitter(trunk, rng),
+            "jit": rng.uniform(-0.15, 0.15, 64), "drop": rng.uniform(0, 0.12, 64), "rr": rng.uniform(0.85, 1.1, 64)}
+
+
+def build_conifer(mesh, plan, lod):
+    """Résineux : étages à profil galbé (anneau extérieur dentelé, anneau intermédiaire, pointe)."""
+    h = plan["height"]
+    sides, tiers = {0: (16, 7), 1: (10, 5), 2: (6, 3)}[lod]
+    cylinder(mesh, [0, 0, -0.3], [0, 0, h * 0.3], h * 0.03, h * 0.02, plan["trunk"], sides=4)
+    for i in range(tiers):
+        f = i / tiers
+        z0 = h * (0.2 + 0.66 * f)
+        r = h * 0.26 * (1 - 0.66 * f)
+        th = h * (0.3 - 0.025 * i)
+        verts, normals = [], []
+        for k in range(sides):                                             # anneau extérieur
+            a = 2 * math.pi * k / sides + plan["jit"][k]
+            rr = r * plan["rr"][k] * (1.0 if k % 2 == 0 or lod == 2 else 0.84)
+            verts.append([rr * math.cos(a), rr * math.sin(a), z0 - plan["drop"][k] * th])
+            normals.append([math.cos(a), math.sin(a), 0.35])
+        for k in range(sides):                                             # anneau intermédiaire
+            a = 2 * math.pi * (k + 0.5) / sides
+            verts.append([0.5 * r * math.cos(a), 0.5 * r * math.sin(a), z0 + th * 0.42])
+            normals.append([math.cos(a), math.sin(a), 0.9])
+        verts.append([0, 0, z0 + th])
+        normals.append([0, 0, 1])
+        tip = 2 * sides
+        tris = []
+        for k in range(sides):
+            o0, o1, m0, mprev = k, (k + 1) % sides, sides + k, sides + (k - 1) % sides
+            tris += [[o0, o1, m0], [o0, m0, mprev], [m0, sides + (k + 1) % sides, tip]]
+        colors = np.column_stack([np.tile(plan["col"], (2 * sides + 1, 1)), [0.45] * sides + [0.8] * sides + [1.0]])
+        part(mesh, "feuillage").add(verts, tris, normals, colors)

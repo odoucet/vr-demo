@@ -1,0 +1,5 @@
+Essais A/B à t = 50 s (temps GPU de l'application, moyenne sur 6 s)
+
+showflag.instancedstaticmeshes 0       réf  0.00 ms ( 0.0 i/s) →  0.00 ms ( 0.0 i/s)  gain +0.00 ms
+foliage.LODDistanceScale 0.5           réf  0.00 ms ( 0.0 i/s) →  0.00 ms ( 0.0 i/s)  gain +0.00 ms
+foliage.LODDistanceScale 0.25          réf  0.00 ms ( 0.0 i/s) →  0.00 ms ( 0.0 i/s)  gain +0.00 ms

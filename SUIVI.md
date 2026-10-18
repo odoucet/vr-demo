@@ -100,6 +100,9 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 
 ## Fait récemment
 
+- **Forêt instanciée à niveaux de détail** : 6 feuillus et 3 résineux en 3 niveaux (≈2 700 / 560 / 90 triangles pour un feuillu), 2 325 arbres avec taille, rotation et teinte propres. Le niveau fin est réservé aux arbres tout proches de la barque ; au-delà de 180 m, plus d'arbres (brume et lisière). Mesures A/B au casque : la forêt coûtait 6,8 ms par image avant réglage des niveaux. **72 Hz tenus sur toute la balade** (`review/perf/greybox-20261018-1507.png`), S2-S3 à la limite (GPU 96-97 %).
+- **Captures réelles au casque** : `pipeline/unreal/quest_shots.py` lance l'APK et capture la vue du casque aux moments clés (`review/iter-013/planche-casque.jpg`). C'est désormais la référence de revue ; à chaque run, la courbe FPS / GPU / CPU est dans `review/perf/`.
+- **Piège réglé** : un matériau doit déclarer son usage « maillages instanciés », sinon le jeu empaqueté affiche le matériau par défaut (arbres gris au casque, alors que le rendu PC était correct).
 - **72 Hz tenus sur toute la balade au Quest** (mesure du 18/10 à 14:34, GPU ≤ 92 %, `review/perf/greybox-20261018-1434.png`). Avant : 49-61 i/s de S2 à S5, GPU saturé.
   - Les essais A/B en direct au casque (`pipeline/unreal/quest_ab.py`, commandes console par adb) ont montré une scène limitée par la géométrie, pas par les pixels. Mesures en S2 : MSAA 4x → 1x : -3,2 ms ; tous les maillages cachés : -8 ms ; résolution à 60 % : -0,6 ms ; eau : -0,5 ms ; brume : -0,7 ms.
   - Correctifs : MSAA 2x ; faces dupliquées supprimées (herbe, fougères, roseaux) ; créatures cachées hors de leur passage (elles étaient dessinées sous le terrain) ; décor lointain caché pendant la brume dense de S1-S2 ; une seule lecture de texture de détail ; rendu fovéal activé.

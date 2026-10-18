@@ -335,13 +335,18 @@ float g = saturate((Albedo.g - Albedo.r) * 5.0) * Blend2;
 float3 dc = lerp(D.rgb, D2.rgb, g);
 float mean = max(lerp(Mean, Mean2, g), 0.02);
 float l = dot(dc, lw) / mean;
+// variation par instance (arbres instanciés : chaque arbre a sa teinte ; 0 hors instances)
+float vr = (R - 0.5) * Vary;
+a *= 1.0 + vr;
+a.r *= 1.0 + vr * 0.9;
+a.b *= 1.0 - vr * 0.5;
 float3 res = a * lerp(1.0, l, Strength);
 // couleur de la texture ramenée à la valeur de la couleur du sommet (touches colorées de la peinture)
 float3 tc = dc / mean * dot(a, lw);
 res = lerp(res, tc, Mix);
 return pow(max(res, 0.0), 1.0 / 2.2);"""
 DETAIL_SCALARS = {"DetailScale": 300.0, "DetailStrength": 0.0, "ColorMix": 0.0, "Blend2": 0.0, "DetailMean": 0.25,
-                  "DetailMean2": 0.25}
+                  "DetailMean2": 0.25, "Vary": 0.0}
 
 
 def look_texture(tid, srgb=True):
@@ -382,13 +387,15 @@ def peint_material():
     path = "/Game/Look/M_Peint"
     brush = brush_texture()
     default_tex = look_texture("tex-mousse")
-    digest = spec_digest("peint-v10", PEINT_CODE, TRI_CODE, TOP_CODE, DETAIL_CODE, sorted(DETAIL_SCALARS.items()),
+    digest = spec_digest("peint-v12", PEINT_CODE, TRI_CODE, TOP_CODE, DETAIL_CODE, sorted(DETAIL_SCALARS.items()),
                          MPC_DIGEST, eal.get_metadata_tag(brush, "source_sha1"))
     existing = eal.load_asset(path) if eal.does_asset_exist(path) else None
     if up_to_date(existing, digest):
         return existing
     mat = existing or tools.create_asset("M_Peint", "/Game/Look", unreal.Material, unreal.MaterialFactoryNew())
     mel.delete_all_material_expressions(mat)
+    # forêt instanciée (HISM) : sans cet usage déclaré, le jeu empaqueté remplace le matériau par celui par défaut
+    mat.set_editor_property("used_with_instanced_static_meshes", True)
     mat.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_UNLIT)
     mat.set_editor_property("float_precision_mode", unreal.MaterialFloatPrecisionMode.MFPM_FULL)   # Quest : pas de calcul en 16 bits
     mat.set_editor_property("two_sided", True)
@@ -445,7 +452,9 @@ def peint_material():
         mel.connect_material_expressions(sp["DetailScale"], "", nd, "Scale")
     mel.connect_material_expressions(nrm, "", tri, "N")
     det = custom_node(mat, DETAIL_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT3,
-                      ["Albedo", "D", "D2", "Strength", "Mix", "Blend2", "Mean", "Mean2"], -1300, -500)
+                      ["Albedo", "D", "D2", "Strength", "Mix", "Blend2", "Mean", "Mean2", "R", "Vary"], -1300, -500)
+    mel.connect_material_expressions(mel.create_material_expression(mat, unreal.MaterialExpressionPerInstanceRandom, -1600, -400), "", det, "R")
+    mel.connect_material_expressions(sp["Vary"], "", det, "Vary")
     mel.connect_material_expressions(vc, "", det, "Albedo")
     mel.connect_material_expressions(tri, "", det, "D")
     mel.connect_material_expressions(top, "", det, "D2")
@@ -590,14 +599,16 @@ SURFACES = {
     "PeintRoche": ("tex-roche", None, 140.0, 0.7, 0.35),
     "PeintTerrain": ("tex-terre", "tex-herbe", 350.0, 0.7, 0.4),
     "PeintPlanches": ("tex-planches", None, 90.0, 0.7, 0.5),
+    "PeintArbre": ("tex-mousse", None, 240.0, 0.75, 0.45, 0.45),      # arbres instanciés : teinte par arbre
+    "PeintTronc": ("tex-ecorce", None, 150.0, 0.7, 0.3, 0.25),
 }
 
 
-def surface_instance(name, tex1, tex2, scale, strength, mix):
+def surface_instance(name, tex1, tex2, scale, strength, mix, vary=0.0):
     path = f"/Game/Look/MI_{name}"
     t1 = look_texture(tex1)
     t2 = look_texture(tex2) if tex2 else t1
-    digest = spec_digest("mi-v1", eal.get_metadata_tag(MATS["Peint"], "source_sha1"), tex1, tex2, scale, strength, mix,
+    digest = spec_digest("mi-v2", eal.get_metadata_tag(MATS["Peint"], "source_sha1"), tex1, tex2, scale, strength, mix, vary,
                          eal.get_metadata_tag(t1, "source_sha1"), eal.get_metadata_tag(t2, "source_sha1"))
     mi = eal.load_asset(path) if eal.does_asset_exist(path) else None
     if up_to_date(mi, digest):
@@ -608,7 +619,7 @@ def surface_instance(name, tex1, tex2, scale, strength, mix):
     mel.set_material_instance_texture_parameter_value(mi, "Detail", t1)
     mel.set_material_instance_texture_parameter_value(mi, "Detail2", t2)
     for k, v in (("DetailScale", scale), ("DetailStrength", strength), ("ColorMix", mix), ("Blend2", 1.0 if tex2 else 0.0),
-                 ("DetailMean", TEX_MEAN[tex1]), ("DetailMean2", TEX_MEAN[tex2 or tex1])):
+                 ("DetailMean", TEX_MEAN[tex1]), ("DetailMean2", TEX_MEAN[tex2 or tex1]), ("Vary", vary)):
         mel.set_material_instance_scalar_parameter_value(mi, k, v)
     mel.update_material_instance(mi)
     mark_saved(mi, digest)
@@ -674,6 +685,33 @@ for name, data in VEG["meshes"].items():
     MESH_MATS[name] = KIND_MATS.get(name.rsplit("_", 1)[-1], "Peint")
 MESHES = {name: build_mesh(name, data) for name, data in GEO["meshes"].items()}
 _fv = [[0.0, 0.0, 0.05]] + [[1.45 * math.cos(2 * math.pi * k / 32), 0.40 * math.sin(2 * math.pi * k / 32), 0.05] for k in range(32)]
+def build_lod_mesh(name, lods, screen_sizes=(1.0, 0.75, 0.3)):
+    """Maillage statique à plusieurs niveaux de détail (LOD0 le plus fin) ; reconstruit si une source change."""
+    import hashlib
+    digest = hashlib.sha1(json.dumps([lods, screen_sizes], sort_keys=True).encode()).hexdigest()[:12]
+    path = f"{GB}/SM_{name}"
+    if eal.does_asset_exist(path) and eal.get_metadata_tag(eal.load_asset(path), "lods_sha1") == digest:
+        return eal.load_asset(path)
+    mesh = build_mesh(name, lods[0])
+    sms = unreal.get_editor_subsystem(unreal.StaticMeshEditorSubsystem)
+    for i, data in enumerate(lods[1:], start=1):
+        src = build_mesh(f"{name}_LOD{i}", data)
+        sms.set_lod_from_static_mesh(mesh, i, src, 0, True)
+    mesh.set_editor_property("auto_compute_lod_screen_size", False) if hasattr(mesh, "auto_compute_lod_screen_size") else None
+    sms.set_lod_screen_sizes(mesh, list(screen_sizes))
+    eal.set_metadata_tag(mesh, "lods_sha1", digest)
+    eal.save_loaded_asset(mesh)
+    return mesh
+
+
+TREE_KIND_MATS = {"feuillage": "PeintArbre", "bois": "PeintTronc"}
+TREE_MESHES = {}
+for pname, lods in VEG.get("prototypes", {}).items():
+    for kind in TREE_KIND_MATS:
+        if kind in lods["lod0"]:
+            TREE_MESHES[(pname, kind)] = build_lod_mesh(f"Arbre_{pname}_{kind}",
+                                                        [lods[f"lod{i}"].get(kind, lods["lod0"][kind]) for i in range(3)])
+
 FLOOR_MESH = build_mesh("PlancherBarque", {"vertices": _fv, "triangles": [[0, 1 + k, 1 + (k + 1) % 32] for k in range(32)],
                                            "normals": [[0, 0, 1]] * len(_fv), "color": [0.32, 0.22, 0.14, 0.8]})
 OBSOLETE = ["SM_Foret", "SM_ArbreColossal", "SM_ArbreLanternes", "M_GB_Foret"] + \
@@ -711,6 +749,22 @@ for name, mesh in MESHES.items():
     a = place_mesh(mesh, f"GB_{name}", MESH_MATS[name])
     if name == "Lucioles":
         a.set_actor_location(unreal.Vector(0, 0, -3000), False, False)   # sous le terrain jusqu'à l'envol (séquence)
+
+# Forêt instanciée : un acteur par modèle et par type de surface, composant HISM (LOD et culling par instance).
+_sds = unreal.get_engine_subsystem(unreal.SubobjectDataSubsystem)
+for (pname, kind), tmesh in TREE_MESHES.items():
+    holder = tag(actors.spawn_actor_from_class(unreal.Actor, unreal.Vector(0, 0, 0)), f"GB_Foret_{pname}_{kind}")
+    root = _sds.k2_gather_subobject_data_for_instance(holder)[0]
+    _sds.add_new_subobject(unreal.AddNewSubobjectParams(parent_handle=root, new_class=unreal.HierarchicalInstancedStaticMeshComponent))
+    hism = holder.get_component_by_class(unreal.HierarchicalInstancedStaticMeshComponent)
+    hism.set_static_mesh(tmesh)
+    hism.set_material(0, MATS[TREE_KIND_MATS[kind]])
+    hism.set_collision_enabled(unreal.CollisionEnabled.NO_COLLISION)
+    hism.set_editor_property("cast_shadow", False)
+    hism.set_editor_property("instance_end_cull_distance", 18000)    # au-delà de 180 m : brume et lisière
+    xf = [unreal.Transform(ue(x, y, z), unreal.Rotator(0, 0, -yaw), unreal.Vector(sxy, sxy, sz))
+          for x, y, z, yaw, sxy, sz in VEG["instances"][pname]]
+    hism.add_instances(xf, False, True)
 
 CUBE = eal.load_asset("/Engine/BasicShapes/Cube")      # 100 cm
 SPHERE = eal.load_asset("/Engine/BasicShapes/Sphere")  # 100 cm de diamètre
