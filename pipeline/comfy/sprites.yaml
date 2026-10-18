@@ -181,3 +181,14 @@ sets:
       - [herbes-lumineuses, "clump of tall grass with softly glowing pale seed heads"]
       - [lys-lumineux, "tall white lily flowers glowing softly with a pale blue light"]
       - [fougere-lumineuse, "small fern whose frond tips glow with tiny teal lights"]
+  heros:
+    type: plant
+    cell: [512, 1024]
+    grid: [4, 1]
+    size: [832, 1216]
+    seed: 2000
+    items:
+      - [tronc-colossal, "lower part of the trunk of a gigantic ancient tree with huge flared buttress roots, deep furrowed mossy bark, the trunk continues straight out of the top of the image, no leaves"]
+      - [tronc-colossal-2, "massive ancient tree trunk with twisted bark, moss and small ferns growing on it, wide roots spreading at the base, the trunk continues straight out of the top of the image, no leaves"]
+      - [rocher-geant, "huge mossy boulder with ferns and small flowers growing on top"]
+      - [souche-geante, "enormous old hollow tree stump covered in moss and mushrooms"]

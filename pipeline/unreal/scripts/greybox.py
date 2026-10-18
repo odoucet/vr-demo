@@ -456,11 +456,17 @@ def look_texture(tid, srgb=True):
     tmp = os.path.join(ROOT, "Unreal", "Saved", "import", f"{tid.replace('-', '_')}.png")
     os.makedirs(os.path.dirname(tmp), exist_ok=True)
     shutil.copyfile(src, tmp)
-    task = unreal.AssetImportTask()
-    task.filename, task.destination_path = tmp, "/Game/Look/Textures"
-    task.automated, task.replace_existing, task.save = True, True, True
-    tools.import_asset_tasks([task])
-    tex = eal.load_asset(path)
+    for attempt in range(3):     # le premier import d'une texture neuve donne parfois un asset de 32 × 32 (constaté le 19/10)
+        task = unreal.AssetImportTask()
+        task.filename, task.destination_path = tmp, "/Game/Look/Textures"
+        task.automated, task.replace_existing, task.save = True, True, True
+        tools.import_asset_tasks([task])
+        tex = eal.load_asset(path)
+        if tex is not None and tex.blueprint_get_size_x() > 32:
+            break
+        unreal.log_warning(f"{tid} : import en {tex.blueprint_get_size_x() if tex else 0} px, nouvel essai")
+        if tex is not None:
+            eal.delete_asset(path)
     if not srgb:
         tex.set_editor_property("srgb", False)
         tex.set_editor_property("compression_settings", unreal.TextureCompressionSettings.TC_VECTOR_DISPLACEMENTMAP)
@@ -1243,7 +1249,7 @@ def vie_mesh(items):
                                     "uv": uv, "uv1": uv1, "uv2": uv2, "uv3": uv3, "color": [1, 1, 1, 1]})
 
 
-SPRITE_CULL = {"arbres": 18000, "arbres2": 18000, "buissons": 7000, "fourres": 8000, "lisieres": 0, "feuillages": 0, "eau": 6000, "faune": 6000, "nuit": 6000}
+SPRITE_CULL = {"arbres": 18000, "arbres2": 18000, "buissons": 7000, "fourres": 8000, "lisieres": 0, "feuillages": 0, "eau": 6000, "faune": 6000, "nuit": 6000, "heros": 0}
 if os.path.exists(SPRITE_LAYOUT):
     MATS["Sprite"] = sprite_material()
     with open(SPRITE_LAYOUT, encoding="utf-8") as f:

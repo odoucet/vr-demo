@@ -168,7 +168,8 @@ def atlas(name, spec, paths):
             wob = 0.03 * np.sin(ys * 37.0 + i) + 0.02 * np.sin(ys * 91.0 + 2 * i)
             ramp = np.clip(np.minimum(xs[None, :] - wob, 1 - xs[None, :] - wob) / 0.12, 0, 1)
             ramp = np.where(ramp >= 1, 1.0, ramp * (0.85 + 0.15 * ys))   # le bas (sol) s'étire un peu plus loin
-            cell[..., 3] = (cell[..., 3] * np.clip(ramp * 1.6 - 0.3, 0, 1)).astype(np.uint8)
+            base = np.clip((1.0 - ys) / 0.12, 0, 1)                      # pied estompé (enfoui dans le sol et la brume)
+            cell[..., 3] = (cell[..., 3] * np.clip(ramp * 1.6 - 0.3, 0, 1) * base).astype(np.uint8)
         sheet[cy:cy + ch, cx:cx + cw] = bleed(cell)
         # emprise du sujet dans sa case (0-1) : le placement en déduit l'échelle du plan
         info.append({"name": p.stem, "u0": (ox - cx) / cw, "u1": (ox - cx + im.width) / cw,

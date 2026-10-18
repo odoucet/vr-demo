@@ -153,28 +153,28 @@ def main():
                 x, y = p["x"] - math.sin(h0) * off, p["y"] + math.cos(h0) * off
                 x = min(max(x, b["x0"] + 4), b["x1"] - 4)
                 y = min(max(y, b["y0"] + 4), b["y1"] - 4)
-                if math.hypot(x - lake["x"], y - lake["y"]) < lake["radius_m"] + 25:
+                if math.hypot(x - lake["x"], y - lake["y"]) < lake["radius_m"] + 25 or path_dist(x, y) < 70:
                     continue
                 z, _d = F.at(x, y)
                 # face à la rivière (normale vers le point du tracé), légère rotation pour casser l'alignement
                 yaw = math.degrees(math.atan2(p["y"] - y, p["x"] - x)) + rng.uniform(-12, 12)
                 cell = cells[rng.integers(len(cells))]
                 # collines et second anneau plus sombres et plus bleutés par la brume : ils reculent
-                add("lisieres", "fixe", [x, y, (z or 0) - 1.5, height * rng.uniform(0.85, 1.15), cell, yaw,
+                add("lisieres", "fixe", [x, y, (z or 0) - 4.0, height * rng.uniform(0.85, 1.15), cell, yaw,
                                           rng.uniform(0.6, 0.72) if (cell == 2 or lateral > 80) else rng.uniform(0.85, 1.0)])
 
-    strip_ring(60.0, 22.0, [0, 1, 3], 40, 0)
-    strip_ring(115.0, 34.0, [0, 1, 2], 55, 20)
+    # un seul anneau, loin : à ~60 m, les bandes se voyaient comme des panneaux plats là où la forêt s'ouvre (gué, lac)
+    strip_ring(120.0, 36.0, [0, 1, 2], 45, 10)
     # autour du lac : couronne de forêt et collines au loin (vue dégagée de S7)
     for k in range(16):
         a = 2 * math.pi * k / 16
-        for dist, height, cells in ((lake["radius_m"] + 30, 22.0, [0, 1, 3]), (lake["radius_m"] + 80, 38.0, [2])):
+        for dist, height, cells in ((lake["radius_m"] + 80, 38.0, [2, 0]),):
             x, y = lake["x"] + math.cos(a) * dist, lake["y"] + math.sin(a) * dist
-            if not (b["x0"] < x < b["x1"] and b["y0"] < y < b["y1"]) or path_dist(x, y) < 25:
+            if not (b["x0"] < x < b["x1"] and b["y0"] < y < b["y1"]) or path_dist(x, y) < 70:
                 continue
             z, _d = F.at(x, y)
             yaw = math.degrees(math.atan2(lake["y"] - y, lake["x"] - x))
-            add("lisieres", "fixe", [x, y, (z or 0) - 1.5, height * rng.uniform(0.9, 1.1), cells[rng.integers(len(cells))], yaw, 0.95])
+            add("lisieres", "fixe", [x, y, (z or 0) - 4.0, height * rng.uniform(0.9, 1.1), cells[rng.integers(len(cells))], yaw, 0.7])
 
     # --- Grands houppiers : enveloppe remplie de touffes peintes (arbre colossal, arbre de l'île) ---------------
     # touffes face à l'œil dans toutes les directions : le houppier paraît plein sous tous les angles, même par en dessous
@@ -190,6 +190,43 @@ def main():
             cell = int(rng.choice([0, 2, 4, 6]) if top and k < n_surf else rng.choice([1, 3, 5, 7] if d[2] < -0.5 else [1, 3]))
             bright = rng.uniform(0.9, 1.08) if top else rng.uniform(0.7, 0.85)
             add("feuillages", "sphere", [x, y, z, size, cell, 0, bright])
+
+    # --- Arbre colossal : tronc peint face à l'œil (un tronc se voit pareil sous tous les angles), sommet caché dans
+    # le houppier ; rochers géants moussus au bord de l'eau, souches géantes en lisière -------------------------
+    gz = F.at(*colossal_xy)[0] or 0.0
+    add("heros", "face", [colossal_xy[0], colossal_xy[1], gz - 2.0, 42.0, 1, 0, 0.95])
+    for t in (31, 57, 88, 101, 121, 158, 176, 195):
+        p = min(s, key=lambda q: abs(q["t"] - t))
+        h0 = math.radians(p["heading_deg"])
+        o = rng.choice([-1, 1]) * (p["width_m"] / 2 + rng.uniform(-1.2, 0.5))
+        x, y = p["x"] - math.sin(h0) * o, p["y"] + math.cos(h0) * o
+        z, _d = F.at(x, y)
+        if z is not None and not excluded(x, y):
+            add("heros", "face", [x, y, max(z, -0.9) - 0.4, rng.uniform(2.2, 3.6), 2, 0, rng.uniform(0.85, 0.95)])
+    for t in (70, 168):
+        p = min(s, key=lambda q: abs(q["t"] - t))
+        h0 = math.radians(p["heading_deg"])
+        o = rng.choice([-1, 1]) * (p["width_m"] / 2 + rng.uniform(5, 9))
+        x, y = p["x"] - math.sin(h0) * o, p["y"] + math.cos(h0) * o
+        z, d = F.at(x, y)
+        if z is not None and d > 2 and not excluded(x, y):
+            add("heros", "face", [x, y, z - 0.2, rng.uniform(3.5, 4.5), 3, 0, 0.9])
+
+    # --- Arbre colossal : rideaux de lianes tombant du houppier autour du tronc, mousses et fougères au pied -----
+    cx, cy = colossal_xy
+    for k in range(18):
+        a = 2 * math.pi * k / 18 + rng.uniform(-0.15, 0.15)
+        r = rng.uniform(6.5, 11.0)
+        add("feuillages@face", "face", [cx + math.cos(a) * r, cy + math.sin(a) * r, rng.uniform(24.0, 30.0), rng.uniform(10.0, 15.0),
+                                        7, 0, rng.uniform(0.7, 0.9)])
+    for k in range(40):
+        a, r = rng.uniform(0, 2 * math.pi), rng.uniform(6.0, 13.0)
+        x, y = cx + math.cos(a) * r, cy + math.sin(a) * r
+        z, d = F.at(x, y)
+        if z is None or d < 0.3:
+            continue
+        fam, cell, h1, h2 = [("fourres", 5, 1.4, 2.4), ("buissons", 3, 1.2, 1.8), ("fourres", 4, 3.0, 4.5), ("fourres", 6, 1.0, 1.4)][rng.integers(4)]
+        add(fam, "face", [x, y, z - 0.05, rng.uniform(h1, h2), cell, 0, rng.uniform(0.8, 0.95)])
 
     # --- Voûte : branches feuillues qui s'avancent au-dessus de l'eau (tronçons boisés), lianes qui pendent ------
     for p in s:

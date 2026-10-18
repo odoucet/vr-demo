@@ -242,17 +242,21 @@ def main():
     colossal = P.Bundle()
     cx, cy = colossal_xy
     bark = COL["ecorce_colossal"]
-    P.cylinder(colossal, [cx, cy, -1.5], [cx, cy, 34], 6.5, 4.0, bark, sides=28, ao_low=0.35)
+    if not SPRITES:                                       # en sprites : tronc peint face à l'œil (sprites_layout.py)
+        P.cylinder(colossal, [cx, cy, -1.5], [cx, cy, 34], 6.5, 4.0, bark, sides=28, ao_low=0.35)
     for k in range(14):                                                    # écorce en côtes verticales
         a = 2 * math.pi * k / 14
-        P.cylinder(colossal, [cx + math.cos(a) * 6.3, cy + math.sin(a) * 6.3, -1.5],
-                   [cx + math.cos(a) * 3.9, cy + math.sin(a) * 3.9, 34], 0.9, 0.5, P.jitter(bark, rng, 0.06), sides=6, ao_low=0.4)
+        rib = P.jitter(bark, rng, 0.06)
+        if not SPRITES:
+            P.cylinder(colossal, [cx + math.cos(a) * 6.3, cy + math.sin(a) * 6.3, -1.5],
+                       [cx + math.cos(a) * 3.9, cy + math.sin(a) * 3.9, 34], 0.9, 0.5, rib, sides=6, ao_low=0.4)
     for k in range(13):                                                    # contreforts
         a = 2 * math.pi * k / 9 + rng.uniform(-0.2, 0.2)
         reach = rng.uniform(9, 15)
-        P.cylinder(colossal, [cx + math.cos(a) * reach, cy + math.sin(a) * reach, -1.5],
-                   [cx + math.cos(a) * 3, cy + math.sin(a) * 3, rng.uniform(7, 12)], 1.4, 2.6, P.jitter(bark, rng, 0.05),
-                   sides=12, ao_low=0.35)
+        top_z, col_b = rng.uniform(7, 12), P.jitter(bark, rng, 0.05)
+        if not SPRITES:
+            P.cylinder(colossal, [cx + math.cos(a) * reach, cy + math.sin(a) * reach, -1.5],
+                       [cx + math.cos(a) * 3, cy + math.sin(a) * 3, top_z], 1.4, 2.6, col_b, sides=12, ao_low=0.35)
     crown_c = np.array([cx, cy, 52.0])
     core = 0.7 if SPRITES else 1.0                  # en sprites : cœur plus petit, habillé de touffes peintes (sprites_layout)
     P.blob(colossal, crown_c, [30 * core, 30 * core, 18 * core], P.jitter(COL["feuillage"][1], rng), rng, subdiv=2,
@@ -271,7 +275,8 @@ def main():
             P.blob(colossal, c, [r, r, r * 0.8], col, rng, subdiv=2 if i < 24 else 1, normal_center=crown_c, ao=(30, 72, 0.35))
     for k in range(6):                                                     # branches maîtresses
         a = 2 * math.pi * k / 6 + 0.3
-        P.cylinder(colossal, [cx, cy, 30], [cx + math.cos(a) * 18, cy + math.sin(a) * 18, 44], 2.2, 1.0, bark, sides=6)
+        if not SPRITES:
+            P.cylinder(colossal, [cx, cy, 30], [cx + math.cos(a) * 18, cy + math.sin(a) * 18, 44], 2.2, 1.0, bark, sides=6)
 
     # --- Arbre aux lanternes (S7) : large houppier en ombrelle sur l'île, lanternes suspendues dessous --------
     lantern = P.Bundle()

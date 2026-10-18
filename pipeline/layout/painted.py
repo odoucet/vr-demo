@@ -106,6 +106,7 @@ class Mesh:
         if not self.v:
             return {"vertices": [], "triangles": [], "normals": [], "colors": []}
         sel = [i for i, g in enumerate(self.g) if g < 0 or keep >= 1.0 or (g * 0.6180339887) % 1.0 < keep]
+        sel = sel or [0]                                   # jamais de niveau vide (maillage impossible à construire)
         v, t, n, c, base = [], [], [], [], 0
         for i in sel:
             v.append(self.v[i])
