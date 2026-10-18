@@ -22,6 +22,7 @@ tools = unreal.AssetToolsHelpers.get_asset_tools()
 actors = unreal.get_editor_subsystem(unreal.EditorActorSubsystem)
 levels = unreal.get_editor_subsystem(unreal.LevelEditorSubsystem)
 LIN = unreal.MovieSceneKeyInterpolation.LINEAR
+SMOOTH = unreal.MovieSceneKeyInterpolation.AUTO    # courbes : créatures et nuage de lucioles (pas de virage sec)
 
 with open(os.path.join(ROOT, "pipeline", "layout", "river.json"), encoding="utf-8") as f:
     RIVER = json.load(f)
@@ -112,8 +113,9 @@ def beat_hold(beats, i):
     return t_in, max(t_in, t_out)
 
 
-def transform_track(actor, keys, scale=None):
-    """keys : liste (t, (x, y, z) cm, yaw°). Interpolation linéaire, pas de roulis ni de tangage."""
+def transform_track(actor, keys, scale=None, interp=LIN):
+    """keys : liste (t, (x, y, z) cm, yaw°). Interpolation linéaire (barque : vitesse constante) ou courbe
+    (SMOOTH : créatures, lucioles). Pas de roulis ni de tangage."""
     binding = seq.add_possessable(actor)
     track = binding.add_track(unreal.MovieScene3DTransformTrack)
     section = track.add_section()
@@ -122,7 +124,7 @@ def transform_track(actor, keys, scale=None):
     for t, (x, y, z), yaw in keys:
         f = frame(t)
         for c, v in zip((ch[0], ch[1], ch[2], ch[5]), (x, y, z, yaw)):
-            c.add_key(f, v, interpolation=LIN)
+            c.add_key(f, v, interpolation=interp)
     s = scale or tuple(actor.get_actor_scale3d().to_tuple())
     for c, v in zip(ch[6:9], s):
         c.set_default(v)
@@ -208,12 +210,12 @@ for label in list(by_label):
     elif label.startswith(("GB_Lisiere", "GB_Collines")):
         visible_between(label, FOG_LIFT_S, DURATION + 1)
 
-transform_track(by_label["GB_Abysses"], creature_keys(CREA["abysses"]))
+transform_track(by_label["GB_Abysses"], creature_keys(CREA["abysses"]), interp=SMOOTH)
 visible_between("GB_Abysses_Modele", CREA["abysses"][0][0], CREA["abysses"][-1][0])
 for i, keys in enumerate(CREA["troupeau"]):
-    transform_track(by_label[f"GB_Troupeau{i}"], creature_keys(keys))
+    transform_track(by_label[f"GB_Troupeau{i}"], creature_keys(keys), interp=SMOOTH)
     visible_between(f"GB_Troupeau{i}_Modele", keys[0][0], keys[-1][0])
-transform_track(by_label["GB_Volante"], creature_keys(CREA["volante"]))
+transform_track(by_label["GB_Volante"], creature_keys(CREA["volante"]), interp=SMOOTH)
 visible_between("GB_Volante_Modele", CREA["volante"][0][0], CREA["volante"][-1][0])
 
 # Envol des lucioles : à la modulation (sequencer.yaml, « lucioles-envol »), le nuage sort de l'eau à 10 m devant
@@ -234,7 +236,7 @@ for k in range(0, 51, 2):
     z = -150.0 + 9000.0 * ease ** 1.3
     swarm.append((t_env + k, (cx + math.cos(ang) * rad, cy + math.sin(ang) * rad, z), yaw0 + k * 4.0))
 swarm.append((DURATION, swarm[-1][1][:2] + (12000.0,), swarm[-1][2]))
-transform_track(by_label["GB_Lucioles"], swarm, scale=(1.0, 1.0, 1.0))
+transform_track(by_label["GB_Lucioles"], swarm, scale=(1.0, 1.0, 1.0), interp=SMOOTH)
 visible_between("GB_Lucioles", t_env - 0.5, DURATION + 1)
 
 # Crépuscule → nuit : luminosité du ciel peint (MPC_Ambiance.CielLuminosite), pleine en S2-S4, baisse sous les
@@ -273,6 +275,9 @@ if mpc is not None:
         msec.add_scalar_parameter_key("AbyssFade", frame(t), v)
     # Barque (x, y cm, z = 0, lacet en radians) pour les shaders : lumière de la lanterne sur le décor et l'eau,
     # sillage et masque de l'eau dans la coque.
+    # position de la créature des abysses pour son halo sur l'eau (shader de l'eau)
+    for t, x, y, z, _h in CREA["abysses"]:
+        msec.add_color_parameter_key("AbyssPos", frame(t), unreal.LinearColor(x * 100, -y * 100, z * 100, 1.0))
     for t, (bx, by, _), yaw in boat_keys:
         msec.add_color_parameter_key("Barque", frame(t), unreal.LinearColor(bx, by, math.radians(yaw), 1.0))   # lacet en z : l'alpha n'était pas transmis
 

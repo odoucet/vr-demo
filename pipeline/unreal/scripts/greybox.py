@@ -104,10 +104,11 @@ def material(name, color, emissive=False, roughness=0.9, specular=None, opacity=
 # appoint du ciel et liseré de contre-jour. Lumières pilotées par MPC_Ambiance (animée beat par beat).
 MPC_PATH = f"{GB}/MPC_Ambiance"
 MPC_VECTORS = {"SoleilDir": (0.9, -0.4, 0.2), "Lumiere": (1.0, 0.95, 0.85), "Ombre": (0.3, 0.35, 0.55),
-               "CielAppoint": (0.1, 0.12, 0.2), "CielTeinte": (1.0, 1.0, 1.0), "Barque": (0.0, 0.0, 0.0)}
+               "CielAppoint": (0.1, 0.12, 0.2), "CielTeinte": (1.0, 1.0, 1.0), "Barque": (0.0, 0.0, 0.0),
+               "AbyssPos": (0.0, 0.0, -10000.0)}
 # CielLuminosite (ancien), apparition progressive des lucioles des berges et du nuage de l'envol
 MPC_SCALARS = {"CielLuminosite": 1.0, "LucioleFade": 1.0, "EnvolFade": 0.0, "AbyssFade": 1.0}
-MPC_DIGEST = spec_digest("mpc-v5", sorted(MPC_VECTORS), sorted(MPC_SCALARS))
+MPC_DIGEST = spec_digest("mpc-v6", sorted(MPC_VECTORS), sorted(MPC_SCALARS))
 
 
 def ambiance_mpc():
@@ -159,6 +160,8 @@ def wire_lantern(mat, node, wp=None):
     mel.connect_material_expressions(wp, "", node, "WP")
     mel.connect_material_expressions(tn, "", node, "T")
     mel.connect_material_expressions(cp, "", node, "B")
+    cam = mel.create_material_expression(mat, unreal.MaterialExpressionCameraPositionWS, -1100, 1200)
+    mel.connect_material_expressions(cam, "", node, "Cam")
 
 
 def custom_node(mat, code, out_type, names, x, y):
@@ -269,7 +272,11 @@ float2 lp = B.xy + float2(cb, sb) * %(lantx).1f;
 float dlw = length(WP.xy - lp);
 float flick = 0.86 + 0.1 * sin(T * 11.0) * sin(T * 6.7 + 1.3) + 0.04 * sin(T * 23.0);
 col += float3(%(cr).2f, %(cg).2f, %(cb).2f) * flick * (0.25 + 0.75 * rip) * 0.9 / (1.0 + (dlw / 140.0) * (dlw / 140.0));
-float op = max(lerp(0.5, 0.96, fr), max(foam, boatfoam * 0.8));
+// halo de la créature des abysses sur la surface (lumière vue à travers l'eau), plus faible quand elle s'enfonce
+float2 da = WP.xy - Ab.xy;
+float halo = exp(-dot(da, da) / (420.0 * 420.0)) * saturate(1.0 + Ab.z / 900.0) * saturate(Af);
+col += float3(0.15, 1.6, 2.0) * 0.18 * halo * (0.6 + 0.4 * rip);
+float op = max(lerp(0.68, 0.97, fr), max(foam, boatfoam * 0.8));
 op *= smoothstep(0.9, 1.02, hull);
 return float4(col, op);""" % {"lantx": LANTERN_LOCAL[0], "cr": CANDLE_RGB[0], "cg": CANDLE_RGB[1], "cb": CANDLE_RGB[2], "x0": WATER_MAP["x0"], "y0": WATER_MAP["y0"], "size": WATER_MAP["size_m"], "drift": SKY_DRIFT}
 
@@ -324,13 +331,26 @@ float dl = length(WP.xyz - lp);
 float flick = 0.86 + 0.1 * sin(T * 11.0) * sin(T * 6.7 + 1.3) + 0.04 * sin(T * 23.0);
 float lamp = flick * saturate(1.0 - dl / 1100.0) / (1.0 + (dl / 170.0) * (dl / 170.0));
 col += albedo * CANDLE * lamp * (0.3 + 0.7 * saturate(dot(n, normalize(lp - WP.xyz)))) * 2.4;
+// sous l'eau (eau plate à z = 0) : la couleur s'éteint vers celle de l'eau profonde selon la longueur du trajet
+// sous la surface (exact pour une eau plate, sans lire la profondeur : impossible sur Quest sans HDR mobile)
+float under = -WP.z;
+if (under > 0.0)
+{
+    float lw = under * length(Cam.xyz - WP.xyz) / max(Cam.z - WP.z, 1.0);
+    float tr = exp(-lw * 0.014);
+    tr = tr * tr * (3.0 - 2.0 * tr);
+    col = lerp((Lumiere.rgb * 0.5 + 0.2) * float3(0.02, 0.06, 0.07), col, tr);
+}
+// ligne d'eau : liseré clair là où l'objet traverse la surface
+col += Lumiere.rgb * 0.06 * (1.0 - smoothstep(0.0, 3.5, abs(WP.z)));
 return col;""" % {"lx": LANTERN_LOCAL[0], "lz": LANTERN_LOCAL[2], "cr": CANDLE_RGB[0], "cg": CANDLE_RGB[1], "cb": CANDLE_RGB[2]}
 
 
 # Une seule lecture de texture par pixel (projection selon l'axe dominant de la normale), au lieu des trois
 # d'un vrai triplanaire : mesure du 18/10, GPU saturé sur Quest ; les bords de projection se perdent dans la touche.
 TRI_CODE = """float3 n = abs(N.xyz);
-float2 uv = (n.z >= n.x && n.z >= n.y) ? P.xy : ((n.x >= n.y) ? P.yz : P.xz);
+float3 pp = Local > 0.5 ? LP.xyz : P.xyz;      // repère de l'objet pour ce qui bouge (plancher de la barque)
+float2 uv = (n.z >= n.x && n.z >= n.y) ? pp.xy : ((n.x >= n.y) ? pp.yz : pp.xz);
 return Texture2DSample(Tex, TexSampler, uv / Scale).rgb;"""
 TOP_CODE = """return Texture2DSample(Tex, TexSampler, P.xy / Scale).rgb;"""
 DETAIL_CODE = """float3 a = pow(max(Albedo.rgb, 0.0), 2.2);
@@ -351,7 +371,7 @@ float3 tc = dc / mean * dot(a, lw);
 res = lerp(res, tc, Mix);
 return pow(max(res, 0.0), 1.0 / 2.2);"""
 DETAIL_SCALARS = {"DetailScale": 300.0, "DetailStrength": 0.0, "ColorMix": 0.0, "Blend2": 0.0, "DetailMean": 0.25,
-                  "DetailMean2": 0.25, "Vary": 0.0}
+                  "DetailMean2": 0.25, "Vary": 0.0, "LocalSpace": 0.0}
 
 
 def look_texture(tid, srgb=True):
@@ -387,13 +407,24 @@ WATER_MAP_TEX = look_texture("eau_carte", srgb=False)
 RIDES_TEX = look_texture("rides", srgb=False)
 
 
-def peint_material(name="M_Peint", dithered=False):
+UNDERWATER_START = "// sous l'eau (eau plate à z = 0)"
+
+
+def dry_code(code):
+    """PEINT_CODE sans l'absorption sous l'eau ni la ligne d'eau : pour ce qui reste hors de l'eau (arbres,
+    buissons, herbe, troncs) : depuis l'ajout de ce calcul sur tous les pixels, S2-S3 sont tombés de 67 à 57-59 i/s au Quest."""
+    a, b = code.index(UNDERWATER_START), code.index("return col;")
+    return code[:a] + code[b:]
+
+
+def peint_material(name="M_Peint", dithered=False, underwater=True):
     """M_Peint : couleur des sommets, ombrage deux tons ; voir PEINT_CODE. dithered : fondu tramé entre niveaux de
     détail (arbres instanciés : ils ne « se redessinent » plus d'un coup)."""
     path = f"/Game/Look/{name}"
     brush = brush_texture()
     default_tex = look_texture("tex-mousse")
-    digest = spec_digest("peint-v13", dithered, PEINT_CODE, TRI_CODE, TOP_CODE, DETAIL_CODE, sorted(DETAIL_SCALARS.items()),
+    code = PEINT_CODE if underwater else dry_code(PEINT_CODE)
+    digest = spec_digest("peint-v14", dithered, underwater, code, TRI_CODE, TOP_CODE, DETAIL_CODE, sorted(DETAIL_SCALARS.items()),
                          MPC_DIGEST, eal.get_metadata_tag(brush, "source_sha1"))
     existing = eal.load_asset(path) if eal.does_asset_exist(path) else None
     if up_to_date(existing, digest):
@@ -429,9 +460,9 @@ def peint_material(name="M_Peint", dithered=False):
         cp.set_editor_property("parameter_name", name)
         params[name] = cp
     node = mel.create_material_expression(mat, unreal.MaterialExpressionCustom, -500, 0)
-    node.set_editor_property("code", PEINT_CODE)
+    node.set_editor_property("code", code)
     node.set_editor_property("output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT3)
-    names = ["Albedo", "AO", "N", "L", "V", "Brush", "Lumiere", "Ombre", "Ciel", "WP", "T", "B"]
+    names = ["Albedo", "AO", "N", "L", "V", "Brush", "Lumiere", "Ombre", "Ciel", "WP", "T", "B", "Cam"]
     inputs = []
     for n in names:
         ci = unreal.CustomInput()
@@ -451,7 +482,9 @@ def peint_material(name="M_Peint", dithered=False):
         t.set_editor_property("parameter_name", name)
         t.set_editor_property("texture", default_tex)
         tobj.append(t)
-    tri = custom_node(mat, TRI_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["Tex", "P", "N", "Scale"], -1600, -900)
+    tri = custom_node(mat, TRI_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["Tex", "P", "N", "Scale", "LP", "Local"], -1600, -900)
+    mel.connect_material_expressions(mel.create_material_expression(mat, unreal.MaterialExpressionLocalPosition, -1900, -1100), "", tri, "LP")
+    mel.connect_material_expressions(sp["LocalSpace"], "", tri, "Local")
     top = custom_node(mat, TOP_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["Tex", "P", "Scale"], -1600, -750)
     for nd, t in ((tri, tobj[0]), (top, tobj[1])):
         mel.connect_material_expressions(t, "", nd, "Tex")
@@ -490,7 +523,8 @@ MATS = {
     "Peint": peint_material(),
     # sans fondu tramé : il empêche le GPU du Quest de rejeter tôt les pixels cachés (houppiers superposés) ;
     # mesure du 18/10 : la forêt coûtait 6,4 ms avec lui
-    "PeintArbreBase": peint_material("M_PeintArbre", dithered=False),
+    "PeintArbreBase": peint_material("M_PeintArbre", dithered=False, underwater=False),
+    "PeintSecBase": peint_material("M_PeintSec", underwater=False),     # feuillage, herbe, troncs : hors de l'eau
     "Terrain": material("Terrain", (0.16, 0.22, 0.08)),
     "Eau": material("Eau", (0.01, 0.025, 0.035), roughness=0.7, specular=0.08, opacity=0.55),
     "Bois": material("Bois", (0.18, 0.11, 0.06)),
@@ -621,22 +655,23 @@ MATS.update(candle_materials())
 
 # Instances du look peint par type de surface : (texture, seconde texture, échelle cm, force, mélange couleur)
 SURFACES = {
-    "PeintFeuillage": ("tex-mousse", None, 260.0, 0.75, 0.45),
-    "PeintBois": ("tex-ecorce", None, 160.0, 0.7, 0.3),
-    "PeintSol": ("tex-herbe", None, 120.0, 0.6, 0.35),
+    "PeintFeuillage": ("tex-mousse", None, 260.0, 0.75, 0.45, 0.0, "PeintSecBase"),
+    "PeintBois": ("tex-ecorce", None, 160.0, 0.7, 0.3),                                  # arche des racines : dans l'eau
+    "PeintBoisSec": ("tex-ecorce", None, 160.0, 0.7, 0.3, 0.0, "PeintSecBase"),
+    "PeintSol": ("tex-herbe", None, 120.0, 0.6, 0.35, 0.0, "PeintSecBase"),
     "PeintRoche": ("tex-roche", None, 140.0, 0.7, 0.35),
     "PeintTerrain": ("tex-terre", "tex-herbe", 350.0, 0.7, 0.4),
-    "PeintPlanches": ("tex-planches", None, 90.0, 0.7, 0.5),
+    "PeintPlanches": ("tex-planches", None, 90.0, 0.7, 0.5, 0.0, "Peint", True),   # plancher : suit la barque
     "PeintArbre": ("tex-mousse", None, 240.0, 0.75, 0.45, 0.45, "PeintArbreBase"),   # arbres instanciés : teinte par arbre
     "PeintTronc": ("tex-ecorce", None, 150.0, 0.7, 0.3, 0.25, "PeintArbreBase"),
 }
 
 
-def surface_instance(name, tex1, tex2, scale, strength, mix, vary=0.0, parent="Peint"):
+def surface_instance(name, tex1, tex2, scale, strength, mix, vary=0.0, parent="Peint", local=False):
     path = f"/Game/Look/MI_{name}"
     t1 = look_texture(tex1)
     t2 = look_texture(tex2) if tex2 else t1
-    digest = spec_digest("mi-v3", eal.get_metadata_tag(MATS[parent], "source_sha1"), parent, tex1, tex2, scale, strength, mix, vary,
+    digest = spec_digest("mi-v4", eal.get_metadata_tag(MATS[parent], "source_sha1"), parent, tex1, tex2, scale, strength, mix, vary, local,
                          eal.get_metadata_tag(t1, "source_sha1"), eal.get_metadata_tag(t2, "source_sha1"))
     mi = eal.load_asset(path) if eal.does_asset_exist(path) else None
     if up_to_date(mi, digest):
@@ -647,7 +682,8 @@ def surface_instance(name, tex1, tex2, scale, strength, mix, vary=0.0, parent="P
     mel.set_material_instance_texture_parameter_value(mi, "Detail", t1)
     mel.set_material_instance_texture_parameter_value(mi, "Detail2", t2)
     for k, v in (("DetailScale", scale), ("DetailStrength", strength), ("ColorMix", mix), ("Blend2", 1.0 if tex2 else 0.0),
-                 ("DetailMean", TEX_MEAN[tex1]), ("DetailMean2", TEX_MEAN[tex2 or tex1]), ("Vary", vary)):
+                 ("DetailMean", TEX_MEAN[tex1]), ("DetailMean2", TEX_MEAN[tex2 or tex1]), ("Vary", vary),
+                 ("LocalSpace", 1.0 if local else 0.0)):
         mel.set_material_instance_scalar_parameter_value(mi, k, v)
     mel.update_material_instance(mi)
     mark_saved(mi, digest)
@@ -717,7 +753,7 @@ GEO["meshes"]["Eau"] = {"vertices": _wv, "triangles": _wt, "normals": [[0, 0, 1]
 MESH_MATS["Eau"] = "Eau"
 with open(os.path.join(ROOT, "pipeline", "layout", "vegetation.json"), encoding="utf-8") as f:
     VEG = json.load(f)
-KIND_MATS = {"feuillage": "PeintFeuillage", "bois": "PeintBois", "sol": "PeintSol", "roche": "PeintRoche"}
+KIND_MATS = {"feuillage": "PeintFeuillage", "bois": "PeintBoisSec", "sol": "PeintSol", "roche": "PeintRoche"}
 for name, data in VEG["meshes"].items():
     GEO["meshes"][name] = data
     MESH_MATS[name] = KIND_MATS.get(name.rsplit("_", 1)[-1], "Peint")
@@ -1009,7 +1045,7 @@ if os.path.exists(SKY_PNG):
         sky_tex = eal.load_asset(f"{GB}/ciel")
         eal.set_metadata_tag(sky_tex, "source_sha1", sky_digest)
         eal.save_loaded_asset(sky_tex)
-    SKY_WATER_VERSION = "ciel-eau-v8"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
+    SKY_WATER_VERSION = "ciel-eau-v9"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
     sky_mat_path = f"{GB}/M_GB_CielPeint"
     sky_mat = eal.load_asset(sky_mat_path) if eal.does_asset_exist(sky_mat_path) else None
     rebuild_sky_water = not up_to_date(sky_mat, spec_digest(SKY_WATER_VERSION, sky_digest, MPC_DIGEST, WATER_CODE,
@@ -1057,7 +1093,7 @@ if os.path.exists(SKY_PNG) and rebuild_sky_water:
     wpos = mel.create_material_expression(water, unreal.MaterialExpressionWorldPosition, -1000, 100)
     wt = mel.create_material_expression(water, unreal.MaterialExpressionTime, -1000, 200)
     wnode = custom_node(water, WATER_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT4,
-                        ["Dir", "WP", "T", "Map", "Rides", "Sky", "Teinte", "Lumiere", "B"], -600, 0)
+                        ["Dir", "WP", "T", "Map", "Rides", "Sky", "Teinte", "Lumiere", "B", "Ab", "Af"], -600, 0)
     mel.connect_material_expressions(wcam, "", wnode, "Dir")
     mel.connect_material_expressions(wpos, "", wnode, "WP")
     mel.connect_material_expressions(wt, "", wnode, "T")
@@ -1071,6 +1107,11 @@ if os.path.exists(SKY_PNG) and rebuild_sky_water:
     wb.set_editor_property("collection", MPC)
     wb.set_editor_property("parameter_name", "Barque")
     mel.connect_material_expressions(wb, "", wnode, "B")
+    for i, (pin, pname) in enumerate((("Ab", "AbyssPos"), ("Af", "AbyssFade"))):
+        cpw = mel.create_material_expression(water, unreal.MaterialExpressionCollectionParameter, -1000, 950 + 100 * i)
+        cpw.set_editor_property("collection", MPC)
+        cpw.set_editor_property("parameter_name", pname)
+        mel.connect_material_expressions(cpw, "", wnode, pin)
     rgb = mel.create_material_expression(water, unreal.MaterialExpressionComponentMask, -300, 0)
     for c in ("r", "g", "b"):
         rgb.set_editor_property(c, True)
@@ -1141,7 +1182,7 @@ def peint_tex_material(name, texture, anim=None, box=None, glow=None, tint=None)
     if box is not None:
         box_def = "".join(f"#define {k} {v:.3f}\n" for k, v in zip(("BXN", "BXX", "BYN", "BYX", "BZN", "BZX"), box))
     anim_code = box_def + ANIM_CODES[anim] if anim else None
-    digest = spec_digest("peint-tex-v6", PEINT_CODE, MPC_DIGEST, texture.get_path_name(), anim_code, glow, tint)
+    digest = spec_digest("peint-tex-v7", PEINT_CODE, MPC_DIGEST, texture.get_path_name(), anim_code, glow, tint)
     existing = eal.load_asset(path) if eal.does_asset_exist(path) else None
     if up_to_date(existing, digest):
         return existing
@@ -1164,7 +1205,7 @@ def peint_tex_material(name, texture, anim=None, box=None, glow=None, tint=None)
     half = mel.create_material_expression(mat, unreal.MaterialExpressionConstant, -1100, 200)
     half.set_editor_property("r", 0.5)
     node = custom_node(mat, PEINT_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT3,
-                       ["Albedo", "AO", "N", "L", "V", "Brush", "Lumiere", "Ombre", "Ciel", "WP", "T", "B"], -500, 0)
+                       ["Albedo", "AO", "N", "L", "V", "Brush", "Lumiere", "Ombre", "Ciel", "WP", "T", "B", "Cam"], -500, 0)
     mel.connect_material_expressions(enc, "", node, "Albedo")
     mel.connect_material_expressions(one, "", node, "AO")
     mel.connect_material_expressions(nrm, "", node, "N")
@@ -1342,10 +1383,10 @@ with open(os.path.join(ROOT, "pipeline", "style", "ambiance.json"), encoding="ut
     fog_s2 = next(b for b in json.load(f)["beats"] if b["id"] == "S2-PONTON")
 fc.set_editor_property("fog_density", fog_s2["densite"])
 fc.set_editor_property("fog_inscattering_luminance", unreal.LinearColor(*fog_s2["brume_lineaire"], 1.0))
-fc.set_editor_property("start_distance", 1500.0)
-# brume basse (retour d'Olivier) : épaisse au ras de l'eau, sa densité diminue de moitié tous les ~7 m de hauteur ;
+fc.set_editor_property("start_distance", 800.0)
+# brume basse (retour d'Olivier) : épaisse au ras de l'eau, sa densité diminue de moitié tous les ~17 m de hauteur ;
 # le ciel peint (matériau « ciel ») n'est pas embrumé
-fc.set_editor_property("fog_height_falloff", 1.4)
+fc.set_editor_property("fog_height_falloff", 0.6)   # mesures du 18/10 : à 1,4 les cimes sortaient de la brume
 tag(actors.spawn_actor_from_class(unreal.PlayerStart, ue(start["x"], start["y"], 0.2)), "Depart")
 
 # Pas de réglage d'exposition : l'exposition auto est coupée dans le projet (VR) et le moteur ignore alors

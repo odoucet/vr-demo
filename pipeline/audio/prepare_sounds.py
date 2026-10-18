@@ -13,15 +13,22 @@ ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "audio" / "sfx"
 DST = ROOT / "Unreal" / "Saved" / "import" / "sfx"
 
+import yaml  # noqa: E402
+
+# Début d'écoute par son (sounds.yaml, debut_s) : saute un passage indésirable de l'enregistrement.
+SKIP = {s_["id"]: s_.get("debut_s", 0)
+        for s_ in yaml.safe_load((ROOT / "pipeline" / "audio" / "sounds.yaml").read_text(encoding="utf-8"))["sounds"]}
+
 DST.mkdir(parents=True, exist_ok=True)
 for ogg in sorted(SRC.glob("*.ogg")):
     wav = DST / f"{ogg.stem}.wav"
-    stamp = wav.with_suffix(".v2")
+    skip = SKIP.get(ogg.stem, 0)
+    stamp = wav.with_suffix(f".v2s{skip}" if skip else ".v2")
     if wav.exists() and stamp.exists() and wav.stat().st_mtime >= ogg.stat().st_mtime:
         continue
     cue = ogg.stem.startswith(("cue-", "sfx-gue"))
     loud = "loudnorm=I=-18:TP=-2:LRA=11" if cue else "loudnorm=I=-24:TP=-2:LRA=11"
-    subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", str(ogg), "-af", loud, "-ar", "48000",
+    subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-ss", str(skip), "-i", str(ogg), "-af", loud, "-ar", "48000",
                     "-ac", "1" if cue else "2", "-c:a", "pcm_s16le", str(wav)], check=True)
     stamp.touch()
     print(f"  {wav.relative_to(ROOT)}")

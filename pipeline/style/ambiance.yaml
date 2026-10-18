@@ -9,7 +9,9 @@
 # Valeurs de nuit réglées sur captures sans courbe filmique (comme le Quest), review/iter-008.
 # fondu_s   : durée du fondu depuis le beat précédent, centré sur le début du beat (avance_s plus tôt) ; valeur
 #             globale, ou par beat (S6 : la nuit tombait trop vite au bout du canal, retour d'Olivier du 18/10).
-# Brume basse depuis le 18/10 (fog_height_falloff 1,4 : épaisse au ras de l'eau) ; densités relevées en conséquence.
+# Brume basse depuis le 18/10 (fog_height_falloff 0,6, début à 8 m) ; densités calculées avec les formules du
+# moteur (densité/1000 par cm, transmission 2^-densité×distance) : brume à 50 % vers 40 m en S2, 60 m en S3-S5,
+# 90 m en S6-S7 ; la nuit, brume plus claire que les ombres (bleu-gris lunaire) pour se lire comme de la brume.
 #
 # Look peint (matériau M_Peint, deux tons) — multiplicateurs linéaires de la couleur propre (look.yaml) :
 # lumiere   : face éclairée (chaude au crépuscule, froide au clair de lune).
@@ -23,10 +25,10 @@
 fondu_s: 12
 saturation: 0.6     # 1 = teinte mesurée telle quelle, 0 = gris
 beats:
-  S1-NOIR:    {luminance: 0.02, densite: 0.100, lumiere: [0.20, 0.24, 0.36], ombre: [0.06, 0.08, 0.14], ciel: [0.03, 0.04, 0.08], ciel_teinte: [0.05, 0.06, 0.10], soleil: [20, 12]}
-  S2-PONTON:  {luminance: 0.10, densite: 0.250, lumiere: [0.45, 0.55, 0.75], ombre: [0.12, 0.17, 0.30], ciel: [0.06, 0.09, 0.16], ciel_teinte: [0.60, 0.70, 0.86], soleil: [25, 10]}   # départ dans la vraie brume (essai ×20, review/iter-006)
-  S3-ABYSSE:  {luminance: 0.11, densite: 0.080, lumiere: [1.00, 0.98, 0.88], ombre: [0.26, 0.34, 0.50], ciel: [0.10, 0.14, 0.20], ciel_teinte: [0.90, 0.92, 0.95], soleil: [60, 16]}
-  S4-GUE:     {luminance: 0.12, densite: 0.080, lumiere: [1.25, 1.02, 0.72], ombre: [0.30, 0.34, 0.56], ciel: [0.12, 0.13, 0.20], ciel_teinte: [1.00, 0.92, 0.85], soleil: [110, 14]}
-  S5-RACINES: {luminance: 0.05, densite: 0.090, lumiere: [0.95, 0.72, 0.38], ombre: [0.17, 0.21, 0.23], ciel: [0.10, 0.11, 0.12], ciel_teinte: [0.70, 0.55, 0.45], soleil: [15, 9]}
-  S6-LUNE:    {fondu_s: 26, avance_s: 8, luminance: 0.02, densite: 0.060, lumiere: [0.16, 0.26, 0.30], ombre: [0.02, 0.04, 0.055], ciel: [0.012, 0.025, 0.03], ciel_teinte: [0.09, 0.13, 0.16], soleil: [15, 30]}   # trouée : ciel et lune dégagés ; la lune éclaire
-  S7-LAC:     {luminance: 0.02, densite: 0.060, lumiere: [0.13, 0.16, 0.30], ombre: [0.02, 0.025, 0.06], ciel: [0.015, 0.02, 0.04], ciel_teinte: [0.06, 0.07, 0.13], soleil: [0, 25]}
+  S1-NOIR:    {luminance: 0.02, densite: 0.300, lumiere: [0.20, 0.24, 0.36], ombre: [0.06, 0.08, 0.14], ciel: [0.03, 0.04, 0.08], ciel_teinte: [0.05, 0.06, 0.10], soleil: [20, 12]}
+  S2-PONTON:  {luminance: 0.13, densite: 0.440, lumiere: [0.45, 0.55, 0.75], ombre: [0.12, 0.17, 0.30], ciel: [0.06, 0.09, 0.16], ciel_teinte: [0.60, 0.70, 0.86], soleil: [25, 10]}   # départ dans la vraie brume (essai ×20, review/iter-006)
+  S3-ABYSSE:  {luminance: 0.11, densite: 0.250, lumiere: [1.00, 0.98, 0.88], ombre: [0.26, 0.34, 0.50], ciel: [0.10, 0.14, 0.20], ciel_teinte: [0.90, 0.92, 0.95], soleil: [60, 16]}
+  S4-GUE:     {luminance: 0.12, densite: 0.250, lumiere: [1.25, 1.02, 0.72], ombre: [0.30, 0.34, 0.56], ciel: [0.12, 0.13, 0.20], ciel_teinte: [1.00, 0.92, 0.85], soleil: [110, 14]}
+  S5-RACINES: {luminance: 0.09, densite: 0.250, lumiere: [0.95, 0.72, 0.38], ombre: [0.17, 0.21, 0.23], ciel: [0.10, 0.11, 0.12], ciel_teinte: [0.70, 0.55, 0.45], soleil: [15, 9]}
+  S6-LUNE:    {fondu_s: 26, avance_s: 8, luminance: 0.06, densite: 0.150, lumiere: [0.16, 0.26, 0.30], ombre: [0.02, 0.04, 0.055], ciel: [0.012, 0.025, 0.03], ciel_teinte: [0.09, 0.13, 0.16], soleil: [15, 30]}   # trouée : ciel et lune dégagés ; la lune éclaire
+  S7-LAC:     {luminance: 0.06, densite: 0.150, lumiere: [0.13, 0.16, 0.30], ombre: [0.02, 0.025, 0.06], ciel: [0.015, 0.02, 0.04], ciel_teinte: [0.06, 0.07, 0.13], soleil: [0, 25]}

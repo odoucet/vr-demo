@@ -153,14 +153,17 @@ def main():
                 if z is not None and not excluded(px, py):
                     P.pebbles(chunk(px, py), px, py, max(z, -0.2), rng, COL["rocher"])
             if rng.uniform() < 0.04:                                  # bois mort couché sur la berge
-                off = side * (p["width_m"] / 2 + rng.uniform(1.5, 6))
+                # parallèle à la berge (jamais vers la rivière), sol mesuré aux deux bouts : il repose sur la
+                # pente (retour d'Olivier : un tronc dépassait au-dessus de l'eau à 78 s)
+                off = side * (p["width_m"] / 2 + rng.uniform(2.0, 6))
                 px, py = p["x"] + nx * off, p["y"] + ny * off
-                z, d = F.at(px, py)
-                if z is not None and d > 1 and not excluded(px, py):
-                    a = rng.uniform(0, 2 * math.pi)
-                    L = rng.uniform(2.5, 5)
-                    P.log(chunk(px, py), [px, py, z + 0.15], [px + math.cos(a) * L, py + math.sin(a) * L, z + 0.25],
-                          rng.uniform(0.15, 0.3), rng, COL["tronc"])
+                L = rng.uniform(2.5, 5)
+                a = h0 + rng.uniform(-0.35, 0.35)
+                qx, qy = px + math.cos(a) * L, py + math.sin(a) * L
+                (za, da), (zb, db) = F.at(px, py), F.at(qx, qy)
+                if (za is not None and zb is not None and min(da, db) > 1.2 and abs(za - zb) < 0.8
+                        and not excluded(px, py) and not excluded(qx, qy)):
+                    P.log(chunk(px, py), [px, py, za + 0.12], [qx, qy, zb + 0.12], rng.uniform(0.15, 0.3), rng, COL["tronc"])
             for _ in range(11):                                      # touffes d'herbe
                 off = side * (p["width_m"] / 2 + rng.uniform(0.2, 9))
                 px, py = p["x"] + nx * off + rng.uniform(-0.5, 0.5), p["y"] + ny * off + rng.uniform(-0.5, 0.5)

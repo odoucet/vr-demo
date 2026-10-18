@@ -45,6 +45,10 @@ def record(variant, duration, log_path):
     if not devices:
         raise SystemExit("Aucun casque : brancher le Quest en USB et accepter le débogage.")
     pkg = PACKAGES[variant]
+    if "Asleep" in adb("shell", "dumpsys", "power").stdout:     # réveil seulement si endormi (sinon ouvre le menu)
+        adb("shell", "input", "keyevent", "KEYCODE_WAKEUP")
+    adb("shell", "cmd", "media_session", "volume", "--stream", "3", "--set", "1")   # volume bas (Olivier, 18/10)
+    adb("shell", "am", "broadcast", "-a", "com.oculus.vrpowermanager.prox_close")  # casque « porté » pendant la mesure
     adb("shell", "am", "force-stop", pkg)
     adb("logcat", "-c")
     adb("shell", "am", "start", "-n", f"{pkg}/{ACTIVITY}", check=True)
@@ -71,6 +75,7 @@ def record(variant, duration, log_path):
                         break
         finally:
             proc.terminate()
+            adb("shell", "am", "broadcast", "-a", "com.oculus.vrpowermanager.automation_disable")   # capteur rendu
 
 
 def parse(log_path):

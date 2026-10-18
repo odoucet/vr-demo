@@ -92,6 +92,7 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 
 ## À vérifier au casque
 
+- **Corrections du 18/10 au soir (APK installé)** : pieux du ponton moins visibles à travers l'eau ? brume enfin perceptible, pas trop dense au départ ? plancher fixe ? lucioles de l'envol en courbes ? plus de voix à l'entrée du lac ? (volume du casque laissé à 1 par mes essais)
 - **J2 (greybox)** : fréquence d'image avec ~530 k triangles de décor et les textures (mesure à faire casque porté), lisibilité de l'eau et du sillage, chaleur de la lanterne, lucioles (taille, clignotement, dérive : agréables ou agaçantes ?), brume du départ (trop dense ?), échelle de la barque (3,5 m, franc-bord ~45 cm, place assise à 1,20 m derrière le centre), gêne de la lanterne de proue (D11), hauteur des yeux 1,10 m, confort de la dérive et des virages, lisibilité du passage sous la barque (S3), distance du troupeau (14 m, S4), passage sous l'arche (8 m, S5).
 
 - **J1 (APK `builds/android/`)** : la vidéo s'affiche ; « AVANT » devant ; la stéréo n'est pas inversée (« ŒIL GAUCHE » ne doit être lu que de l'œil gauche) ; les repères 1,5 m / 3 m / 10 m / ∞ paraissent à ces distances ; le cube rouge clignote en même temps que le flash blanc et le bip ; fluidité (72 Hz) en 4096 px. Point technique incertain : sélection de l'œil (`ResolvedView.StereoPassIndex`) avec le multiview mobile.
@@ -102,7 +103,15 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 
 ## Fait récemment
 
-- **Enquête du 18/10 au soir (sans casque ni 3D locale), à corriger à la prochaine session 3D** :
+- **Corrections de l'enquête (18/10 au soir)** :
+  - Plancher de la barque : texture projetée dans le repère de l'objet, elle ne défile plus.
+  - Lucioles de l'envol et créatures : trajectoires en courbes (interpolation cubique), plus de virage sec à chaque clé.
+  - Troncs couchés : parallèles à la berge, sol mesuré aux deux bouts, plus aucun bout en l'air ni dans l'eau (vérifié sur les 5).
+  - Ambiance du lac : lue à partir de 35 s (Whisper ne détecte plus de parole).
+  - **Brouillard** : densités calculées (50 % à ~32 m en S2, ~50 m en S3-S5, ~78 m en S6-S7), atténuation en hauteur 0,6 au lieu de 1,4 (les cimes restent dans la brume), début à 8 m ; la nuit, brume plus claire que les ombres.
+  - **Performance** : après ces ajouts, S2-S3 étaient tombés à 57-59 i/s (GPU saturé, `review/perf/greybox-20261018-1801.png`). Le calcul sous l'eau tournait sur tous les pixels, arbres compris. Il est maintenant réservé aux matériaux qui touchent l'eau (terrain, roches, racines, ponton, créature) ; feuillage, herbe, arbres et troncs couchés ont un matériau « sec ». **72 i/s sur toute la balade, GPU ≤ 85 %** (`review/perf/greybox-20261018-1812.png`). Captures au casque : `review/iter-017/planche-casque.jpg` (brume visible, rendu inchangé).
+  - **Eau** : les objets immergés (pieux du ponton, racines, fond, corps de la créature) s'éteignent vers la couleur de l'eau profonde selon la longueur du trajet sous la surface, calculée exactement pour une eau plate. Liseré clair là où ils traversent la surface, halo lumineux de la créature sur l'eau, surface un peu plus opaque vers le bas (0,68 au lieu de 0,5).
+- **Enquête du 18/10 au soir (sans casque ni 3D locale)** : corrigée (entrée ci-dessus), diagnostic gardé pour mémoire :
   - **Sol de la barque qui défile** : le plancher utilise le matériau peint, dont la texture de détail est projetée en coordonnées monde ; la barque avance, la texture reste fixe dans le monde. Correctif : projection dans le repère de l'objet pour ce qui bouge (plancher, et toute pièce attachée à la barque).
   - **Lucioles qui filent droit puis tournent net** : le nuage de l'envol suit des clés posées toutes les 2 s en interpolation linéaire (segments droits, changement de direction à chaque clé). Correctif : interpolation courbe (cubique) pour le nuage et les créatures ; la barque reste en linéaire (vitesse constante).
   - **Tronc horizontal dans le vide à droite (passage des abysses)** : localisé, à t ≈ 78 s à droite. Un tronc couché de 4,6 m dont un bout repose sur la berge et l'autre surplombe la rivière à 2,9 m au-dessus du fond. Le générateur ne mesure le sol qu'à un bout et oriente le tronc au hasard, rivière comprise. Un second, à 35 s à gauche, flotte à 0,7 m. Correctif : mesurer le sol aux deux bouts, rester sur la berge.

@@ -1,0 +1,10 @@
+Mesure : greybox-20261018-1801.log, 266 échantillons (1/s), chargement estimé à 0.0 s
+
+beat          FPS min  FPS moy  images perdues  GPU % max  CPU % max
+S1-NOIR             1     48.6             357         99         95  ⚠
+S2-PONTON          53     57.4             418         99         44  ⚠
+S3-ABYSSE          49     59.1             711         99         46  ⚠
+S4-GUE             60     66.3             181         99         49  ⚠
+S5-RACINES         65     71.6              46         99         52  ⚠
+S6-LUNE            68     72.2              34         99         55  ⚠
+S7-LAC             71     72.4               3         86         54  ⚠

@@ -10,7 +10,7 @@
         0.0206,
         0.0233
       ],
-      "densite": 0.1,
+      "densite": 0.3,
       "brume_hex": "#ddf2ff",
       "lumiere": [
         0.2,
@@ -45,11 +45,11 @@
       "debut_s": 20,
       "source": "refs/S2-PONTON.png",
       "brume_lineaire": [
-        0.0657,
-        0.1038,
-        0.1631
+        0.0854,
+        0.135,
+        0.2121
       ],
-      "densite": 0.25,
+      "densite": 0.44,
       "brume_hex": "#aad1ff",
       "lumiere": [
         0.45,
@@ -88,7 +88,7 @@
         0.1258,
         0.0816
       ],
-      "densite": 0.08,
+      "densite": 0.25,
       "brume_hex": "#c0ffd3",
       "lumiere": [
         1.0,
@@ -127,7 +127,7 @@
         0.1286,
         0.0926
       ],
-      "densite": 0.08,
+      "densite": 0.25,
       "brume_hex": "#e5ffdd",
       "lumiere": [
         1.25,
@@ -162,11 +162,11 @@
       "debut_s": 125.8,
       "source": "refs/S5-RACINES.png",
       "brume_lineaire": [
-        0.0479,
-        0.0513,
-        0.0435
+        0.0862,
+        0.0923,
+        0.0784
       ],
-      "densite": 0.09,
+      "densite": 0.25,
       "brume_hex": "#f7ffed",
       "lumiere": [
         0.95,
@@ -201,11 +201,11 @@
       "debut_s": 157.8,
       "source": "refs/S6-LUNE.png",
       "brume_lineaire": [
-        0.0127,
-        0.0218,
-        0.0234
+        0.038,
+        0.0655,
+        0.0703
       ],
-      "densite": 0.06,
+      "densite": 0.15,
       "brume_hex": "#c2f7ff",
       "lumiere": [
         0.16,
@@ -240,11 +240,11 @@
       "debut_s": 203.7,
       "source": "refs/S7-LAC.png",
       "brume_lineaire": [
-        0.0266,
-        0.0182,
-        0.0185
+        0.0798,
+        0.0546,
+        0.0556
       ],
-      "densite": 0.06,
+      "densite": 0.15,
       "brume_hex": "#ffd8da",
       "lumiere": [
         0.13,

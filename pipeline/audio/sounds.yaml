@@ -38,6 +38,7 @@ sounds:
     beats: [S7-LAC]
     query: lake night crickets
     min_duration: 60
+    debut_s: 35         # voix (tournage) dans les 30 premières secondes de l'enregistrement : détectées par Whisper
   - id: sfx-barque-bois
     beats: [all]
     query: boat creak wood
