@@ -965,7 +965,7 @@ sds.add_new_subobject(unreal.AddNewSubobjectParams(parent_handle=root_handle, ne
 vr_cam = vr.get_component_by_class(unreal.CameraComponent)
 vr_cam.set_editor_property("lock_to_hmd", True)
 # Sans casque (rendu MRQ, jeu à l'écran), la caméra reste à sa position relative : yeux à 1,10 m. Avec le casque,
-# la pose de la tête (origine STAGE, au sol) remplace cette position relative.
+# la pose de la tête (origine LocalFloor, au sol sous le joueur, voir BP_Recentrage) remplace cette position.
 vr_cam.set_editor_property("relative_location", unreal.Vector(0, 0, EYE_CM))
 vr.attach_to_actor(boat, "", unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, False)
 cine = cam.get_cine_camera_component()
@@ -1290,10 +1290,11 @@ am = MARKS["arche-racines"]
 pose_a = pose_at(am["t"])
 racine = import_glb("racine/trellis2-s42", "/Game/Assets/Racine", 30000)
 if racine is not None:
-    # l'arche enjambe la rivière (largeur + 9 m), haute de 11 m : ~6-7 m de passage sous la boucle
+    # l'anneau de racines (le modèle est fermé en bas) enjambe la rivière : base enfouie à -4,8 m, le bas de l'anneau
+    # devient des racines immergées vues à travers l'eau ; ~11 m de passage au-dessus de la barque
     loc, _ = oriented(am["t"], 0.0, 0.0, 0.0)
     place_model(racine, "GB_ArcheRacinesModele", loc, -pose_a["heading_deg"] - 90.0,
-                ((pose_a["width_m"] + 9.0) * 100.0, None, 1100.0), -80.0, "Racine", tint=(0.42, 0.34, 0.24))   # écorce sombre moussue (S5)
+                ((pose_a["width_m"] + 18.0) * 100.0, None, 1700.0), -480.0, "Racine", tint=(0.42, 0.34, 0.24))   # écorce sombre moussue (S5)
     for a in actors.get_all_level_actors():
         if a.get_actor_label() == "GB_ArcheRacines":       # l'ancien tube
             actors.destroy_actor(a)
@@ -1387,6 +1388,38 @@ if FILTER is not None:
     settings.set_editor_property("override_auto_exposure_apply_physical_camera_exposure", True)
     settings.set_editor_property("auto_exposure_apply_physical_camera_exposure", False)
     ppv.set_editor_property("settings", settings)
+
+# Recentrage VR : au lancement, origine de suivi « LocalFloor » (centrée sur la position du joueur au démarrage,
+# au niveau du sol) au lieu de « Stage » (centre de la zone du Quest) : le spectateur est toujours sur le banc,
+# quelle que soit la zone de jeu (retour d'Olivier : on se retrouvait derrière la barque). Blueprint écrit par
+# script avec les outils Blueprint du plugin EditorToolset (catégories localisées de l'éditeur).
+def recentering_blueprint():
+    from editor_toolset.toolsets.blueprint import BlueprintTools as BT
+    path, version = "/Game/Look/BP_Recentrage", "recentrage-v1"
+    bp = eal.load_asset(path) if eal.does_asset_exist(path) else None
+    if bp is not None and eal.get_metadata_tag(bp, "source_sha1") == version:
+        return bp
+    if bp is not None:
+        eal.delete_asset(path)
+    bp = BT.create("/Game/Look", "BP_Recentrage", unreal.Actor.static_class())
+    g = next(g for g in BT.list_graphs(bp) if "EventGraph" in g.get_name())
+    begin = next(n for n in BT.find_nodes(g) if "BeginPlay" in str(BT._get_node_info(n).type_id))
+    bi = BT._get_node_info(begin)
+    types = BT.find_node_types(g, "SetTrackingOrigin")
+    node = BT._get_node_info(BT.create_node(g, next(t for t in types if t.endswith("|SetTrackingOrigin")), unreal.IntPoint(300, 0)))
+    BT.connect_pins(next(p_.pin_id for p_ in bi.output_pins if str(p_.name) == "then"),
+                    next(p_.pin_id for p_ in node.input_pins if str(p_.name) == "execute"))
+    BT.set_pin_value(next(p_.pin_id for p_ in node.input_pins if str(p_.name) == "Origin"), "LocalFloor")
+    BT.compile_blueprint(bp)
+    eal.set_metadata_tag(bp, "source_sha1", version)
+    eal.save_loaded_asset(bp)
+    return bp
+
+
+_rbp = recentering_blueprint()
+tag(actors.spawn_actor_from_class(_rbp.generated_class(), unreal.Vector(0, 0, 0)), "RecentrageVR")
+if eal.does_directory_exist("/Game/Probe"):
+    eal.delete_directory("/Game/Probe")
 
 # Pas d'éclairage précalculé : le look peint est non éclairé (M_Peint) ; seuls la barque et les créatures
 # utilisent encore les lumières, toutes dynamiques. Supprime « Lighting needs to be rebuilt » en jeu.
