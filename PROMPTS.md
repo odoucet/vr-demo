@@ -98,9 +98,13 @@ symétrique. Une pose enroulée ou en mouvement ne peut pas être animée propre
 ## Textures — `--tile --ar 1:1`
 
 - `tex-mousse` : `seamless stylized painted moss texture, soft gouache strokes, flat color shapes`
-- `tex-ecorce` : `seamless stylized painted tree bark texture, simple shapes, warm brown and green`
+- `tex-ecorce` : `seamless stylized painted close-up of old tree bark, long vertical fibrous ridges and furrows, soft gouache, browns`
 - `tex-eau` : `seamless stylized river water texture, painted ripples, flat blue-green tones`
 - `tex-planches` : `seamless stylized wooden planks texture, weathered, hand-painted`
+- `tex-herbe` : `seamless stylized painted meadow grass texture seen from above, soft gouache strokes, lush greens, flat color shapes`
+- `tex-terre` : `seamless stylized painted riverbank earth texture, damp soil with small pebbles, soft gouache, warm browns`
+- `tex-roche` : `seamless stylized painted close-up of one large weathered rock surface, broad flat planes, fine cracks and lichen spots, soft gouache, grey`
+- `tex-feuillage` : `seamless stylized painted tree foliage texture, clusters of leaves, soft gouache strokes, deep and light greens`
 
 ## Ciel et lointain — `--ar 2:1`
 

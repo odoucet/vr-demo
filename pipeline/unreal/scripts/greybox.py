@@ -103,8 +103,8 @@ def material(name, color, emissive=False, roughness=0.9, specular=None, opacity=
 # appoint du ciel et liseré de contre-jour. Lumières pilotées par MPC_Ambiance (animée beat par beat).
 MPC_PATH = f"{GB}/MPC_Ambiance"
 MPC_VECTORS = {"SoleilDir": (0.9, -0.4, 0.2), "Lumiere": (1.0, 0.95, 0.85), "Ombre": (0.3, 0.35, 0.55),
-               "CielAppoint": (0.1, 0.12, 0.2), "CielTeinte": (1.0, 1.0, 1.0)}
-MPC_DIGEST = spec_digest("mpc-v3", sorted(MPC_VECTORS))
+               "CielAppoint": (0.1, 0.12, 0.2), "CielTeinte": (1.0, 1.0, 1.0), "Barque": (0.0, 0.0, 0.0)}
+MPC_DIGEST = spec_digest("mpc-v4", sorted(MPC_VECTORS))
 
 
 def ambiance_mpc():
@@ -143,6 +143,18 @@ def mpc_rgb(mat, name, x, y):
     mel.connect_material_expressions(cp, "", mask, "")
     return mask
 
+def wire_lantern(mat, node, wp=None):
+    """Entrées communes à la lumière de la lanterne : position monde, temps, pose de la barque (MPC)."""
+    wp = wp or mel.create_material_expression(mat, unreal.MaterialExpressionWorldPosition, -1100, 900)
+    tn = mel.create_material_expression(mat, unreal.MaterialExpressionTime, -1100, 1000)
+    cp = mel.create_material_expression(mat, unreal.MaterialExpressionCollectionParameter, -1100, 1100)
+    cp.set_editor_property("collection", MPC)
+    cp.set_editor_property("parameter_name", "Barque")
+    mel.connect_material_expressions(wp, "", node, "WP")
+    mel.connect_material_expressions(tn, "", node, "T")
+    mel.connect_material_expressions(cp, "", node, "B")
+
+
 def custom_node(mat, code, out_type, names, x, y):
     node = mel.create_material_expression(mat, unreal.MaterialExpressionCustom, x, y)
     node.set_editor_property("code", code)
@@ -156,6 +168,9 @@ def custom_node(mat, code, out_type, names, x, y):
     return node
 
 
+# Lanterne de proue dans le repère de la barque (cm) : mesurée dans le maillage (voir BOAT_* plus bas).
+LANTERN_LOCAL = (91.0, 0.0, 108.0)
+CANDLE_RGB = (1.0, 0.55, 0.22)
 SKY_DRIFT = 0.0004     # tours de panorama par seconde (vent dans les nuages)
 SKY_UV_CODE = f"""float3 d = normalize(-Dir);
 float u = 0.5 + atan2(d.y, d.x) / (2.0 * PI) + T * {SKY_DRIFT};
@@ -173,6 +188,66 @@ float star = step(0.985, h) * saturate(1.0 - length(f) * 3.0);
 float tw = 0.55 + 0.45 * sin(T * (1.5 + h * 3.0) + h * 80.0);
 float clouds = saturate(1.0 - dot(Tex, float3(0.3, 0.5, 0.2)) * 1.6);
 return sky + star * tw * night * clouds * saturate(d.z * 6.0) * 1.5;"""
+
+
+with open(os.path.join(ROOT, "pipeline", "layout", "water_map.json"), encoding="utf-8") as f:
+    WATER_MAP = json.load(f)
+WATER_CODE = """float3 v = -normalize(Dir.xyz);                       // de la caméra vers le point d'eau
+float2 rp = float2(WP.x, -WP.y) / 100.0;                   // repère du tracé, mètres
+float4 m = Texture2DSample(Map, MapSampler, (rp - float2(%(x0)f, %(y0)f)) / %(size)f);
+float2 flow = float2(m.r * 2.0 - 1.0, -(m.g * 2.0 - 1.0));  // courant, repère Unreal
+float speed = length(flow);
+float2 fd = speed > 0.01 ? flow / speed : float2(1.0, 0.0);
+float shore = m.b;                                          // 0 sur la rive, 1 à 8 m
+// rides dans le repère monde (traits le long de la rivière, qui tourne peu) ; flowmap à deux phases : elles
+// avancent avec le courant local sans s'étirer ni se casser là où il change de direction
+float2 q = WP.xy / 350.0;
+float ph0 = frac(T * 0.06), ph1 = frac(T * 0.06 + 0.5);
+float w = abs(ph0 * 2.0 - 1.0);
+float2 adv = fd * speed * 0.9;
+// traits en travers de la rivière (horizontaux à l'écran pour qui regarde vers l'aval, comme dans l'eau
+// peinte ; dans le sens du courant, la perspective les faisait converger en rayons)
+float2 q0 = (q - adv * ph0).yx, q1 = (q - adv * ph1).yx;
+float r0 = Texture2DSample(Rides, RidesSampler, q0 * float2(0.6, 2.2)).r;
+float r1 = Texture2DSample(Rides, RidesSampler, q1 * float2(0.6, 2.2) + 0.5).r;
+float r2 = Texture2DSample(Rides, RidesSampler, q.yx * float2(0.25, 1.1) + float2(T * 0.004, 0.37)).r;
+float rip = saturate(lerp(r0, r1, w) * 0.85 + r2 * 0.45);
+// reflet du ciel peint, déformé par les rides
+float3 rd = float3(v.x, v.y, abs(v.z));
+float su = 0.5 + atan2(rd.y, rd.x) / (2.0 * PI) + T * %(drift)f;
+float se = asin(clamp(rd.z, 0.0, 1.0));
+float sv = clamp(0.82 - se / (0.5 * PI) * 0.82 + (rip - 0.3) * 0.025, 0.0, 1.0);
+float3 sky = Texture2DSample(Sky, SkySampler, float2(su, sv)).rgb * Teinte.rgb;
+float fr = 0.06 + 0.94 * pow(1.0 - abs(v.z), 4.0);
+// reflet sombre des arbres de la rive (masses vert-bleu), plus marqué au ras de l'eau
+float trees = 1.0 - smoothstep(0.04, 0.35, shore + (r2 - 0.5) * 0.06);
+float3 forest = Lumiere.rgb * float3(0.035, 0.065, 0.055) + Teinte.rgb * float3(0.01, 0.02, 0.03);
+float3 refl = lerp(sky, forest, trees * 0.85);
+float3 deep = (Lumiere.rgb * 0.5 + 0.2) * lerp(float3(0.02, 0.06, 0.07), float3(0.008, 0.03, 0.045), shore);
+float3 col = lerp(deep, refl, fr);
+// crêtes des rides : traits de lumière du ciel, comme posés au pinceau
+col += rip * rip * (0.3 + 0.7 * fr) * (sky * 1.1 + Lumiere.rgb * 0.05) * (1.0 - trees * 0.75);
+// écume le long des berges
+float foam = (1.0 - smoothstep(0.0, 0.05, shore)) * (0.55 + 0.45 * r2);
+col = lerp(col, Lumiere.rgb * 0.5 + sky * 0.35, foam * 0.75);
+// autour de la barque (B : x, y, lacet) : sillage en V, bourrelet d'écume le long de la coque, reflet de la
+// lanterne ; pas d'eau dans la coque
+float cb = cos(B.a), sb = sin(B.a);
+float2 rel = WP.xy - B.xy;
+float lx = dot(rel, float2(cb, sb)), ly = dot(rel, float2(-sb, cb));
+float hull = (lx / 178.0) * (lx / 178.0) + (ly / 64.0) * (ly / 64.0);
+float arm = abs(abs(ly) - max(-lx - 120.0, 0.0) * 0.36);
+float wake = exp(-arm / 20.0) * saturate((-lx - 120.0) / 80.0) * exp(lx / 1600.0) * (0.5 + 0.5 * sin(lx * 0.07 + T * 2.6 + r2 * 3.0));
+float ring = exp(-abs(sqrt(hull) - 1.1) * 8.0) * (0.55 + 0.45 * sin(atan2(ly, lx) * 11.0 + T * 3.2)) * saturate(sqrt(hull) - 0.95) * 4.0;
+float boatfoam = saturate(wake * 0.8 + ring * 0.7);
+col = lerp(col, Lumiere.rgb * 0.45 + sky * 0.45, boatfoam * 0.65);
+float2 lp = B.xy + float2(cb, sb) * %(lantx).1f;
+float dlw = length(WP.xy - lp);
+float flick = 0.86 + 0.1 * sin(T * 11.0) * sin(T * 6.7 + 1.3) + 0.04 * sin(T * 23.0);
+col += float3(%(cr).2f, %(cg).2f, %(cb).2f) * flick * (0.25 + 0.75 * rip) * 0.9 / (1.0 + (dlw / 140.0) * (dlw / 140.0));
+float op = max(lerp(0.5, 0.96, fr), max(foam, boatfoam * 0.8));
+op *= smoothstep(0.9, 1.02, hull);
+return float4(col, op);""" % {"lantx": LANTERN_LOCAL[0], "cr": CANDLE_RGB[0], "cg": CANDLE_RGB[1], "cb": CANDLE_RGB[2], "x0": WATER_MAP["x0"], "y0": WATER_MAP["y0"], "size": WATER_MAP["size_m"], "drift": SKY_DRIFT}
 
 
 BRUSH_PNG = os.path.join(ROOT, "assets", "textures", "pinceau.png")
@@ -197,7 +272,10 @@ def brush_texture():
     return tex
 
 
-PEINT_CODE = """float3 n = normalize(N.xyz);
+PEINT_CODE = """#define LANT_X %(lx).1f
+#define LANT_Z %(lz).1f
+#define CANDLE float3(%(cr).2f, %(cg).2f, %(cb).2f)
+float3 n = normalize(N.xyz);
 float3 l = normalize(L.xyz);
 float3 v = normalize(V.xyz);
 float3 albedo = pow(max(Albedo.rgb, 0.0), 2.2);   // couleurs des sommets stockées en sRGB
@@ -215,14 +293,81 @@ float rim = pow(1.0 - saturate(dot(n, v)), 3.0) * saturate(dot(-v, l));
 col += albedo * Lumiere.rgb * rim * 0.8;
 // variation de la touche
 col *= 1.0 + (brush - 0.5) * 0.18;
-return col;"""
+// lanterne de proue : lumière chaude de bougie qui vacille, sur tout ce qui l'entoure (B = barque : x, y, lacet)
+float cb = cos(B.a), sb = sin(B.a);
+float3 lp = float3(B.x + cb * LANT_X, B.y + sb * LANT_X, LANT_Z);
+float dl = length(WP.xyz - lp);
+float flick = 0.86 + 0.1 * sin(T * 11.0) * sin(T * 6.7 + 1.3) + 0.04 * sin(T * 23.0);
+float lamp = flick * saturate(1.0 - dl / 1100.0) / (1.0 + (dl / 170.0) * (dl / 170.0));
+col += albedo * CANDLE * lamp * (0.3 + 0.7 * saturate(dot(n, normalize(lp - WP.xyz)))) * 2.4;
+return col;""" % {"lx": LANTERN_LOCAL[0], "lz": LANTERN_LOCAL[2], "cr": CANDLE_RGB[0], "cg": CANDLE_RGB[1], "cb": CANDLE_RGB[2]}
+
+
+TRI_CODE = """float3 n = abs(normalize(N.xyz));
+n = n * n * n * n;
+n /= (n.x + n.y + n.z);
+float3 p = P.xyz / Scale;
+float3 cx = Texture2DSample(Tex, TexSampler, p.yz).rgb;
+float3 cy = Texture2DSample(Tex, TexSampler, p.xz).rgb;
+float3 cz = Texture2DSample(Tex, TexSampler, p.xy).rgb;
+return cx * n.x + cy * n.y + cz * n.z;"""
+TOP_CODE = """return Texture2DSample(Tex, TexSampler, P.xy / Scale).rgb;"""
+DETAIL_CODE = """float3 a = pow(max(Albedo.rgb, 0.0), 2.2);
+float3 lw = float3(0.2126, 0.7152, 0.0722);
+// terrain : les sommets verts prennent la seconde texture (herbe), les autres la première (terre)
+float g = saturate((Albedo.g - Albedo.r) * 5.0) * Blend2;
+float3 dc = lerp(D.rgb, D2.rgb, g);
+float mean = max(lerp(Mean, Mean2, g), 0.02);
+float l = dot(dc, lw) / mean;
+float3 res = a * lerp(1.0, l, Strength);
+// couleur de la texture ramenée à la valeur de la couleur du sommet (touches colorées de la peinture)
+float3 tc = dc / mean * dot(a, lw);
+res = lerp(res, tc, Mix);
+return pow(max(res, 0.0), 1.0 / 2.2);"""
+DETAIL_SCALARS = {"DetailScale": 300.0, "DetailStrength": 0.0, "ColorMix": 0.0, "Blend2": 0.0, "DetailMean": 0.25,
+                  "DetailMean2": 0.25}
+
+
+def look_texture(tid, srgb=True):
+    """Texture peinte assets/textures/<tid>.png → /Game/Look/Textures (réimportée si le fichier change).
+    srgb=False : données (carte de l'eau, rides), lues telles quelles."""
+    import hashlib
+    src = os.path.join(ROOT, "assets", "textures", f"{tid}.png")
+    with open(src, "rb") as f:
+        digest = hashlib.sha1(f.read()).hexdigest()[:12]
+    path = f"/Game/Look/Textures/{tid.replace('-', '_')}"
+    tex = eal.load_asset(path) if eal.does_asset_exist(path) else None
+    if up_to_date(tex, digest):
+        return tex
+    import shutil
+    tmp = os.path.join(ROOT, "Unreal", "Saved", "import", f"{tid.replace('-', '_')}.png")
+    os.makedirs(os.path.dirname(tmp), exist_ok=True)
+    shutil.copyfile(src, tmp)
+    task = unreal.AssetImportTask()
+    task.filename, task.destination_path = tmp, "/Game/Look/Textures"
+    task.automated, task.replace_existing, task.save = True, True, True
+    tools.import_asset_tasks([task])
+    tex = eal.load_asset(path)
+    if not srgb:
+        tex.set_editor_property("srgb", False)
+        tex.set_editor_property("compression_settings", unreal.TextureCompressionSettings.TC_VECTOR_DISPLACEMENTMAP)
+    mark_saved(tex, digest)
+    return tex
+
+
+with open(os.path.join(ROOT, "assets", "textures", "stats.json"), encoding="utf-8") as f:
+    TEX_MEAN = json.load(f)
+WATER_MAP_TEX = look_texture("eau_carte", srgb=False)
+RIDES_TEX = look_texture("rides", srgb=False)
 
 
 def peint_material():
     """M_Peint : couleur des sommets, ombrage deux tons ; voir PEINT_CODE."""
     path = "/Game/Look/M_Peint"
     brush = brush_texture()
-    digest = spec_digest("peint-v6", PEINT_CODE, MPC_DIGEST, eal.get_metadata_tag(brush, "source_sha1"))
+    default_tex = look_texture("tex-mousse")
+    digest = spec_digest("peint-v8", PEINT_CODE, TRI_CODE, TOP_CODE, DETAIL_CODE, sorted(DETAIL_SCALARS.items()),
+                         MPC_DIGEST, eal.get_metadata_tag(brush, "source_sha1"))
     existing = eal.load_asset(path) if eal.does_asset_exist(path) else None
     if up_to_date(existing, digest):
         return existing
@@ -255,14 +400,43 @@ def peint_material():
     node = mel.create_material_expression(mat, unreal.MaterialExpressionCustom, -500, 0)
     node.set_editor_property("code", PEINT_CODE)
     node.set_editor_property("output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT3)
-    names = ["Albedo", "AO", "N", "L", "V", "Brush", "Lumiere", "Ombre", "Ciel"]
+    names = ["Albedo", "AO", "N", "L", "V", "Brush", "Lumiere", "Ombre", "Ciel", "WP", "T", "B"]
     inputs = []
     for n in names:
         ci = unreal.CustomInput()
         ci.set_editor_property("input_name", n)
         inputs.append(ci)
     node.set_editor_property("inputs", inputs)
-    mel.connect_material_expressions(vc, "", node, "Albedo")      # sortie couleur (float3 ; pas de broche « RGB »)
+    # Détail peint : textures du type de surface (paramètres des instances MI_Peint_*), projection monde
+    # triplanaire pour la première, de dessus pour la seconde (terrain : herbe), modulant la couleur des sommets.
+    sp = {}
+    for i, (name, v) in enumerate(DETAIL_SCALARS.items()):
+        sp[name] = mel.create_material_expression(mat, unreal.MaterialExpressionScalarParameter, -1900, -600 + 70 * i)
+        sp[name].set_editor_property("parameter_name", name)
+        sp[name].set_editor_property("default_value", v)
+    tobj = []
+    for i, name in enumerate(("Detail", "Detail2")):
+        t = mel.create_material_expression(mat, unreal.MaterialExpressionTextureObjectParameter, -1900, -1000 + 150 * i)
+        t.set_editor_property("parameter_name", name)
+        t.set_editor_property("texture", default_tex)
+        tobj.append(t)
+    tri = custom_node(mat, TRI_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["Tex", "P", "N", "Scale"], -1600, -900)
+    top = custom_node(mat, TOP_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["Tex", "P", "Scale"], -1600, -750)
+    for nd, t in ((tri, tobj[0]), (top, tobj[1])):
+        mel.connect_material_expressions(t, "", nd, "Tex")
+        mel.connect_material_expressions(wp, "", nd, "P")
+        mel.connect_material_expressions(sp["DetailScale"], "", nd, "Scale")
+    mel.connect_material_expressions(nrm, "", tri, "N")
+    det = custom_node(mat, DETAIL_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT3,
+                      ["Albedo", "D", "D2", "Strength", "Mix", "Blend2", "Mean", "Mean2"], -1300, -500)
+    mel.connect_material_expressions(vc, "", det, "Albedo")
+    mel.connect_material_expressions(tri, "", det, "D")
+    mel.connect_material_expressions(top, "", det, "D2")
+    for pin, name in (("Strength", "DetailStrength"), ("Mix", "ColorMix"), ("Blend2", "Blend2"), ("Mean", "DetailMean"),
+                      ("Mean2", "DetailMean2")):
+        mel.connect_material_expressions(sp[name], "", det, pin)
+    mel.connect_material_expressions(det, "", node, "Albedo")     # couleur des sommets enrichie du détail peint
+    wire_lantern(mat, node, wp)
     mel.connect_material_expressions(vc, "A", node, "AO")         # alpha des sommets = occlusion peinte
     mel.connect_material_expressions(nrm, "", node, "N")
     mel.connect_material_expressions(params["SoleilDir"], "", node, "L")
@@ -289,7 +463,7 @@ MATS = {
     "Volante": material("Volante", (0.75, 0.80, 0.85)),
     "Lune": material("Lune", (14.0, 13.5, 12.0), emissive=True),
     "Lanterne": material("Lanterne", (6.0, 2.5, 0.6), emissive=True),
-    "LanternePapier": material("LanternePapier", (1.1, 0.55, 0.22), emissive=True),
+    "LanternePapier": None,     # bougie qui vacille, voir candle_materials()
     "Luciole": None,      # matériau animé, voir firefly_material()
     "Roseau": material("Roseau", (0.045, 0.075, 0.025), roughness=0.95, specular=0.1),
     "Nenuphar": material("Nenuphar", (0.06, 0.20, 0.07), roughness=0.85, specular=0.1),
@@ -350,8 +524,79 @@ def firefly_material(color=(4.0, 5.0, 1.2), amp_cm=30.0):
 
 
 MATS["Luciole"] = firefly_material()
-MESH_MATS = {"Terrain": "Peint", "ArcheRacines": "Peint", "Lucioles": "Luciole", "LuciolesBerges": "Luciole",
-             "Roseaux": "Peint", "Nenuphars": "Peint"}
+
+FLICKER = "(0.86 + 0.1 * sin(T * 11.0) * sin(T * 6.7 + 1.3) + 0.04 * sin(T * 23.0))"
+
+
+def candle_materials():
+    """Lanterne : papier lumineux qui vacille comme une bougie, et halo doux autour (sphère additive dont la
+    lueur décroît vers les bords). Même vacillement que la lumière portée calculée dans M_Peint et l'eau."""
+    out = {}
+    for name, code, blend in (
+            ("LanternePapier", f"return float3({CANDLE_RGB[0]}, {CANDLE_RGB[1]}, {CANDLE_RGB[2]}) * 1.5 * {FLICKER};",
+             unreal.BlendMode.BLEND_OPAQUE),
+            ("HaloLanterne", f"float f = pow(saturate(dot(normalize(N.xyz), normalize(V.xyz))), 2.5);\n"
+                             f"return float3({CANDLE_RGB[0]}, {CANDLE_RGB[1]}, {CANDLE_RGB[2]}) * 0.09 * f * f * {FLICKER};",
+             unreal.BlendMode.BLEND_ADDITIVE)):
+        path = f"{GB}/M_GB_{name}"
+        digest = spec_digest("bougie-v2", code)
+        mat = eal.load_asset(path) if eal.does_asset_exist(path) else None
+        if not up_to_date(mat, digest):
+            mat = mat or tools.create_asset(f"M_GB_{name}", GB, unreal.Material, unreal.MaterialFactoryNew())
+            mel.delete_all_material_expressions(mat)
+            mat.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_UNLIT)
+            mat.set_editor_property("blend_mode", blend)
+            node = custom_node(mat, code, unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["T", "N", "V"], -400, 0)
+            mel.connect_material_expressions(mel.create_material_expression(mat, unreal.MaterialExpressionTime, -700, 0), "", node, "T")
+            mel.connect_material_expressions(mel.create_material_expression(mat, unreal.MaterialExpressionVertexNormalWS, -700, 100), "", node, "N")
+            mel.connect_material_expressions(mel.create_material_expression(mat, unreal.MaterialExpressionCameraVectorWS, -700, 200), "", node, "V")
+            mel.connect_material_property(node, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
+            mel.recompile_material(mat)
+            if mel.get_statistics(mat).num_pixel_shader_instructions <= 0:
+                raise RuntimeError(f"M_GB_{name} ne compile pas")
+            mark_saved(mat, digest)
+        out[name] = mat
+    return out
+
+
+MATS.update(candle_materials())
+
+# Instances du look peint par type de surface : (texture, seconde texture, échelle cm, force, mélange couleur)
+SURFACES = {
+    "PeintFeuillage": ("tex-mousse", None, 260.0, 0.75, 0.45),
+    "PeintBois": ("tex-ecorce", None, 160.0, 0.7, 0.3),
+    "PeintSol": ("tex-herbe", None, 120.0, 0.6, 0.35),
+    "PeintRoche": ("tex-roche", None, 140.0, 0.7, 0.35),
+    "PeintTerrain": ("tex-terre", "tex-herbe", 350.0, 0.7, 0.4),
+}
+
+
+def surface_instance(name, tex1, tex2, scale, strength, mix):
+    path = f"/Game/Look/MI_{name}"
+    t1 = look_texture(tex1)
+    t2 = look_texture(tex2) if tex2 else t1
+    digest = spec_digest("mi-v1", eal.get_metadata_tag(MATS["Peint"], "source_sha1"), tex1, tex2, scale, strength, mix,
+                         eal.get_metadata_tag(t1, "source_sha1"), eal.get_metadata_tag(t2, "source_sha1"))
+    mi = eal.load_asset(path) if eal.does_asset_exist(path) else None
+    if up_to_date(mi, digest):
+        return mi
+    mi = mi or tools.create_asset(f"MI_{name}", "/Game/Look", unreal.MaterialInstanceConstant,
+                                  unreal.MaterialInstanceConstantFactoryNew())
+    mi.set_editor_property("parent", MATS["Peint"])
+    mel.set_material_instance_texture_parameter_value(mi, "Detail", t1)
+    mel.set_material_instance_texture_parameter_value(mi, "Detail2", t2)
+    for k, v in (("DetailScale", scale), ("DetailStrength", strength), ("ColorMix", mix), ("Blend2", 1.0 if tex2 else 0.0),
+                 ("DetailMean", TEX_MEAN[tex1]), ("DetailMean2", TEX_MEAN[tex2 or tex1])):
+        mel.set_material_instance_scalar_parameter_value(mi, k, v)
+    mel.update_material_instance(mi)
+    mark_saved(mi, digest)
+    return mi
+
+
+for name, spec in SURFACES.items():
+    MATS[name] = surface_instance(name, *spec)
+MESH_MATS = {"Terrain": "PeintTerrain", "ArcheRacines": "PeintBois", "Lucioles": "Luciole", "LuciolesBerges": "Luciole",
+             "Roseaux": "PeintSol", "Nenuphars": "Peint"}
 
 
 # --- Maillages depuis greybox.json -------------------------------------------------------------------------
@@ -401,11 +646,14 @@ GEO["meshes"]["Eau"] = {"vertices": [[b["x0"], b["y0"], 0], [b["x1"], b["y0"], 0
 MESH_MATS["Eau"] = "Eau"
 with open(os.path.join(ROOT, "pipeline", "layout", "vegetation.json"), encoding="utf-8") as f:
     VEG = json.load(f)
+KIND_MATS = {"feuillage": "PeintFeuillage", "bois": "PeintBois", "sol": "PeintSol", "roche": "PeintRoche"}
 for name, data in VEG["meshes"].items():
     GEO["meshes"][name] = data
-    MESH_MATS[name] = "Peint"
+    MESH_MATS[name] = KIND_MATS.get(name.rsplit("_", 1)[-1], "Peint")
 MESHES = {name: build_mesh(name, data) for name, data in GEO["meshes"].items()}
-for old in ("SM_Foret", "SM_ArbreColossal", "SM_ArbreLanternes", "M_GB_Foret"):   # remplacés par le look peint
+OBSOLETE = ["SM_Foret", "SM_ArbreColossal", "SM_ArbreLanternes", "M_GB_Foret"] + \
+    [f"SM_{n}" for n in ("Lisiere", "ArbreColossalPeint", "ArbreLanternesPeint", "Collines")] + [f"SM_Vegetation{i:02d}" for i in range(12)]
+for old in OBSOLETE:   # remplacés (look peint, puis découpage par type de surface)
     if eal.does_asset_exist(f"{GB}/{old}"):
         eal.delete_asset(f"{GB}/{old}")
 
@@ -527,6 +775,11 @@ if model is not None:
     paper.root_component.set_editor_property("relative_rotation", unreal.Rotator(0, 0, 0))
     paper.root_component.set_editor_property("relative_scale3d", unreal.Vector(0.34, 0.34, 0.56 * BOAT_SCALE_Z / BOAT_SCALE))
     paper.static_mesh_component.set_editor_property("cast_shadow", False)
+    halo = place_mesh(SPHERE, "HaloLanterne", "HaloLanterne", boat.get_actor_location())
+    halo.attach_to_actor(boat, "", unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, False)
+    halo.root_component.set_editor_property("relative_location", LANTERN)
+    halo.root_component.set_editor_property("relative_scale3d", unreal.Vector(1.0, 1.0, 1.0))
+    halo.static_mesh_component.set_editor_property("cast_shadow", False)
     lantern = tag(actors.spawn_actor_from_class(unreal.PointLight, boat.get_actor_location()), "LumiereLanterne")
     lantern.attach_to_actor(boat, "", unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, False)
     lantern.root_component.set_editor_property("relative_location", LANTERN)
@@ -596,10 +849,12 @@ if os.path.exists(SKY_PNG):
         sky_tex = eal.load_asset(f"{GB}/ciel")
         eal.set_metadata_tag(sky_tex, "source_sha1", sky_digest)
         eal.save_loaded_asset(sky_tex)
-    SKY_WATER_VERSION = "ciel-eau-v3"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
+    SKY_WATER_VERSION = "ciel-eau-v5"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
     sky_mat_path = f"{GB}/M_GB_CielPeint"
     sky_mat = eal.load_asset(sky_mat_path) if eal.does_asset_exist(sky_mat_path) else None
-    rebuild_sky_water = not up_to_date(sky_mat, spec_digest(SKY_WATER_VERSION, sky_digest, MPC_DIGEST))
+    rebuild_sky_water = not up_to_date(sky_mat, spec_digest(SKY_WATER_VERSION, sky_digest, MPC_DIGEST, WATER_CODE,
+                                                            eal.get_metadata_tag(WATER_MAP_TEX, "source_sha1"),
+                                                            eal.get_metadata_tag(RIDES_TEX, "source_sha1")))
     sky_mat = sky_mat or tools.create_asset("M_GB_CielPeint", GB, unreal.Material, unreal.MaterialFactoryNew())
 if os.path.exists(SKY_PNG) and rebuild_sky_water:
     mel.delete_all_material_expressions(sky_mat)
@@ -625,57 +880,44 @@ if os.path.exists(SKY_PNG) and rebuild_sky_water:
     mel.connect_material_expressions(cp, "", mul, "Teinte")
     mel.connect_material_property(mul, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
     mel.recompile_material(sky_mat)
-    mark_saved(sky_mat, spec_digest(SKY_WATER_VERSION, sky_digest, MPC_DIGEST))
-    # Eau : reflet du ciel peint (texture lue dans la direction réfléchie, sans réflexions temps réel, peu coûteux
-    # sur Quest) + Fresnel : miroir vers l'horizon, transparente en regardant vers le bas (S3 : la créature dessous).
+    mark_saved(sky_mat, spec_digest(SKY_WATER_VERSION, sky_digest, MPC_DIGEST, WATER_CODE,
+                                    eal.get_metadata_tag(WATER_MAP_TEX, "source_sha1"),
+                                    eal.get_metadata_tag(RIDES_TEX, "source_sha1")))
+    # Eau peinte (voir WATER_CODE) : rides qui suivent le courant, reflet du ciel déformé, reflets de crêtes,
+    # bande sombre du reflet des arbres près des berges, écume le long des rives, fond profond ; translucide
+    # pour voir la créature des abysses. Sans réflexions temps réel (coût Quest faible).
     water = eal.load_asset(f"{GB}/M_GB_Eau")
     mel.delete_all_material_expressions(water)
     water.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_UNLIT)
     water.set_editor_property("blend_mode", unreal.BlendMode.BLEND_TRANSLUCENT)
     water.set_editor_property("two_sided", True)
-    wcam = mel.create_material_expression(water, unreal.MaterialExpressionCameraVectorWS, -900, 0)
-    wuv = mel.create_material_expression(water, unreal.MaterialExpressionCustom, -650, -100)
-    wuv.set_editor_property("code", "float3 d = normalize(-Dir); d.z = abs(d.z);\n"
-                                    "float u = 0.5 + atan2(d.y, d.x) / (2.0 * PI) + T * " + str(SKY_DRIFT) + ";\n"
-                                    "float e = asin(clamp(d.z, 0.0, 1.0));\n"
-                                    "return float2(u, clamp(0.82 - e / (0.5 * PI) * 0.82, 0.0, 1.0));")
-    wuv.set_editor_property("output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT2)
-    wfr = mel.create_material_expression(water, unreal.MaterialExpressionCustom, -650, 200)
-    wfr.set_editor_property("code", "float3 d = normalize(-Dir); return 0.08 + 0.92 * pow(1.0 - abs(d.z), 4.0);")
-    wfr.set_editor_property("output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT1)
-    wt = mel.create_material_expression(water, unreal.MaterialExpressionTime, -900, 150)
-    for node in (wuv, wfr):
-        inps = []
-        for n in (("Dir", "T") if node is wuv else ("Dir",)):
-            inp = unreal.CustomInput()
-            inp.set_editor_property("input_name", n)
-            inps.append(inp)
-        node.set_editor_property("inputs", inps)
-        mel.connect_material_expressions(wcam, "", node, "Dir")
-    mel.connect_material_expressions(wt, "", wuv, "T")
-    wsky = mel.create_material_expression(water, unreal.MaterialExpressionTextureSample, -400, -100)
-    wsky.set_editor_property("texture", sky_tex)
-    mel.connect_material_expressions(wuv, "", wsky, "UVs")
-    wmpc = mpc_rgb(water, "CielTeinte", -400, 100)
-    refl = mel.create_material_expression(water, unreal.MaterialExpressionMultiply, -200, -50)
-    mel.connect_material_expressions(wsky, "RGB", refl, "A")
-    mel.connect_material_expressions(wmpc, "", refl, "B")
-    deep = mel.create_material_expression(water, unreal.MaterialExpressionConstant3Vector, -200, 150)
-    deep.set_editor_property("constant", unreal.LinearColor(0.01, 0.03, 0.05, 1.0))
-    mix = mel.create_material_expression(water, unreal.MaterialExpressionLinearInterpolate, 0, 0)
-    mel.connect_material_expressions(deep, "", mix, "A")
-    mel.connect_material_expressions(refl, "", mix, "B")
-    mel.connect_material_expressions(wfr, "", mix, "Alpha")
-    mel.connect_material_property(mix, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
-    wop = mel.create_material_expression(water, unreal.MaterialExpressionLinearInterpolate, 0, 250)
-    c0 = mel.create_material_expression(water, unreal.MaterialExpressionConstant, -200, 300)
-    c0.set_editor_property("r", 0.35)
-    c1 = mel.create_material_expression(water, unreal.MaterialExpressionConstant, -200, 380)
-    c1.set_editor_property("r", 0.95)
-    mel.connect_material_expressions(c0, "", wop, "A")
-    mel.connect_material_expressions(c1, "", wop, "B")
-    mel.connect_material_expressions(wfr, "", wop, "Alpha")
-    mel.connect_material_property(wop, "", unreal.MaterialProperty.MP_OPACITY)
+    wcam = mel.create_material_expression(water, unreal.MaterialExpressionCameraVectorWS, -1000, 0)
+    wpos = mel.create_material_expression(water, unreal.MaterialExpressionWorldPosition, -1000, 100)
+    wt = mel.create_material_expression(water, unreal.MaterialExpressionTime, -1000, 200)
+    wnode = custom_node(water, WATER_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT4,
+                        ["Dir", "WP", "T", "Map", "Rides", "Sky", "Teinte", "Lumiere", "B"], -600, 0)
+    mel.connect_material_expressions(wcam, "", wnode, "Dir")
+    mel.connect_material_expressions(wpos, "", wnode, "WP")
+    mel.connect_material_expressions(wt, "", wnode, "T")
+    for i, (pin, tex) in enumerate((("Map", WATER_MAP_TEX), ("Rides", RIDES_TEX), ("Sky", sky_tex))):
+        to = mel.create_material_expression(water, unreal.MaterialExpressionTextureObject, -1000, 300 + 100 * i)
+        to.set_editor_property("texture", tex)
+        mel.connect_material_expressions(to, "", wnode, pin)
+    mel.connect_material_expressions(mpc_rgb(water, "CielTeinte", -1000, 650), "", wnode, "Teinte")
+    mel.connect_material_expressions(mpc_rgb(water, "Lumiere", -1000, 750), "", wnode, "Lumiere")
+    wb = mel.create_material_expression(water, unreal.MaterialExpressionCollectionParameter, -1000, 850)
+    wb.set_editor_property("collection", MPC)
+    wb.set_editor_property("parameter_name", "Barque")
+    mel.connect_material_expressions(wb, "", wnode, "B")
+    rgb = mel.create_material_expression(water, unreal.MaterialExpressionComponentMask, -300, 0)
+    for c in ("r", "g", "b"):
+        rgb.set_editor_property(c, True)
+    alpha = mel.create_material_expression(water, unreal.MaterialExpressionComponentMask, -300, 150)
+    alpha.set_editor_property("a", True)
+    mel.connect_material_expressions(wnode, "", rgb, "")
+    mel.connect_material_expressions(wnode, "", alpha, "")
+    mel.connect_material_property(rgb, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
+    mel.connect_material_property(alpha, "", unreal.MaterialProperty.MP_OPACITY)
     mel.recompile_material(water)
     if mel.get_statistics(water).num_pixel_shader_instructions <= 0 or mel.get_statistics(sky_mat).num_pixel_shader_instructions <= 0:
         raise RuntimeError("Matériau du ciel ou de l'eau : échec de compilation")
@@ -729,7 +971,7 @@ def peint_tex_material(name, texture, flap_axis=None, half_span=1.0):
     """Look peint pour un modèle texturé (créatures, barque) : couleur de la texture, même ombrage deux tons
     que M_Peint. flap_axis : battement d'ailes procédural (WPO, axe d'envergure local, sans squelette)."""
     path = f"/Game/Look/{name}"
-    digest = spec_digest("peint-tex-v1", PEINT_CODE, MPC_DIGEST, texture.get_path_name(), flap_axis, round(half_span, 2), FLAP_CODE)
+    digest = spec_digest("peint-tex-v2", PEINT_CODE, MPC_DIGEST, texture.get_path_name(), flap_axis, round(half_span, 2), FLAP_CODE)
     existing = eal.load_asset(path) if eal.does_asset_exist(path) else None
     if up_to_date(existing, digest):
         return existing
@@ -749,12 +991,13 @@ def peint_tex_material(name, texture, flap_axis=None, half_span=1.0):
     half = mel.create_material_expression(mat, unreal.MaterialExpressionConstant, -1100, 200)
     half.set_editor_property("r", 0.5)
     node = custom_node(mat, PEINT_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT3,
-                       ["Albedo", "AO", "N", "L", "V", "Brush", "Lumiere", "Ombre", "Ciel"], -500, 0)
+                       ["Albedo", "AO", "N", "L", "V", "Brush", "Lumiere", "Ombre", "Ciel", "WP", "T", "B"], -500, 0)
     mel.connect_material_expressions(enc, "", node, "Albedo")
     mel.connect_material_expressions(one, "", node, "AO")
     mel.connect_material_expressions(nrm, "", node, "N")
     mel.connect_material_expressions(cam, "", node, "V")
     mel.connect_material_expressions(half, "", node, "Brush")
+    wire_lantern(mat, node)
     for i, (pin, name_) in enumerate((("L", "SoleilDir"), ("Lumiere", "Lumiere"), ("Ombre", "Ombre"), ("Ciel", "CielAppoint"))):
         cp = mel.create_material_expression(mat, unreal.MaterialExpressionCollectionParameter, -1100, 300 + 100 * i)
         cp.set_editor_property("collection", MPC)
@@ -859,6 +1102,69 @@ tag(actors.spawn_actor_from_class(unreal.PlayerStart, ue(start["x"], start["y"],
 # Pas de réglage d'exposition : l'exposition auto est coupée dans le projet (VR) et le moteur ignore alors
 # toute compensation. La lisibilité du greybox se règle par l'intensité des lumières.
 
+# Filtre « peinture » (PC VR et rendus offline seulement : sur Quest, sans HDR mobile, aucun post-traitement
+# n'est appliqué) : filtre de Kuwahara (aplats et bords nets, comme des touches de gouache) + légère saturation.
+KUWAHARA_CODE = """float2 px = View.ViewSizeAndInvSize.zw;
+const int R = 3;
+float3 m0 = 0, m1 = 0, m2 = 0, m3 = 0, s0 = 0, s1 = 0, s2 = 0, s3 = 0;
+for (int x = -R; x <= R; x++) {
+  for (int y = -R; y <= R; y++) {
+    float3 c = SceneTextureLookup(UV + float2(x, y) * px, 14, false).rgb;
+    if (x <= 0 && y <= 0) { m0 += c; s0 += c * c; }
+    if (x >= 0 && y <= 0) { m1 += c; s1 += c * c; }
+    if (x <= 0 && y >= 0) { m2 += c; s2 += c * c; }
+    if (x >= 0 && y >= 0) { m3 += c; s3 += c * c; }
+  }
+}
+float n = (R + 1) * (R + 1);
+m0 /= n; m1 /= n; m2 /= n; m3 /= n;
+float v0 = dot(s0 / n - m0 * m0, 1), v1 = dot(s1 / n - m1 * m1, 1);
+float v2 = dot(s2 / n - m2 * m2, 1), v3 = dot(s3 / n - m3 * m3, 1);
+float3 c = m0; float v = v0;
+if (v1 < v) { c = m1; v = v1; }
+if (v2 < v) { c = m2; v = v2; }
+if (v3 < v) { c = m3; v = v3; }
+float l = dot(c, float3(0.2126, 0.7152, 0.0722));
+return lerp(float3(l, l, l), c, 1.08);"""
+
+
+def painted_filter():
+    path = "/Game/Look/M_FiltrePeinture"
+    digest = spec_digest("filtre-v2", KUWAHARA_CODE)
+    mat = eal.load_asset(path) if eal.does_asset_exist(path) else None
+    if up_to_date(mat, digest):
+        return mat
+    mat = mat or tools.create_asset("M_FiltrePeinture", "/Game/Look", unreal.Material, unreal.MaterialFactoryNew())
+    mel.delete_all_material_expressions(mat)
+    mat.set_editor_property("material_domain", unreal.MaterialDomain.MD_POST_PROCESS)
+    mat.set_editor_property("blendable_location", unreal.BlendableLocation.BL_SCENE_COLOR_BEFORE_DOF)
+    uv = mel.create_material_expression(mat, unreal.MaterialExpressionTextureCoordinate, -700, 0)
+    st = mel.create_material_expression(mat, unreal.MaterialExpressionSceneTexture, -700, 150)
+    st.set_editor_property("scene_texture_id", unreal.SceneTextureId.PPI_POST_PROCESS_INPUT0)
+    node = custom_node(mat, KUWAHARA_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["UV", "Unused"], -400, 0)
+    mel.connect_material_expressions(uv, "", node, "UV")
+    mel.connect_material_expressions(st, "Color", node, "Unused")   # rend SceneTextureLookup disponible
+    mel.connect_material_property(node, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
+    mel.recompile_material(mat)
+    if mel.get_statistics(mat).num_pixel_shader_instructions <= 0:
+        unreal.log_warning("M_FiltrePeinture ne compile pas : filtre ignoré")
+        return None
+    mark_saved(mat, digest)
+    return mat
+
+
+FILTER = painted_filter()
+if FILTER is not None:
+    ppv = tag(actors.spawn_actor_from_class(unreal.PostProcessVolume, unreal.Vector(0, 0, 0)), "FiltrePeinture")
+    ppv.set_editor_property("unbound", True)
+    settings = ppv.get_editor_property("settings")
+    settings.set_editor_property("weighted_blendables",
+                                 unreal.WeightedBlendables([unreal.WeightedBlendable(1.0, FILTER)]))
+    # pas de flou de mouvement dans les rendus offline (il n'y en a pas au casque ; il étirait l'eau en rayons)
+    settings.set_editor_property("override_motion_blur_amount", True)
+    settings.set_editor_property("motion_blur_amount", 0.0)
+    ppv.set_editor_property("settings", settings)
+
 # Pas d'éclairage précalculé : le look peint est non éclairé (M_Peint) ; seuls la barque et les créatures
 # utilisent encore les lumières, toutes dynamiques. Supprime « Lighting needs to be rebuilt » en jeu.
 world = unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem).get_editor_world()
@@ -868,4 +1174,8 @@ for a in actors.get_all_level_actors():
         comp.set_mobility(unreal.ComponentMobility.MOVABLE)
 
 levels.save_current_level()
+# La séquence (animatic.py) référence les acteurs du niveau, qui viennent d'être recréés : la régénérer aussitôt,
+# sinon ses pistes pointent vers des acteurs disparus (barque immobile, créatures figées).
+import runpy  # noqa: E402
+runpy.run_path(os.path.join(ROOT, "pipeline", "unreal", "scripts", "animatic.py"), run_name="__main__")
 unreal.log(f"Greybox : {MAP} construit ({len(MESHES)} maillages)")

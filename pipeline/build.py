@@ -34,6 +34,8 @@ STAGES = [
     ("brush", "texture de touches de pinceau (look peint)", [PY, "pipeline/style/brush_texture.py"], None),
     ("greybox-geometry", "géométrie du greybox (terrain peint, arche, roseaux)", [PY, "pipeline/layout/greybox_geometry.py"], None),
     ("vegetation", "végétation et décor peints (forêt, berges, grands arbres, collines)", [PY, "pipeline/layout/vegetation.py"], None),
+    ("creatures", "trajectoires des créatures (chenal, gué, vol)", [PY, "pipeline/layout/creatures.py"], None),
+    ("water-map", "carte de l'eau (courant, distance aux berges)", [PY, "pipeline/layout/water_map.py"], None),
     ("unreal-greybox", "niveau greybox", [PY, "pipeline/unreal/run.py", "pipeline/unreal/scripts/greybox.py"], "unreal"),
     ("unreal-animatic", "séquence de l'animatic", [PY, "pipeline/unreal/run.py", "pipeline/unreal/scripts/animatic.py"], "unreal"),
     ("unreal-j1", "scène de test J1 (sphère 360 stéréo)", [PY, "pipeline/unreal/run.py", "pipeline/unreal/scripts/j1_spike.py"], "unreal"),

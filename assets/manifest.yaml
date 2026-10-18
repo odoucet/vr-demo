@@ -248,10 +248,11 @@ assets:
   type: texture
   placeholder: true
   file: assets/sky/ciel.png
-  source: génération locale Z-Image Turbo (bf16), 2048×1024, rendue raccordable horizontalement, agrandie à 4096×2048
-    (modèle 4x_foolhardy_Remacri, bords prolongés pour garder le raccord)
-  workflow: pipeline/comfy/workflows/z_image_turbo_t2i.json + pipeline/comfy/workflows/upscale_model.json
-  script: pipeline/comfy/sky.py --seeds 2 --pick 2
+  source: refs/ciel.png (Olivier, Midjourney, prompt « ciel » de PROMPTS.md, 3072×1536), raccordé horizontalement et
+    agrandi à 4096×2048 (modèle 4x_foolhardy_Remacri, bords prolongés pour garder le raccord). Ancienne version :
+    génération locale Z-Image Turbo, graine 2 (assets/sky/ciel_s2.png)
+  workflow: pipeline/comfy/workflows/upscale_model.json
+  script: pipeline/comfy/sky.py --olivier
   seed: 2
   prompt: PROMPTS.md, section Ciel et lointain (+ bloc de style commun)
   licence: généré localement
@@ -293,4 +294,102 @@ assets:
   licence: généré localement
   note: substitut en attendant l'image d'Olivier ; sert à la palette ; créatures trop proches d'un film connu, ne
     pas utiliser comme design
+  generated: '2026-10-18'
+- id: texture/tex-eau
+  type: texture
+  placeholder: true
+  file: assets/textures/tex-eau.png
+  source: génération locale, repeinte depuis refs/tex-mousse.png (référence de style), rendue raccordable
+  workflow: pipeline/comfy/workflows/qwen_edit_2509_angle.json (LoRA d'angles à 0)
+  script: pipeline/comfy/textures.py tex-eau --seed 2
+  seed: 2
+  prompt: PROMPTS.md, section Textures (tex-eau)
+  licence: généré localement
+  generated: '2026-10-18'
+- id: texture/tex-ecorce
+  type: texture
+  placeholder: true
+  file: assets/textures/tex-ecorce.png
+  source: génération locale, repeinte depuis refs/tex-mousse.png (référence de style), rendue raccordable
+  workflow: pipeline/comfy/workflows/qwen_edit_2509_angle.json (LoRA d'angles à 0)
+  script: pipeline/comfy/textures.py tex-ecorce --seed 2
+  seed: 2
+  prompt: PROMPTS.md, section Textures (tex-ecorce)
+  licence: généré localement
+  generated: '2026-10-18'
+- id: texture/tex-feuillage
+  type: texture
+  placeholder: true
+  file: assets/textures/tex-feuillage.png
+  source: génération locale, repeinte depuis refs/tex-mousse.png (référence de style), rendue raccordable
+  workflow: pipeline/comfy/workflows/qwen_edit_2509_angle.json (LoRA d'angles à 0)
+  script: pipeline/comfy/textures.py tex-feuillage --seed 2
+  seed: 2
+  prompt: PROMPTS.md, section Textures (tex-feuillage)
+  licence: généré localement
+  generated: '2026-10-18'
+- id: texture/tex-herbe
+  type: texture
+  placeholder: true
+  file: assets/textures/tex-herbe.png
+  source: génération locale, repeinte depuis refs/tex-mousse.png (référence de style), rendue raccordable
+  workflow: pipeline/comfy/workflows/qwen_edit_2509_angle.json (LoRA d'angles à 0)
+  script: pipeline/comfy/textures.py tex-herbe --seed 2
+  seed: 2
+  prompt: PROMPTS.md, section Textures (tex-herbe)
+  licence: généré localement
+  generated: '2026-10-18'
+- id: texture/tex-mousse
+  type: texture
+  placeholder: false
+  file: assets/textures/tex-mousse.png
+  source: refs/tex-mousse.png (Olivier)
+  licence: fournie par Olivier
+  generated: '2026-10-18'
+- id: texture/tex-planches
+  type: texture
+  placeholder: true
+  file: assets/textures/tex-planches.png
+  source: génération locale, repeinte depuis refs/tex-mousse.png (référence de style), rendue raccordable
+  workflow: pipeline/comfy/workflows/qwen_edit_2509_angle.json (LoRA d'angles à 0)
+  script: pipeline/comfy/textures.py tex-planches --seed 2
+  seed: 2
+  prompt: PROMPTS.md, section Textures (tex-planches)
+  licence: généré localement
+  generated: '2026-10-18'
+- id: texture/tex-roche
+  type: texture
+  placeholder: true
+  file: assets/textures/tex-roche.png
+  source: génération locale, repeinte depuis refs/tex-mousse.png (référence de style), rendue raccordable
+  workflow: pipeline/comfy/workflows/qwen_edit_2509_angle.json (LoRA d'angles à 0)
+  script: pipeline/comfy/textures.py tex-roche --seed 2
+  seed: 2
+  prompt: PROMPTS.md, section Textures (tex-roche)
+  licence: généré localement
+  generated: '2026-10-18'
+- id: texture/tex-terre
+  type: texture
+  placeholder: true
+  file: assets/textures/tex-terre.png
+  source: génération locale, repeinte depuis refs/tex-mousse.png (référence de style), rendue raccordable
+  workflow: pipeline/comfy/workflows/qwen_edit_2509_angle.json (LoRA d'angles à 0)
+  script: pipeline/comfy/textures.py tex-terre --seed 2
+  seed: 2
+  prompt: PROMPTS.md, section Textures (tex-terre)
+  licence: généré localement
+  generated: '2026-10-18'
+- id: texture/pinceau-rides
+  type: texture
+  placeholder: true
+  file: assets/textures/pinceau.png, assets/textures/rides.png
+  source: procédural (bruit filtré en fréquence), pipeline/style/brush_texture.py
+  licence: généré localement
+  generated: '2026-10-18'
+- id: texture/eau_carte
+  type: data
+  placeholder: false
+  file: assets/textures/eau_carte.png
+  source: calculée sur le terrain du greybox, pipeline/layout/water_map.py
+  licence: généré localement
   generated: '2026-10-18'

@@ -97,13 +97,30 @@ class Mesh:
                 "colors": np.round(np.concatenate(self.c), 3).tolist()}
 
 
+class Bundle:
+    """Un Mesh par type de surface (feuillage, bois, sol, roche) : chaque type a son matériau et sa texture
+    de détail. Les primitives écrivent dans le bon Mesh via part()."""
+    KINDS = ("feuillage", "bois", "sol", "roche")
+
+    def __init__(self):
+        self.parts = {k: Mesh() for k in self.KINDS}
+
+    @property
+    def triangles(self):
+        return sum(m.triangles for m in self.parts.values())
+
+
+def part(mesh, kind):
+    return mesh.parts[kind] if isinstance(mesh, Bundle) else mesh
+
+
 def ao_vertical(z, z0, z1, low=0.45):
     """Occlusion peinte : sombre en bas (contre le sol, sous le houppier), pleine en haut."""
     return low + (1 - low) * np.clip((z - z0) / max(z1 - z0, 1e-6), 0, 1)
 
 
 def blob(mesh, center, radii, color, rng, subdiv=1, normal_center=None, normal_blend=0.75, ao=(None, None, 0.5),
-         wobble=0.12):
+         wobble=0.12, kind="feuillage"):
     """Boule déformée. normal_center : centre des normales sphériques partagées (houppier entier) ; le mélange
     avec la normale propre de la boule garde un léger modelé de chaque touffe."""
     sv, sf = icosphere(subdiv)
@@ -123,10 +140,10 @@ def blob(mesh, center, radii, color, rng, subdiv=1, normal_center=None, normal_b
     z1 = verts[:, 2].max() if z1 is None else z1
     a = ao_vertical(verts[:, 2], z0, z1, low)
     colors = np.column_stack([np.tile(color, (len(verts), 1)), a])
-    mesh.add(verts, sf, normals, colors)
+    part(mesh, kind).add(verts, sf, normals, colors)
 
 
-def cylinder(mesh, base, top, r0, r1, color, sides=7, ao_low=0.5, cap=False):
+def cylinder(mesh, base, top, r0, r1, color, sides=7, ao_low=0.5, cap=False, kind="bois"):
     """Tronc conique à normales cylindriques (ombrage doux tout autour)."""
     base, top = np.asarray(base, float), np.asarray(top, float)
     axis = top - base
@@ -151,7 +168,7 @@ def cylinder(mesh, base, top, r0, r1, color, sides=7, ao_low=0.5, cap=False):
     verts = np.array(verts)
     a = np.where(np.arange(len(verts)) % 2 == 0, ao_low, 1.0)
     colors = np.column_stack([np.tile(color, (len(verts), 1)), a])
-    mesh.add(verts, tris, normals, colors)
+    part(mesh, kind).add(verts, tris, normals, colors)
 
 
 # --- Végétation et décor -----------------------------------------------------------------------------------
@@ -177,6 +194,20 @@ def broadleaf_tree(mesh, x, y, z, height, rng, leaf, trunk, detail=1, crown_scal
         c = crown_c + d * crown_r * rng.uniform(0.6, 0.85)
         blob(mesh, c, [r, r, r * 0.85], jitter(base_col, rng, 0.05), rng, subdiv=1 if detail == 2 else 0,
              normal_center=crown_c, ao=(z_bottom, z_top, 0.4))
+    if detail == 2:      # petites touffes en surface : silhouette en chou-fleur, comme les feuillages peints
+        for _ in range(rng.integers(10, 16)):
+            d = rng.normal(0, 1, 3)
+            d[2] = abs(d[2]) * 0.8 - 0.1
+            d /= np.linalg.norm(d)
+            r = crown_r * rng.uniform(0.18, 0.3)
+            c = crown_c + d * crown_r * rng.uniform(0.95, 1.15)
+            blob(mesh, c, [r, r, r * 0.8], jitter(base_col, rng, 0.07), rng, subdiv=0, normal_center=crown_c,
+                 ao=(z_bottom, z_top, 0.4))
+    # branches visibles sous le houppier
+    for _ in range((3, 2, 0)[2 - detail]):
+        a = rng.uniform(0, 2 * math.pi)
+        tip = crown_c + np.array([math.cos(a), math.sin(a), 0]) * crown_r * 0.7 - [0, 0, crown_r * 0.3]
+        cylinder(mesh, [x, y, crown_c[2] - crown_r * 0.9], tip, height * 0.012, height * 0.005, jitter(trunk, rng), sides=4)
     return crown_c, crown_r
 
 
@@ -203,7 +234,7 @@ def conifer(mesh, x, y, z, height, rng, leaf, trunk, detail=1):
         tris = [[k, (k + 1) % sides, sides] for k in range(sides)]
         a = [0.5] * sides + [1.0]
         colors = np.column_stack([np.tile(jitter(col, rng, 0.03), (sides + 1, 1)), a])
-        mesh.add(verts, tris, normals, colors)
+        part(mesh, "feuillage").add(verts, tris, normals, colors)
 
 
 def bush(mesh, x, y, z, size, rng, leaf, flowers=None):
@@ -221,15 +252,15 @@ def bush(mesh, x, y, z, size, rng, leaf, flowers=None):
             d[2] = abs(d[2]) + 0.3
             d /= np.linalg.norm(d)
             p = c + d * size * 0.55
-            blob(mesh, p, [0.06] * 3, jitter(flowers, rng, 0.05), rng, subdiv=0, ao=(None, None, 1.0), wobble=0)
+            blob(mesh, p, [0.06] * 3, jitter(flowers, rng, 0.05), rng, subdiv=0, ao=(None, None, 1.0), wobble=0, kind="sol")
 
 
-def rock(mesh, x, y, z, size, rng, color):
+def rock(mesh, x, y, z, size, rng, color, subdiv=1):
     """Rocher : boule aplatie, normales adoucies vers le haut (dessus clair, flancs dans l'ombre)."""
     r = np.array([size, size * rng.uniform(0.6, 0.9), size * rng.uniform(0.35, 0.6)])
     c = np.array([x, y, z + r[2] * 0.3])
-    blob(mesh, c, r, jitter(color, rng, 0.06), rng, subdiv=1, normal_center=c - [0, 0, size * 0.6], normal_blend=0.6,
-         ao=(z - r[2] * 0.2, z + r[2] * 1.2, 0.45), wobble=0.22)
+    blob(mesh, c, r, jitter(color, rng, 0.06), rng, subdiv=subdiv, normal_center=c - [0, 0, size * 0.6], normal_blend=0.6,
+         ao=(z - r[2] * 0.2, z + r[2] * 1.2, 0.45), wobble=0.22, kind="roche")
 
 
 def grass_tuft(mesh, x, y, z, height, rng, color, blades=7):
@@ -247,8 +278,43 @@ def grass_tuft(mesh, x, y, z, height, rng, color, blades=7):
         p2 = [x + lx, y + ly, z + h]
         nrm = [math.cos(ang + 1.57) * 0.5, math.sin(ang + 1.57) * 0.5, 1]
         colors = np.array([[*col, 0.45], [*col, 0.45], [*col, 1.0]])
-        mesh.add([p0, p1, p2], [[0, 1, 2], [0, 2, 1]], [nrm] * 3, colors)
+        part(mesh, "sol").add([p0, p1, p2], [[0, 1, 2], [0, 2, 1]], [nrm] * 3, colors)
 
 
 def log(mesh, a, b, radius, rng, color):
     cylinder(mesh, a, b, radius, radius * 0.9, jitter(color, rng), sides=7, ao_low=0.55, cap=True)
+
+
+def fern(mesh, x, y, z, size, rng, color, fronds=7):
+    """Fougère : frondes arquées en éventail (deux segments), double face."""
+    col = jitter(color, rng, 0.08)
+    for k in range(fronds):
+        a = 2 * math.pi * k / fronds + rng.uniform(-0.2, 0.2)
+        dx, dy = math.cos(a), math.sin(a)
+        L = size * rng.uniform(0.7, 1.1)
+        w = L * 0.12
+        px, py = -dy * w, dx * w
+        p0 = [x, y, z]
+        p1 = [x + dx * L * 0.55, y + dy * L * 0.55, z + L * 0.45]
+        p2 = [x + dx * L, y + dy * L, z + L * 0.25]
+        verts = [p0, [p1[0] + px, p1[1] + py, p1[2]], [p1[0] - px, p1[1] - py, p1[2]], p2]
+        tris = [[0, 1, 2], [0, 2, 1], [1, 3, 2], [1, 2, 3]]
+        n = [dx * 0.3, dy * 0.3, 1]
+        colors = np.array([[*col, 0.4], [*col, 0.8], [*col, 0.8], [*col, 1.0]])
+        part(mesh, "sol").add(verts, tris, [n] * 4, colors)
+
+
+def flower_patch(mesh, x, y, z, rng, color, stems=9, radius=0.5):
+    """Massif de fleurs : tiges fines et têtes colorées (petites boules)."""
+    for _ in range(stems):
+        px, py = x + rng.normal(0, radius * 0.5), y + rng.normal(0, radius * 0.5)
+        h = rng.uniform(0.25, 0.6)
+        cylinder(mesh, [px, py, z - 0.02], [px, py, z + h], 0.01, 0.008, np.array([0.35, 0.5, 0.2]), sides=3, kind="sol")
+        blob(mesh, [px, py, z + h], [0.05, 0.05, 0.035], jitter(color, rng, 0.05), rng, subdiv=0,
+             ao=(None, None, 1.0), wobble=0, kind="sol")
+
+
+def pebbles(mesh, x, y, z, rng, color, count=6, spread=0.8):
+    for _ in range(count):
+        s = rng.uniform(0.08, 0.25)
+        rock(mesh, x + rng.normal(0, spread), y + rng.normal(0, spread), z - s * 0.2, s, rng, color, subdiv=0)

@@ -6,7 +6,8 @@ Contenu : feuillus en cumulus et résineux étagés (forêt dense, plus fine pr�
 masses de feuillage en bord de terrain, buissons fleuris, touffes d'herbe et rochers sur les berges, gros
 plans de collines lointains, arbre colossal (S5) avec ses racines, arbre aux lanternes (S7) et ses lanternes.
 Chaque maillage porte normales et couleurs par sommet pour le matériau M_Peint (pipeline/layout/painted.py).
-Découpé en tronçons le long du parcours (culling) ; budgets de triangles affichés. Déterministe.
+Découpé en tronçons le long du parcours (culling), et par type de surface (feuillage, bois, sol, roche :
+un matériau et une texture de détail chacun) ; budgets de triangles affichés. Déterministe.
 """
 import json
 import math
@@ -64,7 +65,7 @@ def main():
         """Tronçon du point de parcours le plus proche (les objets d'un même passage sont regroupés)."""
         t = st[np.argmin((sx - x) ** 2 + (sy - y) ** 2)]
         k = f"Vegetation{int(t // CHUNK_S):02d}"
-        return chunks.setdefault(k, P.Mesh())
+        return chunks.setdefault(k, P.Bundle())
 
     def path_dist(x, y):
         return float(np.sqrt(np.min((sx - x) ** 2 + (sy - y) ** 2)))
@@ -78,16 +79,16 @@ def main():
 
     # --- Forêt : échantillonnage par cellules de 5 m, densité et détail selon la distance au parcours ---------
     trees = 0
-    for x in np.arange(b["x0"], b["x1"], 5.0):
-        for y in np.arange(b["y0"], b["y1"], 5.0):
-            px, py = x + rng.uniform(0, 5), y + rng.uniform(0, 5)
+    for x in np.arange(b["x0"], b["x1"], 4.2):
+        for y in np.arange(b["y0"], b["y1"], 4.2):
+            px, py = x + rng.uniform(0, 4.2), y + rng.uniform(0, 4.2)
             z, d = F.at(px, py)
             if z is None or d < 3.5 + rng.uniform(0, 3) or excluded(px, py):
                 continue
             pd = path_dist(px, py)
             if pd > 45 and rng.uniform() < 0.55:      # au loin, la lisière (plus bas) prend le relais
                 continue
-            detail = 2 if pd < 16 else 1 if pd < 34 else 0
+            detail = 2 if pd < 18 else 1 if pd < 38 else 0
             h = rng.uniform(10, 20) * (1.15 if pd > 30 else 1.0)
             m = chunk(px, py)
             if rng.uniform() < 0.25:
@@ -97,8 +98,8 @@ def main():
             trees += 1
 
     # --- Lisière : masses de feuillage en bord de terrain, qui ferment le monde ---------------------------------
-    edge = P.Mesh()
-    for _ in range(420):
+    edge = P.Bundle()
+    for _ in range(620):
         side = rng.integers(4)
         u = rng.uniform()
         px = b["x0"] + (b["x1"] - b["x0"]) * (u if side < 2 else (0.02 if side == 2 else 0.98)) + rng.normal(0, 4)
@@ -119,14 +120,39 @@ def main():
         h0 = math.radians(p["heading_deg"])
         nx, ny = -math.sin(h0), math.cos(h0)
         for side in (1, -1):
-            for _ in range(5):                                       # touffes d'herbe
-                off = side * (p["width_m"] / 2 + rng.uniform(0.2, 7))
+            for _ in range(3):                                       # fougères et massifs de fleurs
+                off = side * (p["width_m"] / 2 + rng.uniform(1.0, 9))
+                px, py = p["x"] + nx * off + rng.uniform(-0.5, 0.5), p["y"] + ny * off + rng.uniform(-0.5, 0.5)
+                z, d = F.at(px, py)
+                if z is None or d < 0.6 or excluded(px, py):
+                    continue
+                if rng.uniform() < 0.6:
+                    P.fern(chunk(px, py), px, py, z, rng.uniform(0.5, 1.1), rng, COL["herbe"][rng.integers(3)] * 0.85)
+                else:
+                    P.flower_patch(chunk(px, py), px, py, z, rng, COL["fleurs"][rng.integers(4)])
+            if rng.uniform() < 0.35:                                  # galets au bord de l'eau
+                off = side * (p["width_m"] / 2 + rng.uniform(-0.6, 0.8))
+                px, py = p["x"] + nx * off, p["y"] + ny * off
+                z, d = F.at(px, py)
+                if z is not None and not excluded(px, py):
+                    P.pebbles(chunk(px, py), px, py, max(z, -0.2), rng, COL["rocher"])
+            if rng.uniform() < 0.04:                                  # bois mort couché sur la berge
+                off = side * (p["width_m"] / 2 + rng.uniform(1.5, 6))
+                px, py = p["x"] + nx * off, p["y"] + ny * off
+                z, d = F.at(px, py)
+                if z is not None and d > 1 and not excluded(px, py):
+                    a = rng.uniform(0, 2 * math.pi)
+                    L = rng.uniform(2.5, 5)
+                    P.log(chunk(px, py), [px, py, z + 0.15], [px + math.cos(a) * L, py + math.sin(a) * L, z + 0.25],
+                          rng.uniform(0.15, 0.3), rng, COL["tronc"])
+            for _ in range(14):                                      # touffes d'herbe
+                off = side * (p["width_m"] / 2 + rng.uniform(0.2, 9))
                 px, py = p["x"] + nx * off + rng.uniform(-0.5, 0.5), p["y"] + ny * off + rng.uniform(-0.5, 0.5)
                 z, d = F.at(px, py)
                 if z is None or d < 0.2 or excluded(px, py):
                     continue
                 P.grass_tuft(chunk(px, py), px, py, z, rng.uniform(0.35, 0.8), rng, COL["herbe"][rng.integers(3)])
-            if rng.uniform() < 0.55:                                  # buisson
+            if rng.uniform() < 0.9:                                   # buisson
                 off = side * (p["width_m"] / 2 + rng.uniform(1.5, 9))
                 px, py = p["x"] + nx * off, p["y"] + ny * off
                 z, d = F.at(px, py)
@@ -140,6 +166,31 @@ def main():
                 if z is not None and not excluded(px, py):
                     P.rock(chunk(px, py), px, py, max(z, -0.3), rng.uniform(0.4, 1.3), rng, COL["rocher"])
 
+    # --- Fleurs de nénuphar (S3) et roseaux du lac (S7) -----------------------------------------------------------
+    for p in s:
+        h0 = math.radians(p["heading_deg"])
+        nx, ny = -math.sin(h0), math.cos(h0)
+        if 48 <= p["t"] <= 92 and rng.uniform() < 0.8:
+            off = rng.choice([-1, 1]) * rng.uniform(2.2, p["width_m"] / 2 - 0.4)
+            px, py = p["x"] + nx * off, p["y"] + ny * off
+            col = COL["fleurs"][1] if rng.uniform() < 0.7 else COL["fleurs"][0]
+            m = chunk(px, py)
+            for k in range(6):                                      # pétales en couronne autour d'un cœur
+                a = 2 * math.pi * k / 6
+                P.blob(m, [px + math.cos(a) * 0.09, py + math.sin(a) * 0.09, 0.1], [0.09, 0.05, 0.05],
+                       P.jitter(col, rng, 0.04), rng, subdiv=0, ao=(None, None, 1.0), wobble=0, kind="sol")
+            P.blob(m, [px, py, 0.14], [0.05] * 3, COL["fleurs"][2], rng, subdiv=0, ao=(None, None, 1.0), wobble=0, kind="sol")
+    lake = river["lake"]
+    for k in range(260):                                             # roseaux en touffes sur le pourtour du lac
+        a = rng.uniform(0, 2 * math.pi)
+        r = lake["radius_m"] + rng.uniform(-2.5, 1.5)
+        px, py = lake["x"] + r * math.cos(a), lake["y"] + r * math.sin(a)
+        if path_dist(px, py) < 6:
+            continue
+        z, d = F.at(px, py)
+        P.grass_tuft(chunk(px, py), px, py, min(z if z is not None else 0, 0.1) if z is not None else -0.2,
+                     rng.uniform(1.2, 2.2), rng, COL["roseau"], blades=9)
+
     # --- Gué (S4) : pierres plates en travers de la rivière, devant la barque, hors de sa trajectoire ---------
     ford = next(p for p in s if p["t"] >= 112)
     h0 = math.radians(ford["heading_deg"])
@@ -151,33 +202,37 @@ def main():
         P.rock(chunk(px, py), px, py, -0.25, rng.uniform(0.5, 0.9), rng, COL["rocher"])
 
     # --- Arbre colossal (S5) : tronc évasé sur la berge gauche, contreforts de racines, houppier immense ----------
-    colossal = P.Mesh()
+    colossal = P.Bundle()
     cx, cy = colossal_xy
     bark = COL["ecorce_colossal"]
-    P.cylinder(colossal, [cx, cy, -1.5], [cx, cy, 34], 6.5, 4.0, bark, sides=14, ao_low=0.35)
-    for k in range(9):                                                     # contreforts
+    P.cylinder(colossal, [cx, cy, -1.5], [cx, cy, 34], 6.5, 4.0, bark, sides=28, ao_low=0.35)
+    for k in range(14):                                                    # écorce en côtes verticales
+        a = 2 * math.pi * k / 14
+        P.cylinder(colossal, [cx + math.cos(a) * 6.3, cy + math.sin(a) * 6.3, -1.5],
+                   [cx + math.cos(a) * 3.9, cy + math.sin(a) * 3.9, 34], 0.9, 0.5, P.jitter(bark, rng, 0.06), sides=6, ao_low=0.4)
+    for k in range(13):                                                    # contreforts
         a = 2 * math.pi * k / 9 + rng.uniform(-0.2, 0.2)
         reach = rng.uniform(9, 15)
         P.cylinder(colossal, [cx + math.cos(a) * reach, cy + math.sin(a) * reach, -1.5],
                    [cx + math.cos(a) * 3, cy + math.sin(a) * 3, rng.uniform(7, 12)], 1.4, 2.6, P.jitter(bark, rng, 0.05),
-                   sides=7, ao_low=0.35)
+                   sides=12, ao_low=0.35)
     crown_c = np.array([cx, cy, 52.0])
     P.blob(colossal, crown_c, [30, 30, 18], P.jitter(COL["feuillage"][1], rng), rng, subdiv=2, normal_center=crown_c,
            ao=(30, 72, 0.35))
-    for _ in range(16):
+    for i in range(60):                                                    # touffes, puis petites touffes en surface
         d = rng.normal(0, 1, 3)
-        d[2] = d[2] * 0.4
+        d[2] = d[2] * 0.4 if i < 24 else abs(d[2]) * 0.7 - 0.1
         d /= np.linalg.norm(d)
-        c = crown_c + d * np.array([26, 26, 14])
-        r = rng.uniform(9, 15)
-        P.blob(colossal, c, [r, r, r * 0.8], P.jitter(COL["feuillage"][rng.integers(5)], rng, 0.05), rng, subdiv=1,
-               normal_center=crown_c, ao=(30, 72, 0.35))
+        c = crown_c + d * (np.array([26, 26, 14]) if i < 24 else np.array([31, 31, 18]))
+        r = rng.uniform(9, 15) if i < 24 else rng.uniform(4, 7)
+        P.blob(colossal, c, [r, r, r * 0.8], P.jitter(COL["feuillage"][rng.integers(5)], rng, 0.05), rng,
+               subdiv=2 if i < 24 else 1, normal_center=crown_c, ao=(30, 72, 0.35))
     for k in range(6):                                                     # branches maîtresses
         a = 2 * math.pi * k / 6 + 0.3
         P.cylinder(colossal, [cx, cy, 30], [cx + math.cos(a) * 18, cy + math.sin(a) * 18, 44], 2.2, 1.0, bark, sides=6)
 
     # --- Arbre aux lanternes (S7) : large houppier en ombrelle sur l'île, lanternes suspendues dessous --------
-    lantern = P.Mesh()
+    lantern = P.Bundle()
     lx, ly = isl["x"], isl["y"]
     P.cylinder(lantern, [lx, ly, 0.0], [lx, ly, 11], 1.6, 0.9, COL["tronc"], sides=10, ao_low=0.4)
     for k in range(5):
@@ -185,12 +240,12 @@ def main():
         P.cylinder(lantern, [lx, ly, 8], [lx + math.cos(a) * 7, ly + math.sin(a) * 7, 13], 0.6, 0.3, COL["tronc"], sides=5)
     lc = np.array([lx, ly, 15.0])
     P.blob(lantern, lc, [12, 12, 6], P.jitter(COL["feuillage"][2], rng), rng, subdiv=2, normal_center=lc, ao=(9, 21, 0.35))
-    for _ in range(12):
+    for i in range(40):
         d = rng.normal(0, 1, 3)
-        d[2] *= 0.35
+        d[2] = d[2] * 0.35 if i < 16 else abs(d[2]) * 0.6
         d /= np.linalg.norm(d)
-        c = lc + d * np.array([10, 10, 4])
-        r = rng.uniform(4, 6.5)
+        c = lc + d * (np.array([10, 10, 4]) if i < 16 else np.array([12.5, 12.5, 5.5]))
+        r = rng.uniform(4, 6.5) if i < 16 else rng.uniform(1.8, 3)
         P.blob(lantern, c, [r, r, r * 0.7], P.jitter(COL["feuillage"][2], rng, 0.05), rng, subdiv=1,
                normal_center=lc, ao=(9, 21, 0.35))
     lanterns = []
@@ -201,7 +256,7 @@ def main():
                          round(10.5 - 2.5 * (r / 13) ** 2 + rng.uniform(-1.2, 1.5), 2)])
 
     # --- Collines lointaines : trois plans de reliefs arrondis autour de la scène (la brume les éclaircit) -----
-    hills = P.Mesh()
+    hills = P.Bundle()
     cxs, cys = (b["x0"] + b["x1"]) / 2, (b["y0"] + b["y1"]) / 2
     for layer, (rad, col) in enumerate(zip((380, 600, 900), COL["collines"])):
         for k in range(22):
@@ -212,12 +267,16 @@ def main():
             P.blob(hills, c, [w, w * 0.8, rad * rng.uniform(0.10, 0.16)], P.jitter(col, rng, 0.04), rng, subdiv=2,
                    normal_center=c - [0, 0, 30], ao=(-20, rad * 0.2, 0.6), wobble=0.08)
 
-    meshes = dict(sorted(chunks.items()))
-    meshes.update({"Lisiere": edge, "ArbreColossalPeint": colossal, "ArbreLanternesPeint": lantern, "Collines": hills})
-    total = 0
-    for k, m in meshes.items():
-        print(f"  {k:22s} {m.triangles:8d} triangles")
-        total += m.triangles
+    bundles = dict(sorted(chunks.items()))
+    bundles.update({"Lisiere": edge, "ArbreColossalPeint": colossal, "ArbreLanternesPeint": lantern, "Collines": hills})
+    meshes, total = {}, 0
+    for k, bnd in bundles.items():
+        print(f"  {k:22s} {bnd.triangles:8d} triangles  " +
+              " ".join(f"{kind}={m.triangles}" for kind, m in bnd.parts.items() if m.triangles))
+        total += bnd.triangles
+        for kind, m in bnd.parts.items():
+            if m.triangles:
+                meshes[f"{k}_{kind}"] = m
     print(f"  {'total':22s} {total:8d} triangles ({trees} arbres)")
     OUT.write_text(json.dumps({"units": "m", "meshes": {k: m.to_dict() for k, m in meshes.items()},
                                "lanternes": lanterns}), encoding="utf-8")

@@ -1,7 +1,4 @@
 {
-  "seed": 2,
-  "prompt": "wide 360 degree panoramic dusk sky, equirectangular, towering cumulus clouds lit pink and gold from below, deep blue zenith, distant dark forest silhouette along the horizon, first stars, hand-painted, hand-painted 1980s Japanese animation background art, gouache and watercolor, soft painterly edges, flat color shapes, gentle diffuse light, lush saturated greens, towering cumulus clouds, nostalgic and serene mood",
-  "model": "z_image_turbo_bf16",
-  "workflow": "pipeline/comfy/workflows/z_image_turbo_t2i.json",
+  "source": "refs/ciel.png (Olivier, Midjourney, prompt « ciel »)",
   "upscale": "pipeline/comfy/workflows/upscale_model.json (4x_foolhardy_Remacri) → 4096x2048"
 }

@@ -92,6 +92,25 @@ def mux(iteration, seq, duration, last):
                     "-map", "0:v", "-map", "[a]", "-c:v", "libx264", "-crf", "20", "-pix_fmt", "yuv420p",
                     "-c:a", "aac", "-b:a", "192k", "-t", str(duration), "-movflags", "+faststart", str(out)], check=True)
     print(f"{out.relative_to(ROOT)} ({out.stat().st_size / 1e6:.0f} Mo, {last} images, {len(sounds)} sons + musique)")
+    contact_sheet(iteration)
+
+
+KEY_TIMES = [30, 62, 76, 100, 112, 140, 181, 196, 214, 232]
+
+
+def contact_sheet(iteration):
+    """Planche des moments clés de l'animatic (référence de revue : rendu fidèle à la lumière par beat)."""
+    from PIL import Image, ImageDraw
+    w, h = 640, 360
+    sheet = Image.new("RGB", (w * 2, h * ((len(KEY_TIMES) + 1) // 2)))
+    for i, t in enumerate(KEY_TIMES):
+        src = FRAMES / f"{int(t * FPS):05d}.jpeg"
+        im = Image.open(src).resize((w, h)) if src.exists() else Image.new("RGB", (w, h))
+        ImageDraw.Draw(im).text((8, 8), f"{t} s", fill="yellow")
+        sheet.paste(im, ((i % 2) * w, (i // 2) * h))
+    out = ROOT / "review" / f"iter-{iteration:03d}" / "planche-animatic.jpg"
+    sheet.save(out, quality=88)
+    print(out.relative_to(ROOT))
 
 
 if __name__ == "__main__":

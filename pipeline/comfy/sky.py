@@ -3,6 +3,7 @@
     python pipeline/comfy/sky.py                    # graines 1 à 3 → assets/sky/ciel_s<graine>.png
     python pipeline/comfy/sky.py --seeds 7 --pick 7 # retient une graine → assets/sky/ciel.png (agrandi en 4096×2048)
     python pipeline/comfy/sky.py --upscale          # réagrandit la graine retenue (params.json)
+    python pipeline/comfy/sky.py --olivier          # ciel HD d'Olivier (refs/ciel.png) → assets/sky/ciel.png
 
 Prompt : section « Ciel et lointain » de PROMPTS.md (bloc de style commun). Le panorama est rendu
 raccordable (fondu circulaire des bords gauche/droit) pour se refermer sur la sphère du ciel. Substitut :
@@ -74,8 +75,21 @@ def main():
     ap.add_argument("--seeds", type=int, nargs="+", default=[1, 2, 3])
     ap.add_argument("--pick", type=int)
     ap.add_argument("--upscale", action="store_true", help="réagrandir la graine retenue")
+    ap.add_argument("--olivier", action="store_true", help="partir de refs/ciel.png (dépôt d'Olivier)")
     args = ap.parse_args()
     OUT.mkdir(parents=True, exist_ok=True)
+    if args.olivier:
+        src = OUT / "ciel_olivier.png"
+        Image.open(ROOT / "refs" / "ciel.png").convert("RGB").save(src)     # copie : refs/ n'est jamais modifié
+        make_seamless(src)
+        with gpu_lock("sky.py (agrandissement)"):
+            upscale(src, OUT / "ciel.png")
+        (OUT / "params.json").write_text(json.dumps({"source": "refs/ciel.png (Olivier, Midjourney, prompt « ciel »)",
+                                                     "upscale": "pipeline/comfy/workflows/upscale_model.json "
+                                                                "(4x_foolhardy_Remacri) → 4096x2048"},
+                                                    indent=2, ensure_ascii=False), encoding="utf-8")
+        print("Retenu : assets/sky/ciel.png (ciel HD d'Olivier, raccordé et agrandi)")
+        return
     if args.upscale:
         args.pick, args.seeds = json.loads((OUT / "params.json").read_text(encoding="utf-8"))["seed"], []
     with gpu_lock("sky.py (Z-Image Turbo)"):

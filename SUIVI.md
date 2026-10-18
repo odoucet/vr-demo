@@ -27,7 +27,7 @@ Dans le casque : Bibliothèque → Sources inconnues.
    Hauteur : le joueur est posé au niveau de l'eau, ta tête assise doit tomber vers 1,10 m (origine OpenXR « STAGE », au sol).
    Si tu es trop haut ou trop bas, dis-le-moi : c'est un réglage.
    Alternative sans APK : Quest Link + éditeur, niveau `Barque_Greybox`, Play → VR Preview.
-3. Sans casque : `review/iter-008/animatic.mp4` (4 min, musique + ambiances) et `review/iter-008/planche-animatic.jpg` (images de l'animatic aux moments clés).
+3. Sans casque : `review/iter-010/animatic.mp4` (4 min, musique + ambiances) et `review/iter-010/planche-animatic.jpg` (images de l'animatic aux moments clés).
 
 **Mesure de fréquence d'image (facultatif, 5 min)** : Quest branché en USB et casque porté, lance
 `python pipeline/unreal/quest_perf.py --variant greybox` (ou dis-moi « Quest branché » et je la lance). L'APK
@@ -88,7 +88,7 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 
 ## À vérifier au casque
 
-- **J2 (greybox)** : lucioles (taille, clignotement, dérive : agréables ou agaçantes ?), brume du départ (trop dense ?), échelle de la barque (3,5 m, franc-bord ~45 cm, place assise à 1,20 m derrière le centre), gêne de la lanterne de proue (D11), hauteur des yeux 1,10 m, confort de la dérive et des virages, lisibilité du passage sous la barque (S3), distance du troupeau (14 m, S4), passage sous l'arche (8 m, S5).
+- **J2 (greybox)** : fréquence d'image avec ~530 k triangles de décor et les textures (mesure à faire casque porté), lisibilité de l'eau et du sillage, chaleur de la lanterne, lucioles (taille, clignotement, dérive : agréables ou agaçantes ?), brume du départ (trop dense ?), échelle de la barque (3,5 m, franc-bord ~45 cm, place assise à 1,20 m derrière le centre), gêne de la lanterne de proue (D11), hauteur des yeux 1,10 m, confort de la dérive et des virages, lisibilité du passage sous la barque (S3), distance du troupeau (14 m, S4), passage sous l'arche (8 m, S5).
 
 - **J1 (APK `builds/android/`)** : la vidéo s'affiche ; « AVANT » devant ; la stéréo n'est pas inversée (« ŒIL GAUCHE » ne doit être lu que de l'œil gauche) ; les repères 1,5 m / 3 m / 10 m / ∞ paraissent à ces distances ; le cube rouge clignote en même temps que le flash blanc et le bip ; fluidité (72 Hz) en 4096 px. Point technique incertain : sélection de l'œil (`ResolvedView.StereoPassIndex`) avec le multiview mobile.
 
@@ -98,6 +98,15 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 
 ## Fait récemment
 
+- **Itération 9-10 (rendu HD, polygones, eau, lanterne ; retours du 18/10 matin)** :
+  - **Textures peintes** : ta mousse (`refs/tex-mousse.png`) sert de référence de style. Les autres textures (écorce, herbe, terre, roche, feuillage, planches) sont repeintes à partir d'elle en local (Qwen-Image-Edit, `pipeline/comfy/textures.py`, prompts dans `PROMPTS.md`). Elles sont projetées en coordonnées monde (triplanaire) par type de surface : feuillage = ta mousse, bois = écorce, sol = herbe, roche = roche, terrain = terre/herbe selon la couleur. Elles modulent la valeur des aplats et y mêlent leurs touches de couleur.
+  - **Ciel HD** : ton `refs/ciel.png`, raccordé gauche/droite et agrandi en 4096×2048. Le raccord laisse un nuage un peu fantôme, derrière le spectateur au départ.
+  - **Polygones** : ~530 k triangles de décor (contre ~250 k), 2 373 arbres. Houppiers proches en chou-fleur (touffes de surface) avec branches visibles, fougères, massifs de fleurs, galets, bois mort, fleurs de nénuphar, roseaux du lac, contreforts et côtes d'écorce de l'arbre colossal, houppier de l'arbre aux lanternes trois fois plus détaillé. Chaque tronçon est découpé par type de surface (un matériau chacun).
+  - **Eau peinte** : rides qui suivent le courant (carte de l'eau calculée sur le terrain), reflet du ciel déformé par les rides, traits de lumière sur les crêtes, bande sombre du reflet des arbres près des berges, écume le long des rives, chenal plus sombre.
+  - **Autour de la barque** : sillage en V, bourrelet d'écume le long de la coque, reflet de la lanterne. **Plus d'eau dans la barque** (masque à l'intérieur de la coque).
+  - **Lanterne** : papier qui vacille comme une bougie, halo doux, et lumière chaude portée sur le décor, la barque et l'eau (calculée dans les matériaux peints, qui ne reçoivent pas les lumières du moteur).
+  - **Lucioles** : le nuage de l'envol ne « retombe » plus sous l'eau à la fin (il était renvoyé sous le terrain en 0,5 s) ; il continue de monter et disparaît dans le ciel.
+  - **Filtre peinture** (filtre de Kuwahara, aplats à bords nets) : PC VR et rendus offline seulement. **Sur Quest, aucun filtre de post-traitement n'est possible** (rendu mobile sans HDR) : le look y vient des matériaux et des textures.
 - **Itération 8 (look peint, retours au casque du 18/10)** :
   - **Look dessin animé** dans le matériau `M_Peint` (non éclairé, ombrage deux tons à bord peint, liseré de contre-jour, couleurs par sommet). Ce n'est pas un filtre de rendu : sur Quest sans HDR mobile, aucun post-traitement n'est possible.
   - **Lumière par beat** dans `pipeline/style/ambiance.yaml` (lumière, ombre, ciel, soleil, teinte du ciel) : brume bleue au départ, jour vert, crépuscule doré sous les racines, nuit bleue étoilée pour la lune et le lac.
@@ -142,5 +151,5 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 |---|---|
 | J0 Bible de style | prompts prêts ; **palette par beat** (`review/bible/palettes.png`, `pipeline/style/palettes.yaml`) à partir de tes essais S2/S5/S6/S7 et de concepts provisoires S1/S3/S4 ; ciel peint provisoire ; attend tes images d'assets (I1) et le choix de l'image maîtresse (D1) |
 | J1 Spike vidéo 360 + Quest | scène J1_Spike construite par script (sphère 360 stéréo + séquence + témoin de synchro), matériau validé dans l'éditeur ; **APK prêt : `builds/android/Barque-arm64.apk`** (485 Mo) ; attend le test au casque (go / no-go) |
-| J2 Greybox + animatic | greybox construit par script (terrain, eau translucide, arche, forêt, lac, lune, blocs des créatures) ; séquence LS_Animatic calée sur la musique ; 18 captures et animatic vidéo avec musique ; **itération 8 : look peint (dessin animé), lumière par beat, décor dense, créatures corrigées** ; lucioles animées (itération 7) ; brume par beat, roseaux, nénuphars (itération 6) ; eau qui reflète le ciel peint (itération 5), ciel peint (itération 4) (crépuscule → nuit) après les créatures 3D (itération 3) (abysses lumineuse, troupeau, créature volante) après la barque 3D en itération 2 (modèle TRELLIS.2 de ta vue 3/4, lanterne lumineuse, place assise sur le banc arrière) — `review/iter-008/planche-animatic.jpg` et `review/iter-008/animatic.mp4` ; à valider : timing et confort au casque |
+| J2 Greybox + animatic | greybox construit par script (terrain, eau translucide, arche, forêt, lac, lune, blocs des créatures) ; séquence LS_Animatic calée sur la musique ; 18 captures et animatic vidéo avec musique ; **itérations 9-10 : textures peintes, ciel HD, ~530 k triangles de décor, eau peinte avec sillage, lanterne-bougie** ; look peint, lumière par beat, créatures corrigées (itération 8) ; lucioles animées (itération 7) ; brume par beat, roseaux, nénuphars (itération 6) ; eau qui reflète le ciel peint (itération 5), ciel peint (itération 4) (crépuscule → nuit) après les créatures 3D (itération 3) (abysses lumineuse, troupeau, créature volante) après la barque 3D en itération 2 (modèle TRELLIS.2 de ta vue 3/4, lanterne lumineuse, place assise sur le banc arrière) — `review/iter-010/planche-animatic.jpg` et `review/iter-010/animatic.mp4` ; à valider : timing et confort au casque |
 | J3 à J6 | non commencés |

@@ -154,7 +154,10 @@ transform_track(by_label["GB_Lucioles"], [
     (t_env, (x0, y0, -150.0), yaw0),
     (t_env + 8, ((x0 + x1) / 2, (y0 + y1) / 2, 600.0), yaw0),
     (t_env + 22, (x1, y1, 2600.0), yaw0),
-    (t_env + 22.5, hidden, yaw0), (DURATION, hidden, yaw0)], scale=(1.0, 1.0, 1.0))
+    # puis continue de monter et de s'éloigner jusqu'à disparaître dans le ciel (avant : renvoyé sous le terrain
+    # en 0,5 s, on le voyait « tomber » dans l'eau)
+    (t_env + 50, (x1 + (x1 - x0) * 1.5, y1 + (y1 - y0) * 1.5, 9000.0), yaw0),
+    (DURATION, (x1 + (x1 - x0) * 2.0, y1 + (y1 - y0) * 2.0, 12000.0), yaw0)], scale=(1.0, 1.0, 1.0))
 
 # Crépuscule → nuit : luminosité du ciel peint (MPC_Ambiance.CielLuminosite), pleine en S2-S4, baisse sous les
 # racines et pendant la trouée, nuit pour la lune (S6) et le lac (S7).
@@ -181,6 +184,10 @@ if mpc is not None:
         for t in (t_in, max(t_in, t_out)):
             for name, v in values.items():
                 msec.add_color_parameter_key(name, frame(t), unreal.LinearColor(*v, 1.0))
+    # Barque (x, y cm, z = 0, lacet en radians) pour les shaders : lumière de la lanterne sur le décor et l'eau,
+    # sillage et masque de l'eau dans la coque.
+    for t, (bx, by, _), yaw in boat_keys:
+        msec.add_color_parameter_key("Barque", frame(t), unreal.LinearColor(bx, by, 0.0, math.radians(yaw)))
 
 # Brume par beat (pipeline/style/ambiance.json, partagé avec le rendu offline du lointain) : couleur et densité
 # tenues pendant le beat, fondu de fondu_s centré sur le début de chaque beat.

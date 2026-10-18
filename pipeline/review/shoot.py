@@ -48,10 +48,9 @@ params.frame = unreal.FrameTime(unreal.FrameNumber({frame}))
 params.position_type = unreal.MovieScenePositionType.FRAME
 params.update_method = unreal.UpdatePositionMethod.SCRUB
 lseb.set_global_position(params)
-# Les pistes de MPC_Ambiance (lumières du look peint, teinte du ciel) modifient l'instance de la collection,
-# mais en scrubbant hors lecture le tampon lu par les shaders n'est mis à jour qu'au tick du monde : on
-# réapplique les valeurs évaluées sur l'instance et on fait tourner l'éditeur en temps réel avant la capture.
-unreal.get_editor_subsystem(unreal.LevelEditorSubsystem).editor_set_viewport_realtime(True)
+# Les pistes de MPC_Ambiance (lumières du look peint, teinte du ciel) : la capture SceneCapture de l'éditeur
+# ne voit pas leurs valeurs animées (limite constatée le 18/10, voir SUIVI.md) ; on les réapplique quand même,
+# mais la référence pour la lumière par beat est l'animatic (Movie Render Queue).
 _world = unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem).get_editor_world()
 _mpc = unreal.load_asset("/Game/Greybox/MPC_Ambiance")
 if _mpc is not None:
