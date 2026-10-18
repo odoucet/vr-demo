@@ -100,6 +100,9 @@ alors que la scène est bien plus dense :
   maillage de la barque), le papier lumineux et le halo : ils restent solidaires (`review/iter-029/casque/`, 4 images à
   1,2 s d'écart).
 
+**Planches de revue (sans casque)** : `review/iter-030/planche-sprites.jpg` (les 11 familles d'images peintes, ~90 images)
+et `review/iter-030/tour-editeur.jpg` (tour de la balade dans l'éditeur, lumière de jour : la nuit n'y est pas rendue).
+
 **Étape 3 (19/10)** — **arbre colossal entièrement peint** : tronc moussu en sprite (un tronc se voit pareil sous tous
 les angles), houppier en touffes peintes, rideaux de lianes, fougères et mousses au pied ; l'arche 3D des racines reste.
 Rochers géants moussus au bord de l'eau, souches géantes. Les bandes de lisière sont reculées à plus de 70 m (de près,
