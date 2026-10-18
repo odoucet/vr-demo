@@ -1,0 +1,21 @@
+# Couleurs propres (albédo, sRGB) du look peint, choisies d'après les essais de style d'Olivier
+# (refs/S2-PONTON, S5-RACINES, S6-LUNE, S7-LAC) : verts denses étagés, troncs bruns sombres, mousses.
+# L'ambiance de chaque beat (lumière chaude / ombre froide, brume) est dans ambiance.yaml : ces couleurs
+# restent les mêmes d'un beat à l'autre, c'est la lumière qui change.
+# Lus par pipeline/layout/vegetation.py et greybox_geometry.py.
+
+feuillage: ['#6e9e3e', '#4f8838', '#3c7a44', '#5d9a4a', '#7aa84a']   # feuillus, variés par arbre
+resineux: ['#2f5e45', '#36664a', '#2a5240']
+tronc: '#4a3a2c'
+ecorce_colossal: '#5c5232'     # tronc et racines de l'arbre colossal, moussus
+mousse: '#56743a'
+herbe: ['#6a9a3e', '#7ea848', '#5a8a3a']
+roseau: '#5e7a3a'
+terre: '#5a4c36'
+terre_mouillee: '#33302a'
+fond: '#3c4a30'               # fond du lit de la rivière
+rocher: '#727a6e'
+nenuphar: '#3f7a3e'
+fleurs: ['#f2ead8', '#eaa4b4', '#f0d070', '#c8b8f0']
+bois_ponton: '#6a5238'
+collines: ['#3a5a4a', '#4a6a64', '#5a7a80']   # plans lointains, du plus proche au plus loin

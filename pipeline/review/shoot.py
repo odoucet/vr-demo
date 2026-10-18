@@ -35,6 +35,9 @@ if "Barque_Greybox" not in unreal.get_editor_subsystem(unreal.UnrealEditorSubsys
     levels.load_level("/Game/Maps/Barque_Greybox")
 # Capture par SceneCapture2D vers une cible de rendu 1920x1080 : indépendante de la fenêtre de l'éditeur
 # (HighResShot ne produit rien quand le viewport n'est pas affiché).
+# Attendre la fin des compilations de shaders et du streaming des textures : sinon un matériau neuf est
+# remplacé par le matériau par défaut (gris, éclairé) sur la capture.
+unreal.AutomationLibrary.finish_loading_before_screenshot()
 seq = unreal.load_asset("/Game/Sequences/LS_Animatic")
 lseb = unreal.LevelSequenceEditorBlueprintLibrary
 if lseb.get_current_level_sequence() != seq:
@@ -45,6 +48,28 @@ params.frame = unreal.FrameTime(unreal.FrameNumber({frame}))
 params.position_type = unreal.MovieScenePositionType.FRAME
 params.update_method = unreal.UpdatePositionMethod.SCRUB
 lseb.set_global_position(params)
+# Les pistes de MPC_Ambiance (lumières du look peint, teinte du ciel) modifient l'instance de la collection,
+# mais en scrubbant hors lecture le tampon lu par les shaders n'est mis à jour qu'au tick du monde : on
+# réapplique les valeurs évaluées sur l'instance et on fait tourner l'éditeur en temps réel avant la capture.
+unreal.get_editor_subsystem(unreal.LevelEditorSubsystem).editor_set_viewport_realtime(True)
+_world = unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem).get_editor_world()
+_mpc = unreal.load_asset("/Game/Greybox/MPC_Ambiance")
+if _mpc is not None:
+    _vps = list(_mpc.get_editor_property("vector_parameters"))
+    for _vp in _vps:
+        _vp.set_editor_property("default_value", unreal.MaterialLibrary.get_vector_parameter_value(_world, _mpc, _vp.get_editor_property("parameter_name")))
+    _mpc.set_editor_property("vector_parameters", _vps)
+    for _vp in _mpc.get_editor_property("vector_parameters"):
+        _n = _vp.get_editor_property("parameter_name")
+        _v = unreal.MaterialLibrary.get_vector_parameter_value(_world, _mpc, _n)
+        # valeur légèrement décalée puis exacte : une valeur identique ne déclenche aucune mise à jour
+        unreal.MaterialLibrary.set_vector_parameter_value(_world, _mpc, _n, unreal.LinearColor(_v.r + 0.001, _v.g, _v.b, _v.a))
+        unreal.MaterialLibrary.set_vector_parameter_value(_world, _mpc, _n, _v)
+    for _sp in _mpc.get_editor_property("scalar_parameters"):
+        _n = _sp.get_editor_property("parameter_name")
+        _v = unreal.MaterialLibrary.get_scalar_parameter_value(_world, _mpc, _n)
+        unreal.MaterialLibrary.set_scalar_parameter_value(_world, _mpc, _n, _v + 0.001)
+        unreal.MaterialLibrary.set_scalar_parameter_value(_world, _mpc, _n, _v)
 eal = unreal.EditorAssetLibrary
 rt_path = "/Game/Review/RT_Review"
 if eal.does_asset_exist(rt_path):
@@ -66,14 +91,20 @@ comp.set_editor_property("texture_target", rt)
 comp.set_editor_property("capture_source", unreal.SceneCaptureSource.SCS_FINAL_COLOR_LDR)
 comp.set_editor_property("capture_every_frame", False)
 comp.set_editor_property("capture_on_movement", False)
-# Capture deux images plus tard : les états de rendu animés par la séquence (couleur et densité de la brume)
-# ne sont transmis au rendu qu'à la fin de l'image ; capturer tout de suite montrerait l'état précédent.
+# Comme sur Quest (rendu mobile sans HDR) : pas de courbe de tonalité filmique ; la couleur linéaire est
+# seulement encodée en sRGB par la cible de rendu. Les captures montrent ainsi ce qu'affichera le casque.
+flag = unreal.EngineShowFlagsSetting()
+flag.set_editor_property("show_flag_name", "Tonemapper")
+flag.set_editor_property("enabled", False)
+comp.set_editor_property("show_flag_settings", [flag])
+# Capture quelques images plus tard : les états de rendu animés par la séquence (brume, collection de
+# paramètres) ne sont transmis au rendu qu'aux ticks suivants ; capturer tout de suite montrerait l'état précédent.
 _ticks = [0]
 
 
 def _shot(dt):
     _ticks[0] += 1
-    if _ticks[0] < 3:
+    if _ticks[0] < 30:
         return
     unreal.unregister_slate_post_tick_callback(_handle)
     comp.capture_scene()

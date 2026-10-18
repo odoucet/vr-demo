@@ -27,7 +27,7 @@ Dans le casque : Bibliothèque → Sources inconnues.
    Hauteur : le joueur est posé au niveau de l'eau, ta tête assise doit tomber vers 1,10 m (origine OpenXR « STAGE », au sol).
    Si tu es trop haut ou trop bas, dis-le-moi : c'est un réglage.
    Alternative sans APK : Quest Link + éditeur, niveau `Barque_Greybox`, Play → VR Preview.
-3. Sans casque : `review/iter-007/animatic.mp4` (4 min, musique + ambiances) et `review/iter-007/planche.jpg`.
+3. Sans casque : `review/iter-008/animatic.mp4` (4 min, musique + ambiances) et `review/iter-008/planche-animatic.jpg` (images de l'animatic aux moments clés).
 
 **Mesure de fréquence d'image (facultatif, 5 min)** : Quest branché en USB et casque porté, lance
 `python pipeline/unreal/quest_perf.py --variant greybox` (ou dis-moi « Quest branché » et je la lance). L'APK
@@ -98,6 +98,14 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 
 ## Fait récemment
 
+- **Itération 8 (look peint, retours au casque du 18/10)** :
+  - **Look dessin animé** dans le matériau `M_Peint` (non éclairé, ombrage deux tons à bord peint, liseré de contre-jour, couleurs par sommet). Ce n'est pas un filtre de rendu : sur Quest sans HDR mobile, aucun post-traitement n'est possible.
+  - **Lumière par beat** dans `pipeline/style/ambiance.yaml` (lumière, ombre, ciel, soleil, teinte du ciel) : brume bleue au départ, jour vert, crépuscule doré sous les racines, nuit bleue étoilée pour la lune et le lac.
+  - **Décor peint** (`pipeline/layout/vegetation.py`, couleurs dans `pipeline/style/look.yaml`) : environ 1 700 arbres (feuillus en houppiers à normales sphériques, résineux), lisière, buissons fleuris, herbe, rochers, pierres du gué, collines lointaines, arbre colossal à contreforts, arbre aux lanternes en ombrelle. La barque et les créatures prennent le même look (texture conservée).
+  - **Ciel vivant** : nuages qui dérivent lentement (y compris dans le reflet de l'eau), étoiles qui scintillent la nuit.
+  - **Retours corrigés** : plus de « Lighting needs to be rebuilt » (aucun éclairage précalculé). Abysses : suit le chenal, rattrape et dépasse la barque, puis plonge dans une fosse. Troupeau : sort de la forêt par un sentier creusé dans la berge, traverse le gué et remonte sur la berge gauche en suivant le terrain. Créature volante : continue son vol jusqu'à sortir du champ, avec un battement d'ailes procédural.
+  - **Captures de revue** : les captures de l'éditeur (SceneCapture) n'appliquent pas la lumière par beat (paramètres de collection non transmis hors lecture) ; elles montrent toutes la même lumière. En attendant une revue rendue par Movie Render Queue, la référence est l'animatic (`planche-animatic.jpg`).
+- **Mesure au casque (APK de l'itération 7, ancien look)** : 72 Hz tenus en S2-S3, GPU à ~89 % (10,9 ms sur 13,9) ; le casque, non porté, s'est mis en pause au bout d'une minute. À refaire casque porté sur l'APK de l'itération 8.
 - **Itération 7 (J2)** : lucioles vivantes. Elles dérivent lentement et clignotent, avec une phase propre à chacune ; tout est animé dans le shader (WPO), sans coût CPU sur le Quest. Environ 440 lucioles éparses le long des berges de 0:20 à la fin, en plus du nuage de l'envol. Nénuphars et roseaux moins brillants : ils renvoyaient le ciel en blanc à contre-jour. Les captures de revue figent le temps des shaders (images comparables d'une itération à l'autre) ; le clignotement a été vérifié sur les images de l'animatic.
 - **Mesure au casque prête** : `pipeline/unreal/quest_perf.py` lance l'APK par adb, relève la télémétrie VrApi (FPS, images perdues, GPU %, CPU %) et la résume par beat avec une courbe. Testé sur un journal simulé, en attente d'un Quest branché.
 - **Ciel en 4096×2048** : le panorama retenu est agrandi par un modèle 4x (Remacri), puis réduit, avec le raccord gauche/droite préservé (`sky.py --upscale`). Les nuages sont nets et les aplats propres ; le ciel était flou en 2048 px.
@@ -134,5 +142,5 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 |---|---|
 | J0 Bible de style | prompts prêts ; **palette par beat** (`review/bible/palettes.png`, `pipeline/style/palettes.yaml`) à partir de tes essais S2/S5/S6/S7 et de concepts provisoires S1/S3/S4 ; ciel peint provisoire ; attend tes images d'assets (I1) et le choix de l'image maîtresse (D1) |
 | J1 Spike vidéo 360 + Quest | scène J1_Spike construite par script (sphère 360 stéréo + séquence + témoin de synchro), matériau validé dans l'éditeur ; **APK prêt : `builds/android/Barque-arm64.apk`** (485 Mo) ; attend le test au casque (go / no-go) |
-| J2 Greybox + animatic | greybox construit par script (terrain, eau translucide, arche, forêt, lac, lune, blocs des créatures) ; séquence LS_Animatic calée sur la musique ; 18 captures et animatic vidéo avec musique ; **itération 7 : lucioles animées le long des berges** ; brume par beat, roseaux, nénuphars (itération 6) ; eau qui reflète le ciel peint (itération 5), ciel peint (itération 4) (crépuscule → nuit) après les créatures 3D (itération 3) (abysses lumineuse, troupeau, créature volante) après la barque 3D en itération 2 (modèle TRELLIS.2 de ta vue 3/4, lanterne lumineuse, place assise sur le banc arrière) — `review/iter-007/planche.jpg` et `review/iter-007/animatic.mp4` ; à valider : timing et confort au casque |
+| J2 Greybox + animatic | greybox construit par script (terrain, eau translucide, arche, forêt, lac, lune, blocs des créatures) ; séquence LS_Animatic calée sur la musique ; 18 captures et animatic vidéo avec musique ; **itération 8 : look peint (dessin animé), lumière par beat, décor dense, créatures corrigées** ; lucioles animées (itération 7) ; brume par beat, roseaux, nénuphars (itération 6) ; eau qui reflète le ciel peint (itération 5), ciel peint (itération 4) (crépuscule → nuit) après les créatures 3D (itération 3) (abysses lumineuse, troupeau, créature volante) après la barque 3D en itération 2 (modèle TRELLIS.2 de ta vue 3/4, lanterne lumineuse, place assise sur le banc arrière) — `review/iter-008/planche-animatic.jpg` et `review/iter-008/animatic.mp4` ; à valider : timing et confort au casque |
 | J3 à J6 | non commencés |

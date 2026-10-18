@@ -121,35 +121,27 @@ fc = fade.get_all_channels()[0]
 for t, v in [(0, 1.0), (MUSIC_OFFSET, 1.0), (MUSIC_OFFSET + 2.5, 0.0), (DURATION - 3.0, 0.0), (DURATION, 1.0)]:
     fc.add_key(frame(t), v, interpolation=LIN)
 
-# Ombre des abysses : traverse sous la barque à t = 70 s, de gauche à droite, à 3,2 m sous l'eau.
-t0 = MARKS["abysses-passage"]["t"]
-k = []
-for t, side in [(t0 - 12, 26.0), (t0, 0.0), (t0 + 12, -26.0)]:
-    (x, y, z), yaw = rel(t0, 0.0, side, -3.2)
-    k.append((t, (x, y, z), yaw + 90))
-k = [(t0 - 30, k[0][1], k[0][2])] + k + [(DURATION, k[-1][1], k[-1][2])]
-transform_track(by_label["GB_Abysses"], k)
+# Créatures : trajectoires calculées sur le tracé et le terrain (pipeline/layout/creatures.py). Clés en mètres
+# dans le repère du tracé → Unreal (cm, y inversé) ; cap → lacet (+X du bloc dans le sens du mouvement).
+# Avant la première clé et après la dernière, la créature est cachée sous le terrain.
+with open(os.path.join(ROOT, "pipeline", "layout", "creatures.json"), encoding="utf-8") as f:
+    CREA = json.load(f)
 
-# Troupeau : traverse 14 m devant la barque, de droite à gauche, centré sur t = 112 s ; décalé par animal.
-tm = MARKS["troupeau-gue"]
-for i in range(5):
-    lag, lane = i * 1.6, (i % 2) * 3.0
-    keys = []
-    for t, side in [(tm["t"] - 9 + lag, -22.0), (tm["t"] + 9 + lag, 22.0)]:
-        (x, y, z), yaw = rel(tm["t"], tm["ahead_m"] + lane, side, 0.6)
-        keys.append((t, (x, y, z), yaw - 90))
-    keys = [(0.0, keys[0][1], keys[0][2])] + keys + [(DURATION, keys[-1][1], keys[-1][2])]
-    transform_track(by_label[f"GB_Troupeau{i}"], keys)
 
-# Créature volante : passe devant la lune au sommet de S6 (t = 180,8 s), à 300 m, à la hauteur de la lune.
-cl = MARKS["creature-lune"]
-alt = cl["ahead_m"] * math.tan(math.radians(22))
-keys = []
-for t, side in [(cl["t"] - 12, cl["side_m"] + 160.0), (cl["t"], cl["side_m"]), (cl["t"] + 12, cl["side_m"] - 160.0)]:
-    (x, y, z), yaw = rel(cl["t"], cl["ahead_m"], side, alt)
-    keys.append((t, (x, y, z), yaw + 90))   # +X dans le sens du mouvement (de gauche à droite)
-keys = [(0.0, keys[0][1], keys[0][2])] + keys + [(DURATION, keys[-1][1], keys[-1][2])]
-transform_track(by_label["GB_Volante"], keys)
+def creature_keys(keys, hide_before=True, hide_after=True):
+    k = [(t, (x * 100, -y * 100, z * 100), -h) for t, x, y, z, h in keys]
+    hid = lambda kk: (kk[1][0], kk[1][1], -6000.0)       # noqa: E731
+    if hide_before:
+        k = [(0.0, hid(k[0]), k[0][2]), (k[0][0] - 0.5, hid(k[0]), k[0][2])] + k
+    if hide_after:
+        k = k + [(k[-1][0] + 0.5, hid(k[-1]), k[-1][2]), (DURATION, hid(k[-1]), k[-1][2])]
+    return k
+
+
+transform_track(by_label["GB_Abysses"], creature_keys(CREA["abysses"]))
+for i, keys in enumerate(CREA["troupeau"]):
+    transform_track(by_label[f"GB_Troupeau{i}"], creature_keys(keys))
+transform_track(by_label["GB_Volante"], creature_keys(CREA["volante"]))
 
 # Envol des lucioles : à la modulation (sequencer.yaml, « lucioles-envol »), le nuage sort de l'eau à 10 m devant
 # la barque et monte vers la trouée de la canopée en s'étalant ; caché sous le terrain avant et après.
@@ -175,6 +167,20 @@ if mpc is not None:
     msec.add_scalar_parameter_key("CielLuminosite", frame(0), 1.0)
     for t, v in [(97.9, 1.0), (127.8, 0.8), (157.8, 0.45), (180.0, 0.28), (DURATION, 0.25)]:
         msec.add_scalar_parameter_key("CielLuminosite", frame(t), v)
+    # Look peint : lumière, ombre, appoint du ciel et direction du soleil par beat (pipeline/style/ambiance.json),
+    # tenus pendant le beat avec le même fondu que la brume. Direction : repère du tracé → Unreal (y inversé).
+    with open(os.path.join(ROOT, "pipeline", "style", "ambiance.json"), encoding="utf-8") as f:
+        amb = json.load(f)
+    half_l = amb["fondu_s"] / 2
+    for i, b in enumerate(amb["beats"]):
+        t_in = 0.0 if i == 0 else b["debut_s"] + half_l
+        t_out = amb["beats"][i + 1]["debut_s"] - half_l if i + 1 < len(amb["beats"]) else DURATION
+        sx_, sy_, sz_ = b["soleil_dir"]
+        values = {"Lumiere": b["lumiere"], "Ombre": b["ombre"], "CielAppoint": b["ciel"], "SoleilDir": [sx_, -sy_, sz_],
+                  "CielTeinte": b["ciel_teinte"]}
+        for t in (t_in, max(t_in, t_out)):
+            for name, v in values.items():
+                msec.add_color_parameter_key(name, frame(t), unreal.LinearColor(*v, 1.0))
 
 # Brume par beat (pipeline/style/ambiance.json, partagé avec le rendu offline du lointain) : couleur et densité
 # tenues pendant le beat, fondu de fondu_s centré sur le début de chaque beat.

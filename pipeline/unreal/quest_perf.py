@@ -49,15 +49,25 @@ def record(variant, duration, log_path):
     adb("shell", "am", "start", "-n", f"{pkg}/{ACTIVITY}", check=True)
     t0 = time.time()
     print(f"{pkg} lancé, mesure pendant {duration} s (porter le casque)…")
+    import queue
+    import threading
     with log_path.open("w", encoding="utf-8") as f:
         exe = from_windows(CONFIG["android"]["root"]) / "sdk" / "platform-tools" / "adb.exe"
         proc = subprocess.Popen([str(exe), "logcat", "-v", "epoch", "-s", "VrApi:I"], stdout=subprocess.PIPE, text=True)
         f.write(f"# t0={t0:.3f} {pkg}\n")
+        lines = queue.Queue()
+        threading.Thread(target=lambda: [lines.put(l) for l in proc.stdout], daemon=True).start()
+        last = time.time()
         try:
-            for line in proc.stdout:
-                f.write(line)
-                if time.time() - t0 > duration:
-                    break
+            while time.time() - t0 < duration:
+                try:
+                    f.write(lines.get(timeout=1.0))
+                    last = time.time()
+                except queue.Empty:
+                    # Plus de télémétrie : l'application a perdu le premier plan (casque retiré, suivi perdu).
+                    if time.time() - last > 15 and time.time() - t0 > 30:
+                        print(f"Télémétrie interrompue à {last - t0:.0f} s (casque retiré ou mis en veille ?)")
+                        break
         finally:
             proc.terminate()
 

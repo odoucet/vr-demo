@@ -46,3 +46,7 @@ Unreal/Content/Movies/
 
 # Builds (APK, exécutables)
 builds/
+
+# Géométrie générée depuis le tracé (régénérée par build.py, volumineuse)
+pipeline/layout/greybox.json
+pipeline/layout/vegetation.json

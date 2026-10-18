@@ -11,19 +11,69 @@
         0.0233
       ],
       "densite": 0.08,
-      "brume_hex": "#ddf2ff"
+      "brume_hex": "#ddf2ff",
+      "lumiere": [
+        0.2,
+        0.24,
+        0.36
+      ],
+      "ombre": [
+        0.06,
+        0.08,
+        0.14
+      ],
+      "ciel": [
+        0.03,
+        0.04,
+        0.08
+      ],
+      "ciel_teinte": [
+        0.05,
+        0.06,
+        0.1
+      ],
+      "soleil_dir": [
+        0.9192,
+        0.3345,
+        0.2079
+      ]
     },
     {
       "id": "S2-PONTON",
       "debut_s": 20,
       "source": "refs/S2-PONTON.png",
       "brume_lineaire": [
-        0.0854,
-        0.135,
-        0.2121
+        0.0657,
+        0.1038,
+        0.1631
       ],
       "densite": 0.2,
-      "brume_hex": "#aad1ff"
+      "brume_hex": "#aad1ff",
+      "lumiere": [
+        0.45,
+        0.55,
+        0.75
+      ],
+      "ombre": [
+        0.12,
+        0.17,
+        0.3
+      ],
+      "ciel": [
+        0.06,
+        0.09,
+        0.16
+      ],
+      "ciel_teinte": [
+        0.6,
+        0.7,
+        0.86
+      ],
+      "soleil_dir": [
+        0.8925,
+        0.4162,
+        0.1736
+      ]
     },
     {
       "id": "S3-ABYSSE",
@@ -35,7 +85,32 @@
         0.0816
       ],
       "densite": 0.045,
-      "brume_hex": "#c0ffd3"
+      "brume_hex": "#c0ffd3",
+      "lumiere": [
+        1.0,
+        0.98,
+        0.88
+      ],
+      "ombre": [
+        0.26,
+        0.34,
+        0.5
+      ],
+      "ciel": [
+        0.1,
+        0.14,
+        0.2
+      ],
+      "ciel_teinte": [
+        0.9,
+        0.92,
+        0.95
+      ],
+      "soleil_dir": [
+        0.4806,
+        0.8325,
+        0.2756
+      ]
     },
     {
       "id": "S4-GUE",
@@ -47,43 +122,143 @@
         0.0926
       ],
       "densite": 0.045,
-      "brume_hex": "#e5ffdd"
+      "brume_hex": "#e5ffdd",
+      "lumiere": [
+        1.25,
+        1.02,
+        0.72
+      ],
+      "ombre": [
+        0.3,
+        0.34,
+        0.56
+      ],
+      "ciel": [
+        0.12,
+        0.13,
+        0.2
+      ],
+      "ciel_teinte": [
+        1.0,
+        0.92,
+        0.85
+      ],
+      "soleil_dir": [
+        -0.5865,
+        0.773,
+        0.2419
+      ]
     },
     {
       "id": "S5-RACINES",
       "debut_s": 127.8,
       "source": "refs/S5-RACINES.png",
       "brume_lineaire": [
-        0.0766,
-        0.0821,
-        0.0697
+        0.0479,
+        0.0513,
+        0.0435
       ],
       "densite": 0.06,
-      "brume_hex": "#f7ffed"
+      "brume_hex": "#f7ffed",
+      "lumiere": [
+        0.95,
+        0.72,
+        0.38
+      ],
+      "ombre": [
+        0.07,
+        0.11,
+        0.12
+      ],
+      "ciel": [
+        0.04,
+        0.05,
+        0.06
+      ],
+      "ciel_teinte": [
+        0.7,
+        0.55,
+        0.45
+      ],
+      "soleil_dir": [
+        0.8361,
+        0.5258,
+        0.1564
+      ]
     },
     {
       "id": "S6-LUNE",
       "debut_s": 157.8,
       "source": "refs/S6-LUNE.png",
       "brume_lineaire": [
-        0.0317,
-        0.0546,
-        0.0586
+        0.0127,
+        0.0218,
+        0.0234
       ],
       "densite": 0.03,
-      "brume_hex": "#c2f7ff"
+      "brume_hex": "#c2f7ff",
+      "lumiere": [
+        0.16,
+        0.26,
+        0.3
+      ],
+      "ombre": [
+        0.02,
+        0.04,
+        0.055
+      ],
+      "ciel": [
+        0.012,
+        0.025,
+        0.03
+      ],
+      "ciel_teinte": [
+        0.16,
+        0.24,
+        0.28
+      ],
+      "soleil_dir": [
+        0.81,
+        0.3065,
+        0.5
+      ]
     },
     {
       "id": "S7-LAC",
       "debut_s": 201.7,
       "source": "refs/S7-LAC.png",
       "brume_lineaire": [
-        0.0798,
-        0.0546,
-        0.0556
+        0.0266,
+        0.0182,
+        0.0185
       ],
       "densite": 0.035,
-      "brume_hex": "#ffd8da"
+      "brume_hex": "#ffd8da",
+      "lumiere": [
+        0.13,
+        0.16,
+        0.3
+      ],
+      "ombre": [
+        0.02,
+        0.025,
+        0.06
+      ],
+      "ciel": [
+        0.015,
+        0.02,
+        0.04
+      ],
+      "ciel_teinte": [
+        0.11,
+        0.13,
+        0.24
+      ],
+      "soleil_dir": [
+        0.8238,
+        0.3778,
+        0.4226
+      ]
     }
   ]
 }

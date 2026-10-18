@@ -4,7 +4,8 @@
 
 Teinte : partie claire (quart supérieur en luminance) de la bande d'horizon (35-50 % de la hauteur) de
 refs/<beat>.png, à défaut assets/concepts/<beat>.png : c'est là que la brume se voit dans les références.
-Saturation, luminance et densité : pipeline/style/ambiance.yaml. Temps des beats : pipeline/sequencer.yaml (temps démo).
+Saturation, luminance et densité : pipeline/style/ambiance.yaml, comme la lumière du look peint (teintes de
+lumière, d'ombre et de ciel, direction du soleil convertie en vecteur dans le repère du tracé). Temps des beats : pipeline/sequencer.yaml (temps démo).
 Sortie en JSON (le Python d'Unreal n'a pas yaml). Déterministe.
 """
 import json
@@ -41,10 +42,19 @@ def mist_tint(path):
     return np.median(band[lum >= np.quantile(lum, 0.75)], axis=0)    # sRGB 0-1
 
 
+def sun_direction(river, t, rel_heading_deg, elevation_deg):
+    """Vecteur unitaire vers la lumière, repère du tracé (x avant au départ, y gauche, z haut)."""
+    pose = min(river["samples"], key=lambda p: abs(p["t"] - t))
+    az = np.radians(pose["heading_deg"] + rel_heading_deg)
+    el = np.radians(elevation_deg)
+    return [round(float(v), 4) for v in (np.cos(el) * np.cos(az), np.cos(el) * np.sin(az), np.sin(el))]
+
+
 def main():
     cfg = yaml.safe_load((STYLE / "ambiance.yaml").read_text(encoding="utf-8"))
     seq = yaml.safe_load((ROOT / "pipeline" / "sequencer.yaml").read_text(encoding="utf-8"))
     offset = seq["music"]["offset_s"]
+    river = json.loads((ROOT / "pipeline" / "layout" / "river.json").read_text(encoding="utf-8"))
     out = {"fondu_s": cfg["fondu_s"], "beats": []}
     for b in seq["beats"]:
         src, params = source(b["id"]), cfg["beats"][b["id"]]
@@ -56,6 +66,9 @@ def main():
             "id": b["id"], "debut_s": round(offset + b["music_s"], 2), "source": str(src.relative_to(ROOT)),
             "brume_lineaire": [round(float(v), 4) for v in lin], "densite": params["densite"],
             "brume_hex": "#%02x%02x%02x" % tuple(int(round(v * 255)) for v in linear_to_srgb(lin / max(lin.max(), 1e-6))),
+            "lumiere": params["lumiere"], "ombre": params["ombre"], "ciel": params["ciel"],
+            "ciel_teinte": params["ciel_teinte"],
+            "soleil_dir": sun_direction(river, offset + b["music_s"], *params["soleil"]),
         })
     (STYLE / "ambiance.json").write_text(json.dumps(out, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 

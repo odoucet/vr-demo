@@ -96,11 +96,194 @@ def material(name, color, emissive=False, roughness=0.9, specular=None, opacity=
     return mat
 
 
+# --- Look peint ---------------------------------------------------------------------------------------
+# Pas de filtre de rendu : sur Quest (sans HDR mobile) aucun post-traitement n'est possible. Le dessin animé
+# est dans le matériau M_Peint, non éclairé : ombrage en deux tons (lumière / ombre) à frontière douce,
+# bord irrégulier par une texture de touches de pinceau, couleur et occlusion portées par les sommets,
+# appoint du ciel et liseré de contre-jour. Lumières pilotées par MPC_Ambiance (animée beat par beat).
+MPC_PATH = f"{GB}/MPC_Ambiance"
+MPC_VECTORS = {"SoleilDir": (0.9, -0.4, 0.2), "Lumiere": (1.0, 0.95, 0.85), "Ombre": (0.3, 0.35, 0.55),
+               "CielAppoint": (0.1, 0.12, 0.2), "CielTeinte": (1.0, 1.0, 1.0)}
+MPC_DIGEST = spec_digest("mpc-v3", sorted(MPC_VECTORS))
+
+
+def ambiance_mpc():
+    """Collection de paramètres partagée (ciel, look peint) ; recréée seulement si sa liste change (les
+    matériaux s'y réfèrent par identifiant)."""
+    mpc = eal.load_asset(MPC_PATH) if eal.does_asset_exist(MPC_PATH) else tools.create_asset(
+        "MPC_Ambiance", GB, unreal.MaterialParameterCollection, unreal.MaterialParameterCollectionFactoryNew())
+    if up_to_date(mpc, MPC_DIGEST):
+        return mpc
+    sp = unreal.CollectionScalarParameter()
+    sp.set_editor_property("parameter_name", "CielLuminosite")
+    sp.set_editor_property("default_value", 1.0)
+    vps = []
+    for name, v in MPC_VECTORS.items():
+        vp = unreal.CollectionVectorParameter()
+        vp.set_editor_property("parameter_name", name)
+        vp.set_editor_property("default_value", unreal.LinearColor(*v, 1.0))
+        vps.append(vp)
+    mpc.set_editor_property("scalar_parameters", [sp])
+    mpc.set_editor_property("vector_parameters", vps)
+    mark_saved(mpc, MPC_DIGEST)
+    return mpc
+
+
+MPC = ambiance_mpc()
+
+
+def mpc_rgb(mat, name, x, y):
+    """Paramètre vectoriel de MPC_Ambiance réduit à RGB (multipliable par une couleur de texture)."""
+    cp = mel.create_material_expression(mat, unreal.MaterialExpressionCollectionParameter, x - 200, y)
+    cp.set_editor_property("collection", MPC)
+    cp.set_editor_property("parameter_name", name)
+    mask = mel.create_material_expression(mat, unreal.MaterialExpressionComponentMask, x, y)
+    for c in ("r", "g", "b"):
+        mask.set_editor_property(c, True)
+    mel.connect_material_expressions(cp, "", mask, "")
+    return mask
+
+def custom_node(mat, code, out_type, names, x, y):
+    node = mel.create_material_expression(mat, unreal.MaterialExpressionCustom, x, y)
+    node.set_editor_property("code", code)
+    node.set_editor_property("output_type", out_type)
+    inputs = []
+    for n in names:
+        ci = unreal.CustomInput()
+        ci.set_editor_property("input_name", n)
+        inputs.append(ci)
+    node.set_editor_property("inputs", inputs)
+    return node
+
+
+SKY_DRIFT = 0.0004     # tours de panorama par seconde (vent dans les nuages)
+SKY_UV_CODE = f"""float3 d = normalize(-Dir);
+float u = 0.5 + atan2(d.y, d.x) / (2.0 * PI) + T * {SKY_DRIFT};
+float e = asin(clamp(d.z, -1.0, 1.0));
+float v = clamp(0.82 - e / (0.5 * PI) * 0.82, 0.0, 1.0);
+return float2(u, v);"""
+SKY_STARS_CODE = """float3 d = normalize(-Dir);
+float3 sky = Tex * Teinte.rgb;
+float night = saturate(1.0 - dot(Teinte.rgb, float3(0.3, 0.5, 0.2)) * 3.0);
+float2 g = float2(atan2(d.y, d.x) * 260.0, d.z * 260.0);
+float2 c = floor(g);
+float h = frac(sin(dot(c, float2(12.9898, 78.233))) * 43758.5453);
+float2 f = frac(g) - 0.5;
+float star = step(0.985, h) * saturate(1.0 - length(f) * 3.0);
+float tw = 0.55 + 0.45 * sin(T * (1.5 + h * 3.0) + h * 80.0);
+float clouds = saturate(1.0 - dot(Tex, float3(0.3, 0.5, 0.2)) * 1.6);
+return sky + star * tw * night * clouds * saturate(d.z * 6.0) * 1.5;"""
+
+
+BRUSH_PNG = os.path.join(ROOT, "assets", "textures", "pinceau.png")
+
+
+def brush_texture():
+    import hashlib
+    with open(BRUSH_PNG, "rb") as f:
+        digest = hashlib.sha1(f.read()).hexdigest()[:12]
+    path = "/Game/Look/pinceau"
+    tex = eal.load_asset(path) if eal.does_asset_exist(path) else None
+    if up_to_date(tex, digest):
+        return tex
+    task = unreal.AssetImportTask()
+    task.filename, task.destination_path = BRUSH_PNG, "/Game/Look"
+    task.automated, task.replace_existing, task.save = True, True, True
+    tools.import_asset_tasks([task])
+    tex = eal.load_asset(path)
+    tex.set_editor_property("srgb", False)
+    tex.set_editor_property("compression_settings", unreal.TextureCompressionSettings.TC_GRAYSCALE)
+    mark_saved(tex, digest)
+    return tex
+
+
+PEINT_CODE = """float3 n = normalize(N.xyz);
+float3 l = normalize(L.xyz);
+float3 v = normalize(V.xyz);
+float3 albedo = pow(max(Albedo.rgb, 0.0), 2.2);   // couleurs des sommets stockées en sRGB
+float brush = Brush.r;
+float ndl = dot(n, l);
+// frontière lumière / ombre douce, décalée par les touches de pinceau (bord peint, jamais net)
+float t = smoothstep(-0.10, 0.12, ndl + (brush - 0.5) * 0.45);
+float3 col = albedo * lerp(Ombre.rgb, Lumiere.rgb, t);
+// occlusion peinte (alpha des sommets) : creux et dessous plus sombres, sans aller au noir
+col *= lerp(0.35, 1.0, AO);
+// appoint du ciel sur les faces tournées vers le haut
+col += albedo * Ciel.rgb * saturate(n.z * 0.5 + 0.5);
+// liseré de contre-jour : bords des silhouettes éclairés quand la lumière est en face
+float rim = pow(1.0 - saturate(dot(n, v)), 3.0) * saturate(dot(-v, l));
+col += albedo * Lumiere.rgb * rim * 0.8;
+// variation de la touche
+col *= 1.0 + (brush - 0.5) * 0.18;
+return col;"""
+
+
+def peint_material():
+    """M_Peint : couleur des sommets, ombrage deux tons ; voir PEINT_CODE."""
+    path = "/Game/Look/M_Peint"
+    brush = brush_texture()
+    digest = spec_digest("peint-v6", PEINT_CODE, MPC_DIGEST, eal.get_metadata_tag(brush, "source_sha1"))
+    existing = eal.load_asset(path) if eal.does_asset_exist(path) else None
+    if up_to_date(existing, digest):
+        return existing
+    mat = existing or tools.create_asset("M_Peint", "/Game/Look", unreal.Material, unreal.MaterialFactoryNew())
+    mel.delete_all_material_expressions(mat)
+    mat.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_UNLIT)
+    mat.set_editor_property("two_sided", True)
+    vc = mel.create_material_expression(mat, unreal.MaterialExpressionVertexColor, -1100, -200)
+    nrm = mel.create_material_expression(mat, unreal.MaterialExpressionVertexNormalWS, -1100, 0)
+    cam = mel.create_material_expression(mat, unreal.MaterialExpressionCameraVectorWS, -1100, 100)
+    wp = mel.create_material_expression(mat, unreal.MaterialExpressionWorldPosition, -1400, 300)
+    # projection monde de la texture de touches (5 m), légèrement inclinée pour couvrir aussi les verticales
+    uvc = mel.create_material_expression(mat, unreal.MaterialExpressionCustom, -1150, 300)
+    uvc.set_editor_property("code", "return float2(P.x + P.z * 0.6, P.y - P.z * 0.45) / 500.0;")
+    uvc.set_editor_property("output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT2)
+    ci = unreal.CustomInput()
+    ci.set_editor_property("input_name", "P")
+    uvc.set_editor_property("inputs", [ci])
+    mel.connect_material_expressions(wp, "", uvc, "P")
+    tex = mel.create_material_expression(mat, unreal.MaterialExpressionTextureSample, -900, 300)
+    tex.set_editor_property("texture", brush)
+    tex.set_editor_property("sampler_type", unreal.MaterialSamplerType.SAMPLERTYPE_LINEAR_GRAYSCALE)   # texture non sRGB
+    mel.connect_material_expressions(uvc, "", tex, "UVs")
+    params = {}
+    for i, name in enumerate(("SoleilDir", "Lumiere", "Ombre", "CielAppoint")):
+        cp = mel.create_material_expression(mat, unreal.MaterialExpressionCollectionParameter, -1100, 450 + 100 * i)
+        cp.set_editor_property("collection", MPC)
+        cp.set_editor_property("parameter_name", name)
+        params[name] = cp
+    node = mel.create_material_expression(mat, unreal.MaterialExpressionCustom, -500, 0)
+    node.set_editor_property("code", PEINT_CODE)
+    node.set_editor_property("output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT3)
+    names = ["Albedo", "AO", "N", "L", "V", "Brush", "Lumiere", "Ombre", "Ciel"]
+    inputs = []
+    for n in names:
+        ci = unreal.CustomInput()
+        ci.set_editor_property("input_name", n)
+        inputs.append(ci)
+    node.set_editor_property("inputs", inputs)
+    mel.connect_material_expressions(vc, "", node, "Albedo")      # sortie couleur (float3 ; pas de broche « RGB »)
+    mel.connect_material_expressions(vc, "A", node, "AO")         # alpha des sommets = occlusion peinte
+    mel.connect_material_expressions(nrm, "", node, "N")
+    mel.connect_material_expressions(params["SoleilDir"], "", node, "L")
+    mel.connect_material_expressions(cam, "", node, "V")
+    mel.connect_material_expressions(tex, "R", node, "Brush")
+    mel.connect_material_expressions(params["Lumiere"], "", node, "Lumiere")
+    mel.connect_material_expressions(params["Ombre"], "", node, "Ombre")
+    mel.connect_material_expressions(params["CielAppoint"], "", node, "Ciel")
+    mel.connect_material_property(node, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
+    mel.recompile_material(mat)
+    if mel.get_statistics(mat).num_pixel_shader_instructions <= 0:
+        raise RuntimeError("M_Peint ne compile pas (voir l'éditeur de matériau)")
+    mark_saved(mat, digest)
+    return mat
+
+
 MATS = {
+    "Peint": peint_material(),
     "Terrain": material("Terrain", (0.16, 0.22, 0.08)),
     "Eau": material("Eau", (0.01, 0.025, 0.035), roughness=0.7, specular=0.08, opacity=0.55),
     "Bois": material("Bois", (0.18, 0.11, 0.06)),
-    "Foret": material("Foret", (0.04, 0.12, 0.05)),
     "Creature": material("Creature", (0.0, 0.6, 0.7), emissive=True),  # bioluminescente
     "Troupeau": material("Troupeau", (0.18, 0.30, 0.08)),
     "Volante": material("Volante", (0.75, 0.80, 0.85)),
@@ -167,8 +350,8 @@ def firefly_material(color=(4.0, 5.0, 1.2), amp_cm=30.0):
 
 
 MATS["Luciole"] = firefly_material()
-MESH_MATS = {"Terrain": "Terrain", "ArcheRacines": "Bois", "Foret": "Foret", "ArbreColossal": "Bois", "ArbreLanternes": "Foret",
-             "Lucioles": "Luciole", "LuciolesBerges": "Luciole", "Roseaux": "Roseau", "Nenuphars": "Nenuphar"}
+MESH_MATS = {"Terrain": "Peint", "ArcheRacines": "Peint", "Lucioles": "Luciole", "LuciolesBerges": "Luciole",
+             "Roseaux": "Peint", "Nenuphars": "Peint"}
 
 
 # --- Maillages depuis greybox.json -------------------------------------------------------------------------
@@ -188,8 +371,17 @@ def build_mesh(name, data, uv_scale_cm=400.0):
     k = 100.0 / uv_scale_cm
     buffers.uv0 = ([unreal.Vector2D(*uv) for uv in data["uv"]] if "uv" in data else
                    [unreal.Vector2D(v[0] * k, -v[1] * k) for v in data["vertices"]])
+    # Look peint : couleur par sommet (sRGB → linéaire), alpha = occlusion ; normales choisies si fournies
+    # (feuillages sphériques), sinon recalculées.
+    srgb = lambda c: ((c + 0.055) / 1.055) ** 2.4 if c > 0.04045 else c / 12.92     # noqa: E731
+    colors = data.get("colors") or ([data["color"]] * len(data["vertices"]) if "color" in data else None)
+    if colors:
+        buffers.vertex_colors = [unreal.LinearColor(srgb(c[0]), srgb(c[1]), srgb(c[2]), c[3]) for c in colors]
+    if "normals" in data:
+        buffers.normals = [unreal.Vector(n[0], -n[1], n[2]) for n in data["normals"]]
     dm.append_buffers_to_mesh(buffers)
-    dm.recompute_normals(unreal.GeometryScriptCalculateNormalsOptions())
+    if "normals" not in data:
+        dm.recompute_normals(unreal.GeometryScriptCalculateNormalsOptions())
     if eal.does_asset_exist(path):
         mesh = eal.load_asset(path)
         unreal.GeometryScript_AssetUtils.copy_mesh_to_static_mesh(dm, mesh, unreal.GeometryScriptCopyMeshToAssetOptions(),
@@ -207,7 +399,15 @@ b = GEO["bounds"]
 GEO["meshes"]["Eau"] = {"vertices": [[b["x0"], b["y0"], 0], [b["x1"], b["y0"], 0], [b["x1"], b["y1"], 0], [b["x0"], b["y1"], 0]],
                         "triangles": [[0, 1, 2], [0, 2, 3]]}
 MESH_MATS["Eau"] = "Eau"
+with open(os.path.join(ROOT, "pipeline", "layout", "vegetation.json"), encoding="utf-8") as f:
+    VEG = json.load(f)
+for name, data in VEG["meshes"].items():
+    GEO["meshes"][name] = data
+    MESH_MATS[name] = "Peint"
 MESHES = {name: build_mesh(name, data) for name, data in GEO["meshes"].items()}
+for old in ("SM_Foret", "SM_ArbreColossal", "SM_ArbreLanternes", "M_GB_Foret"):   # remplacés par le look peint
+    if eal.does_asset_exist(f"{GB}/{old}"):
+        eal.delete_asset(f"{GB}/{old}")
 
 # --- Niveau --------------------------------------------------------------------------------------------
 if eal.does_asset_exist(MAP):
@@ -396,10 +596,10 @@ if os.path.exists(SKY_PNG):
         sky_tex = eal.load_asset(f"{GB}/ciel")
         eal.set_metadata_tag(sky_tex, "source_sha1", sky_digest)
         eal.save_loaded_asset(sky_tex)
-    SKY_WATER_VERSION = "ciel-eau-v1"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
+    SKY_WATER_VERSION = "ciel-eau-v3"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
     sky_mat_path = f"{GB}/M_GB_CielPeint"
     sky_mat = eal.load_asset(sky_mat_path) if eal.does_asset_exist(sky_mat_path) else None
-    rebuild_sky_water = not up_to_date(sky_mat, spec_digest(SKY_WATER_VERSION, sky_digest))
+    rebuild_sky_water = not up_to_date(sky_mat, spec_digest(SKY_WATER_VERSION, sky_digest, MPC_DIGEST))
     sky_mat = sky_mat or tools.create_asset("M_GB_CielPeint", GB, unreal.Material, unreal.MaterialFactoryNew())
 if os.path.exists(SKY_PNG) and rebuild_sky_water:
     mel.delete_all_material_expressions(sky_mat)
@@ -407,37 +607,25 @@ if os.path.exists(SKY_PNG) and rebuild_sky_water:
     sky_mat.set_editor_property("is_sky", True)
     sky_mat.set_editor_property("two_sided", True)
     camv = mel.create_material_expression(sky_mat, unreal.MaterialExpressionCameraVectorWS, -700, 0)
-    cu = mel.create_material_expression(sky_mat, unreal.MaterialExpressionCustom, -450, 0)
-    cu.set_editor_property("code", "float3 d = normalize(-Dir);\n"
-                                   "float u = 0.5 + atan2(d.y, d.x) / (2.0 * PI);\n"
-                                   "float e = asin(clamp(d.z, -1.0, 1.0));\n"
-                                   "float v = clamp(0.82 - e / (0.5 * PI) * 0.82, 0.0, 1.0);\n"
-                                   "return float2(u, v);")
-    cu.set_editor_property("output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT2)
-    ci = unreal.CustomInput()
-    ci.set_editor_property("input_name", "Dir")
-    cu.set_editor_property("inputs", [ci])
+    # Ciel vivant : le panorama dérive lentement (nuages poussés par le vent, ~0,15°/s), étoiles procédurales
+    # qui scintillent la nuit (révélées quand la teinte du ciel s'assombrit, masquées par les nuages clairs).
+    tnode = mel.create_material_expression(sky_mat, unreal.MaterialExpressionTime, -700, 150)
+    cu = custom_node(sky_mat, SKY_UV_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT2, ["Dir", "T"], -450, 0)
+    mel.connect_material_expressions(camv, "", cu, "Dir")
+    mel.connect_material_expressions(tnode, "", cu, "T")
     st = mel.create_material_expression(sky_mat, unreal.MaterialExpressionTextureSample, -200, 0)
     st.set_editor_property("texture", sky_tex)
-    mel.connect_material_expressions(camv, "", cu, "Dir")
     mel.connect_material_expressions(cu, "", st, "UVs")
-    # Luminosité du ciel pilotée par la séquence (crépuscule → nuit) via une collection de paramètres.
-    mpc_path = f"{GB}/MPC_Ambiance"
-    mpc = eal.load_asset(mpc_path) if eal.does_asset_exist(mpc_path) else tools.create_asset("MPC_Ambiance", GB, unreal.MaterialParameterCollection, unreal.MaterialParameterCollectionFactoryNew())
-    sp = unreal.CollectionScalarParameter()
-    sp.set_editor_property("parameter_name", "CielLuminosite")
-    sp.set_editor_property("default_value", 1.0)
-    mpc.set_editor_property("scalar_parameters", [sp])
-    eal.save_loaded_asset(mpc)
-    cp = mel.create_material_expression(sky_mat, unreal.MaterialExpressionCollectionParameter, -200, 250)
-    cp.set_editor_property("collection", mpc)
-    cp.set_editor_property("parameter_name", "CielLuminosite")
-    mul = mel.create_material_expression(sky_mat, unreal.MaterialExpressionMultiply, 0, 100)
-    mel.connect_material_expressions(st, "RGB", mul, "A")
-    mel.connect_material_expressions(cp, "", mul, "B")
+    mpc = MPC
+    cp = mpc_rgb(sky_mat, "CielTeinte", -200, 250)
+    mul = custom_node(sky_mat, SKY_STARS_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["Dir", "T", "Tex", "Teinte"], 0, 100)
+    mel.connect_material_expressions(camv, "", mul, "Dir")
+    mel.connect_material_expressions(tnode, "", mul, "T")
+    mel.connect_material_expressions(st, "RGB", mul, "Tex")
+    mel.connect_material_expressions(cp, "", mul, "Teinte")
     mel.connect_material_property(mul, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
     mel.recompile_material(sky_mat)
-    mark_saved(sky_mat, spec_digest(SKY_WATER_VERSION, sky_digest))
+    mark_saved(sky_mat, spec_digest(SKY_WATER_VERSION, sky_digest, MPC_DIGEST))
     # Eau : reflet du ciel peint (texture lue dans la direction réfléchie, sans réflexions temps réel, peu coûteux
     # sur Quest) + Fresnel : miroir vers l'horizon, transparente en regardant vers le bas (S3 : la créature dessous).
     water = eal.load_asset(f"{GB}/M_GB_Eau")
@@ -448,24 +636,27 @@ if os.path.exists(SKY_PNG) and rebuild_sky_water:
     wcam = mel.create_material_expression(water, unreal.MaterialExpressionCameraVectorWS, -900, 0)
     wuv = mel.create_material_expression(water, unreal.MaterialExpressionCustom, -650, -100)
     wuv.set_editor_property("code", "float3 d = normalize(-Dir); d.z = abs(d.z);\n"
-                                    "float u = 0.5 + atan2(d.y, d.x) / (2.0 * PI);\n"
+                                    "float u = 0.5 + atan2(d.y, d.x) / (2.0 * PI) + T * " + str(SKY_DRIFT) + ";\n"
                                     "float e = asin(clamp(d.z, 0.0, 1.0));\n"
                                     "return float2(u, clamp(0.82 - e / (0.5 * PI) * 0.82, 0.0, 1.0));")
     wuv.set_editor_property("output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT2)
     wfr = mel.create_material_expression(water, unreal.MaterialExpressionCustom, -650, 200)
     wfr.set_editor_property("code", "float3 d = normalize(-Dir); return 0.08 + 0.92 * pow(1.0 - abs(d.z), 4.0);")
     wfr.set_editor_property("output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT1)
+    wt = mel.create_material_expression(water, unreal.MaterialExpressionTime, -900, 150)
     for node in (wuv, wfr):
-        inp = unreal.CustomInput()
-        inp.set_editor_property("input_name", "Dir")
-        node.set_editor_property("inputs", [inp])
+        inps = []
+        for n in (("Dir", "T") if node is wuv else ("Dir",)):
+            inp = unreal.CustomInput()
+            inp.set_editor_property("input_name", n)
+            inps.append(inp)
+        node.set_editor_property("inputs", inps)
         mel.connect_material_expressions(wcam, "", node, "Dir")
+    mel.connect_material_expressions(wt, "", wuv, "T")
     wsky = mel.create_material_expression(water, unreal.MaterialExpressionTextureSample, -400, -100)
     wsky.set_editor_property("texture", sky_tex)
     mel.connect_material_expressions(wuv, "", wsky, "UVs")
-    wmpc = mel.create_material_expression(water, unreal.MaterialExpressionCollectionParameter, -400, 100)
-    wmpc.set_editor_property("collection", mpc)
-    wmpc.set_editor_property("parameter_name", "CielLuminosite")
+    wmpc = mpc_rgb(water, "CielTeinte", -400, 100)
     refl = mel.create_material_expression(water, unreal.MaterialExpressionMultiply, -200, -50)
     mel.connect_material_expressions(wsky, "RGB", refl, "A")
     mel.connect_material_expressions(wmpc, "", refl, "B")
@@ -486,18 +677,17 @@ if os.path.exists(SKY_PNG) and rebuild_sky_water:
     mel.connect_material_expressions(wfr, "", wop, "Alpha")
     mel.connect_material_property(wop, "", unreal.MaterialProperty.MP_OPACITY)
     mel.recompile_material(water)
+    if mel.get_statistics(water).num_pixel_shader_instructions <= 0 or mel.get_statistics(sky_mat).num_pixel_shader_instructions <= 0:
+        raise RuntimeError("Matériau du ciel ou de l'eau : échec de compilation")
     eal.save_loaded_asset(water)
 if os.path.exists(SKY_PNG):
     MATS["CielPeint"] = sky_mat
     sky_sphere = place_mesh(SPHERE, "GB_CielPeint", "CielPeint", unreal.Vector(10000, 0, 0), scale=(10000, 10000, 10000))
     sky_sphere.static_mesh_component.set_editor_property("cast_shadow", False)
 
-# Lanternes de l'arbre de S7 : 40 petites sources sur le houppier.
-lt = MARKS["ile-lanternes"]
-for i in range(40):
-    a = 2 * math.pi * i / 40 * 2.618
-    r = 4 + 7 * ((i * 37) % 11) / 11
-    place_mesh(SPHERE, f"GB_Lanterne{i:02d}", "Lanterne", ue(lt["x"] + r * math.cos(a), lt["y"] + r * math.sin(a), 8 + 9 * ((i * 17) % 13) / 13), scale=(0.5, 0.5, 0.6))
+# Lanternes de l'arbre de S7 : suspendues sous le houppier (positions dans vegetation.json).
+for i, (x, y, z) in enumerate(VEG["lanternes"]):
+    place_mesh(SPHERE, f"GB_Lanterne{i:02d}", "Lanterne", ue(x, y, z), scale=(0.45, 0.45, 0.6))
 
 # Créatures : bloc animé par la séquence (repère : +X = sens du mouvement) + modèle 3D attaché s'il existe.
 # Modèles TRELLIS.2 : longueur sur +Y à l'import (1 unité = 100 cm), comme la barque → rotation -90°.
@@ -531,6 +721,89 @@ def glow(dest_dir, tint):
         eal.save_loaded_asset(mi)
 
 
+FLAP_CODE = """float n = saturate(abs(dot(LP.xyz, Axis.xyz)) / Half);
+return float3(0, 0, Half * 0.22 * n * n * sin(T * 1.8));"""
+
+
+def peint_tex_material(name, texture, flap_axis=None, half_span=1.0):
+    """Look peint pour un modèle texturé (créatures, barque) : couleur de la texture, même ombrage deux tons
+    que M_Peint. flap_axis : battement d'ailes procédural (WPO, axe d'envergure local, sans squelette)."""
+    path = f"/Game/Look/{name}"
+    digest = spec_digest("peint-tex-v1", PEINT_CODE, MPC_DIGEST, texture.get_path_name(), flap_axis, round(half_span, 2), FLAP_CODE)
+    existing = eal.load_asset(path) if eal.does_asset_exist(path) else None
+    if up_to_date(existing, digest):
+        return existing
+    mat = existing or tools.create_asset(name, "/Game/Look", unreal.Material, unreal.MaterialFactoryNew())
+    mel.delete_all_material_expressions(mat)
+    mat.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_UNLIT)
+    mat.set_editor_property("two_sided", True)
+    tex = mel.create_material_expression(mat, unreal.MaterialExpressionTextureSample, -1300, -200)
+    tex.set_editor_property("texture", texture)
+    # la texture est déjà décodée (linéaire) : on la réencode pour le code commun, qui décode les couleurs sRGB
+    enc = custom_node(mat, "return pow(max(C, 0.0), 1.0 / 2.2);", unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["C"], -1100, -200)
+    mel.connect_material_expressions(tex, "RGB", enc, "C")
+    one = mel.create_material_expression(mat, unreal.MaterialExpressionConstant, -1100, -100)
+    one.set_editor_property("r", 1.0)
+    nrm = mel.create_material_expression(mat, unreal.MaterialExpressionVertexNormalWS, -1100, 0)
+    cam = mel.create_material_expression(mat, unreal.MaterialExpressionCameraVectorWS, -1100, 100)
+    half = mel.create_material_expression(mat, unreal.MaterialExpressionConstant, -1100, 200)
+    half.set_editor_property("r", 0.5)
+    node = custom_node(mat, PEINT_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT3,
+                       ["Albedo", "AO", "N", "L", "V", "Brush", "Lumiere", "Ombre", "Ciel"], -500, 0)
+    mel.connect_material_expressions(enc, "", node, "Albedo")
+    mel.connect_material_expressions(one, "", node, "AO")
+    mel.connect_material_expressions(nrm, "", node, "N")
+    mel.connect_material_expressions(cam, "", node, "V")
+    mel.connect_material_expressions(half, "", node, "Brush")
+    for i, (pin, name_) in enumerate((("L", "SoleilDir"), ("Lumiere", "Lumiere"), ("Ombre", "Ombre"), ("Ciel", "CielAppoint"))):
+        cp = mel.create_material_expression(mat, unreal.MaterialExpressionCollectionParameter, -1100, 300 + 100 * i)
+        cp.set_editor_property("collection", MPC)
+        cp.set_editor_property("parameter_name", name_)
+        mel.connect_material_expressions(cp, "", node, pin)
+    mel.connect_material_property(node, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
+    if flap_axis is not None:
+        lp = mel.create_material_expression(mat, unreal.MaterialExpressionLocalPosition, -900, 500)
+        tt = mel.create_material_expression(mat, unreal.MaterialExpressionTime, -900, 600)
+        ax = mel.create_material_expression(mat, unreal.MaterialExpressionConstant3Vector, -900, 700)
+        ax.set_editor_property("constant", unreal.LinearColor(*flap_axis, 1.0))
+        hs = mel.create_material_expression(mat, unreal.MaterialExpressionConstant, -900, 800)
+        hs.set_editor_property("r", half_span)
+        fl = custom_node(mat, FLAP_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["LP", "T", "Axis", "Half"], -650, 600)
+        for src, pin in ((lp, "LP"), (tt, "T"), (ax, "Axis"), (hs, "Half")):
+            mel.connect_material_expressions(src, "", fl, pin)
+        tr = mel.create_material_expression(mat, unreal.MaterialExpressionTransform, -400, 600)
+        tr.set_editor_property("transform_source_type", unreal.MaterialVectorCoordTransformSource.TRANSFORMSOURCE_LOCAL)
+        tr.set_editor_property("transform_type", unreal.MaterialVectorCoordTransform.TRANSFORM_WORLD)
+        mel.connect_material_expressions(fl, "", tr, "")
+        mel.connect_material_property(tr, "", unreal.MaterialProperty.MP_WORLD_POSITION_OFFSET)
+    mel.recompile_material(mat)
+    if mel.get_statistics(mat).num_pixel_shader_instructions <= 0:
+        raise RuntimeError(f"{name} ne compile pas")
+    mark_saved(mat, digest)
+    return mat
+
+
+def painted_model(model, name, flap=False):
+    """Remplace les matériaux glTF du modèle par le look peint (texture de couleur conservée)."""
+    mats = []
+    for i in range(model.get_num_sections(0) if hasattr(model, "get_num_sections") else 1):
+        mi = model.get_material(i)
+        if mi is None:
+            break
+        tex = mel.get_material_instance_texture_parameter_value(mi, "BaseColorTexture") if isinstance(mi, unreal.MaterialInstance) else None
+        if tex is None:
+            mats.append(None)
+            continue
+        axis, half_span = None, 1.0
+        if flap:
+            box = model.get_bounding_box()
+            ext = (box.max.x - box.min.x, box.max.y - box.min.y)
+            axis = (1.0, 0.0, 0.0) if ext[0] >= ext[1] else (0.0, 1.0, 0.0)
+            half_span = max(ext) / 2
+        mats.append(peint_tex_material(f"M_Peint_{name}{i}", tex, axis, half_span))
+    return mats
+
+
 def creature(label, kind, loc):
     rel_glb, mat, fallback, mscale, dz, max_tris = CREATURES[kind]
     model = import_glb(rel_glb, f"/Game/Assets/{kind[3:]}", max_tris)
@@ -548,6 +821,10 @@ def creature(label, kind, loc):
     m.root_component.set_editor_property("relative_location", unreal.Vector(0, 0, dz))
     m.root_component.set_editor_property("relative_rotation", unreal.Rotator(0, 0, -90.0))
     m.root_component.set_editor_property("relative_scale3d", unreal.Vector(*mscale))
+    if kind not in GLOW:      # les abysses gardent leur bioluminescence ; les autres prennent le look peint
+        for i, pm in enumerate(painted_model(model, kind[3:], flap=(kind == "GB_Volante"))):
+            if pm is not None:
+                m.static_mesh_component.set_material(i, pm)
     return blk
 
 
@@ -555,6 +832,10 @@ creature("GB_Abysses", "GB_Abysses", ue(0, -60, -3.2))
 for i in range(5):
     creature(f"GB_Troupeau{i}", "GB_Troupeau", ue(0, -60 - i * 4, 0.6))
 creature("GB_Volante", "GB_Volante", ue(*moon_xy, 150))
+if model is not None:      # la barque prend aussi le look peint
+    for i, pm in enumerate(painted_model(model, "Barque")):
+        if pm is not None:
+            hull.static_mesh_component.set_material(i, pm)
 
 # Lumière de crépuscule, ciel, brume.
 sun = tag(actors.spawn_actor_from_class(unreal.DirectionalLight, unreal.Vector(0, 0, 3000), unreal.Rotator(0, -8, ue_yaw(start["heading_deg"]) + 150)), "Soleil")
@@ -577,6 +858,14 @@ tag(actors.spawn_actor_from_class(unreal.PlayerStart, ue(start["x"], start["y"],
 
 # Pas de réglage d'exposition : l'exposition auto est coupée dans le projet (VR) et le moteur ignore alors
 # toute compensation. La lisibilité du greybox se règle par l'intensité des lumières.
+
+# Pas d'éclairage précalculé : le look peint est non éclairé (M_Peint) ; seuls la barque et les créatures
+# utilisent encore les lumières, toutes dynamiques. Supprime « Lighting needs to be rebuilt » en jeu.
+world = unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem).get_editor_world()
+world.get_world_settings().set_editor_property("force_no_precomputed_lighting", True)
+for a in actors.get_all_level_actors():
+    for comp in a.get_components_by_class(unreal.LightComponentBase):
+        comp.set_mobility(unreal.ComponentMobility.MOVABLE)
 
 levels.save_current_level()
 unreal.log(f"Greybox : {MAP} construit ({len(MESHES)} maillages)")

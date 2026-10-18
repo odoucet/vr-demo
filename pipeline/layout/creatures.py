@@ -1,0 +1,110 @@
+"""Trajectoires des créatures, calculées sur le tracé et le terrain (clés lues par animatic.py).
+
+    python pipeline/layout/creatures.py      # → pipeline/layout/creatures.json
+
+Repère du tracé (m, x avant au départ, y gauche, z haut), cap en degrés. Retours d'Olivier (2026-10-18) :
+- abysses : suit le chenal (et non plus en travers), plus vite que la barque : arrive de derrière, passe
+  sous la barque à t = 70 s, la dépasse, puis plonge dans une fosse devant (terrain : ABYSS_PIT_T) ;
+- troupeau : sort de la forêt à droite par un sentier creusé dans la berge, traverse le gué l'eau au poitrail
+  et remonte sur la berge gauche ; la hauteur suit le terrain (plus de traversée « dans le sol ») ;
+- créature volante : passe devant la lune puis continue son vol jusqu'à sortir du champ, sans s'arrêter.
+Une clé par seconde (interpolation linéaire dans la séquence). Déterministe.
+"""
+import json
+import math
+import sys
+from pathlib import Path
+
+import numpy as np
+
+LAYOUT = Path(__file__).resolve().parent
+sys.path.insert(0, str(LAYOUT))
+from greybox_geometry import ABYSS_PIT_T, GRID_M, herd_crossing, terrain  # noqa: E402
+
+OUT = LAYOUT / "creatures.json"
+HIDDEN_Z = -60.0      # sous le terrain : créature cachée
+
+
+def main():
+    river = json.loads((LAYOUT / "river.json").read_text(encoding="utf-8"))
+    s = river["samples"]
+    st = np.array([p["t"] for p in s])
+    marks = {m["id"]: m for m in river["landmarks"]}
+    _, bounds, (gx, gy, d, z) = terrain(river)
+
+    def ground(x, y):
+        j = int(round((y - bounds["y0"]) / GRID_M))
+        i = int(round((x - bounds["x0"]) / GRID_M))
+        j, i = min(max(j, 0), z.shape[0] - 1), min(max(i, 0), z.shape[1] - 1)
+        return float(z[j, i])
+
+    def path(tau):
+        """Point du chenal au temps de parcours tau (la barque y passe à tau), interpolé."""
+        tau = float(np.clip(tau, st[0], st[-1]))
+        k = int(np.searchsorted(st, tau))
+        a, b = s[max(k - 1, 0)], s[min(k, len(s) - 1)]
+        f = 0 if b["t"] == a["t"] else (tau - a["t"]) / (b["t"] - a["t"])
+        return (a["x"] + f * (b["x"] - a["x"]), a["y"] + f * (b["y"] - a["y"]),
+                a["heading_deg"] + f * (b["heading_deg"] - a["heading_deg"]))
+
+    out = {"units": "m", "abysses": [], "troupeau": [], "volante": []}
+
+    # --- Abysses : avance relative de -24 m (derrière) à +20 m (devant) entre 54 s et 84 s, puis plongée --------
+    t0 = marks["abysses-passage"]["t"]
+    for t in np.arange(t0 - 22, t0 + 26, 1.0):
+        lead = np.interp(t, [t0 - 16, t0, t0 + 14], [-24.0, 0.0, 20.0])
+        lead = lead if t >= t0 - 16 else -24.0 - (t0 - 16 - t) * 1.0
+        tau = min(t + lead, ABYSS_PIT_T)
+        x, y, h = path(tau)
+        wiggle = 0.8 * math.sin(t * 0.35)                       # léger serpentement dans le chenal
+        x, y = x - math.sin(math.radians(h)) * wiggle, y + math.cos(math.radians(h)) * wiggle
+        bed = ground(x, y)
+        depth = min(max(-3.2, bed + 1.4), -2.8)                 # jamais près de la surface ; sous le fond = cachée
+        if t < t0 - 12:                                         # avant : sous le fond, invisible, puis remonte
+            depth = np.interp(t, [t0 - 22, t0 - 12], [bed - 3.0, depth])
+        if tau >= ABYSS_PIT_T - 1:                              # arrivée sur la fosse : plongée
+            depth = np.interp(t, [t0 + 14, t0 + 24], [depth, bed - 3.0])
+        out["abysses"].append([round(float(t), 2), round(x, 3), round(y, 3), round(float(depth), 3), round(h, 2)])
+
+    # --- Troupeau : sentier forêt droite → gué → forêt gauche, à 1,8 m/s, hauteur sur le terrain --------------
+    hx, hy, ux, uy = herd_crossing(river)
+    tm = marks["troupeau-gue"]["t"]
+    heading = math.degrees(math.atan2(uy, ux))                  # vers la gauche du tracé
+    for i in range(5):
+        lag, lane = i * 1.6, (i % 2) * 2.5 - 1.25
+        start, speed = -34.0, 1.8
+        t_start = tm + lag + start / speed                      # au milieu du gué à t ≈ 112 s (+ décalage)
+        keys = []
+        for k in range(int(68 / speed) + 1):
+            a = start + k * speed
+            x = hx + ux * a + uy * lane
+            y = hy + uy * a - ux * lane
+            gz = ground(x, y)
+            keys.append([round(t_start + k, 2), round(x, 3), round(y, 3), round(gz + 1.2, 3), round(heading, 2)])
+        out["troupeau"].append(keys)
+
+    # --- Créature volante : arc devant la lune, puis s'éloigne en montant, cachée une fois hors du champ -----------
+    cl = marks["creature-lune"]
+    pc = min(s, key=lambda p: abs(p["t"] - cl["t"]))
+    hc = math.radians(pc["heading_deg"])
+    alt = cl["ahead_m"] * math.tan(math.radians(22))
+    fx, fy, lx, ly = math.cos(hc), math.sin(hc), -math.sin(hc), math.cos(hc)
+    for t in np.arange(cl["t"] - 20, cl["t"] + 40, 1.0):
+        u = (t - cl["t"]) / 12.0                                # -1 → 1 pendant le passage devant la lune
+        side = cl["side_m"] - 160.0 * u
+        ahead = cl["ahead_m"] + 60.0 * max(u - 1, 0) ** 1.2     # après le passage : s'éloigne
+        zz = alt + 6.0 * math.sin(u * 1.3) + 25.0 * max(u - 1, 0)
+        x, y = pc["x"] + fx * ahead + lx * side, pc["y"] + fy * ahead + ly * side
+        yaw = math.degrees(math.atan2(-ly * 160 + fy * (60 if u > 1 else 0), -lx * 160 + fx * (60 if u > 1 else 0)))
+        out["volante"].append([round(float(t), 2), round(x, 2), round(y, 2), round(zz, 2), round(yaw, 2)])
+
+    OUT.write_text(json.dumps(out), encoding="utf-8")
+    print(f"→ {OUT.relative_to(LAYOUT.parents[1])} : abysses {len(out['abysses'])} clés, troupeau 5 × "
+          f"{len(out['troupeau'][0])}, volante {len(out['volante'])}")
+    a = out["abysses"]
+    print("  abysses (t, z) :", [(k[0], k[3]) for k in a[::6]])
+    print("  troupeau 0 (t, z) :", [(k[0], k[3]) for k in out["troupeau"][0][::6]])
+
+
+if __name__ == "__main__":
+    main()
