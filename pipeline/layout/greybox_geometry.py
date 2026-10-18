@@ -180,7 +180,7 @@ def reeds(river, field, bounds, seed=5):
         lx, ly = math.cos(ang + 1.3) * lean, math.sin(ang + 1.3) * lean
         b = len(verts)
         verts.extend([[x - dx, y - dy, z0], [x + dx, y + dy, z0], [x + lx, y + ly, z0 + h]])
-        tris.extend([[b, b + 1, b + 2], [b, b + 2, b + 1]])     # double face
+        tris.extend([[b, b + 1, b + 2]])     # une face : le matériau est double face
 
     for p in s:
         h0 = math.radians(p["heading_deg"])

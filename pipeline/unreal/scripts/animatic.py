@@ -138,10 +138,40 @@ def creature_keys(keys, hide_before=True, hide_after=True):
     return k
 
 
+def visible_between(label, t0, t1):
+    """Acteur affiché seulement entre t0 et t1 : caché, il n'est plus dessiné du tout (mesure au casque : les
+    créatures en attente sous le terrain coûtaient ~100 k triangles par image)."""
+    actor = by_label.get(label)
+    if actor is None:
+        return
+    vis = seq.add_possessable(actor).add_track(unreal.MovieSceneVisibilityTrack).add_section()
+    vis.set_range(0, end)
+    ch = vis.get_all_channels()[0]
+    ch.add_key(frame(0), False)
+    ch.add_key(frame(max(t0, 0.0)), True)
+    if t1 < DURATION:
+        ch.add_key(frame(t1), False)
+
+
+# Décor caché par la brume dense de S1-S2 (densité 0,2 : rien de visible au-delà de ~40 m) : les tronçons
+# lointains ne sont affichés qu'à l'approche, au plus tard quand la brume commence à se lever (36 s).
+FOG_LIFT_S = 36.0
+for label in list(by_label):
+    if label.startswith("GB_Vegetation"):
+        k = int(label[len("GB_Vegetation"):len("GB_Vegetation") + 2])
+        start = 30.0 * k - 45.0                  # 45 m avant l'entrée du tronçon (barque à 1 m/s)
+        if start > 0:
+            visible_between(label, min(start, FOG_LIFT_S) if start < 80 else start - 60.0, DURATION + 1)
+    elif label.split("_")[1] in ("Lisiere", "ArbreColossalPeint", "ArbreLanternesPeint", "Collines") if label.startswith("GB_") and "_" in label[3:] else False:
+        visible_between(label, FOG_LIFT_S, DURATION + 1)
+
 transform_track(by_label["GB_Abysses"], creature_keys(CREA["abysses"]))
+visible_between("GB_Abysses_Modele", CREA["abysses"][0][0], CREA["abysses"][-1][0])
 for i, keys in enumerate(CREA["troupeau"]):
     transform_track(by_label[f"GB_Troupeau{i}"], creature_keys(keys))
+    visible_between(f"GB_Troupeau{i}_Modele", keys[0][0], keys[-1][0])
 transform_track(by_label["GB_Volante"], creature_keys(CREA["volante"]))
+visible_between("GB_Volante_Modele", CREA["volante"][0][0], CREA["volante"][-1][0])
 
 # Envol des lucioles : à la modulation (sequencer.yaml, « lucioles-envol »), le nuage sort de l'eau à 10 m devant
 # la barque et monte vers la trouée de la canopée en s'étalant ; caché sous le terrain avant et après.
@@ -149,15 +179,20 @@ t_env = 137.8 + MUSIC_OFFSET   # « lucioles-envol » : 137,8 s de musique
 (x0, y0, _), yaw0 = rel(t_env, 10.0, 0.0, 0.0)
 (x1, y1, _), _ = rel(t_env + 22, 25.0, 0.0, 0.0)
 hidden = (x0, y0, -3000.0)
-transform_track(by_label["GB_Lucioles"], [
-    (0.0, hidden, yaw0), (t_env - 0.5, hidden, yaw0),
-    (t_env, (x0, y0, -150.0), yaw0),
-    (t_env + 8, ((x0 + x1) / 2, (y0 + y1) / 2, 600.0), yaw0),
-    (t_env + 22, (x1, y1, 2600.0), yaw0),
-    # puis continue de monter et de s'éloigner jusqu'à disparaître dans le ciel (avant : renvoyé sous le terrain
-    # en 0,5 s, on le voyait « tomber » dans l'eau)
-    (t_env + 50, (x1 + (x1 - x0) * 1.5, y1 + (y1 - y0) * 1.5, 9000.0), yaw0),
-    (DURATION, (x1 + (x1 - x0) * 2.0, y1 + (y1 - y0) * 2.0, 12000.0), yaw0)], scale=(1.0, 1.0, 1.0))
+# Montée en spirale large et irrégulière (retour d'Olivier : trajectoire trop droite) ; chaque luciole ajoute en
+# plus ses propres boucles (matériau M_GB_LucioleEnvol, WPO de 2,6 m).
+swarm = [(0.0, hidden, yaw0), (t_env - 0.5, hidden, yaw0)]
+for k in range(0, 51, 2):
+    u = k / 50.0
+    ease = u * u * (3 - 2 * u)
+    cx, cy = x0 + (x1 - x0) * 1.6 * ease, y0 + (y1 - y0) * 1.6 * ease
+    ang = k * 0.32 + math.sin(k * 0.17) * 0.8
+    rad = 600.0 + 900.0 * ease
+    z = -150.0 + 9000.0 * ease ** 1.3
+    swarm.append((t_env + k, (cx + math.cos(ang) * rad, cy + math.sin(ang) * rad, z), yaw0 + k * 4.0))
+swarm.append((DURATION, swarm[-1][1][:2] + (12000.0,), swarm[-1][2]))
+transform_track(by_label["GB_Lucioles"], swarm, scale=(1.0, 1.0, 1.0))
+visible_between("GB_Lucioles", t_env - 0.5, DURATION + 1)
 
 # Crépuscule → nuit : luminosité du ciel peint (MPC_Ambiance.CielLuminosite), pleine en S2-S4, baisse sous les
 # racines et pendant la trouée, nuit pour la lune (S6) et le lac (S7).

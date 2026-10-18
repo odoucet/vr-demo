@@ -181,7 +181,7 @@ def broadleaf_tree(mesh, x, y, z, height, rng, leaf, trunk, detail=1, crown_scal
     crown_c[:2] += rng.normal(0, 0.04, 2) * height
     cylinder(mesh, [x, y, z - 0.3], [crown_c[0], crown_c[1], crown_c[2] - crown_r * 0.2],
              height * 0.035, height * 0.022, jitter(trunk, rng), sides=6 if detail else 4)
-    n = (rng.integers(7, 11), rng.integers(6, 10), rng.integers(3, 5))[2 - detail]
+    n = (rng.integers(7, 11), rng.integers(5, 8), rng.integers(3, 5))[2 - detail]
     base_col = jitter(leaf, rng, 0.08)
     z_bottom, z_top = crown_c[2] - crown_r * 1.0, crown_c[2] + crown_r * 1.1
     blob(mesh, crown_c, [crown_r] * 3, base_col, rng, subdiv=1 if detail else 0, normal_center=crown_c,
@@ -192,10 +192,10 @@ def broadleaf_tree(mesh, x, y, z, height, rng, leaf, trunk, detail=1, crown_scal
         d /= np.linalg.norm(d)
         r = crown_r * rng.uniform(0.45, 0.7)
         c = crown_c + d * crown_r * rng.uniform(0.6, 0.85)
-        blob(mesh, c, [r, r, r * 0.85], jitter(base_col, rng, 0.05), rng, subdiv=1 if detail == 2 else 0,
+        blob(mesh, c, [r, r, r * 0.85], jitter(base_col, rng, 0.05), rng, subdiv=1 if detail >= 1 else 0,
              normal_center=crown_c, ao=(z_bottom, z_top, 0.4))
     if detail == 2:      # petites touffes en surface : silhouette en chou-fleur, comme les feuillages peints
-        for _ in range(rng.integers(10, 16)):
+        for _ in range(rng.integers(6, 10)):
             d = rng.normal(0, 1, 3)
             d[2] = abs(d[2]) * 0.8 - 0.1
             d /= np.linalg.norm(d)
@@ -278,7 +278,7 @@ def grass_tuft(mesh, x, y, z, height, rng, color, blades=7):
         p2 = [x + lx, y + ly, z + h]
         nrm = [math.cos(ang + 1.57) * 0.5, math.sin(ang + 1.57) * 0.5, 1]
         colors = np.array([[*col, 0.45], [*col, 0.45], [*col, 1.0]])
-        part(mesh, "sol").add([p0, p1, p2], [[0, 1, 2], [0, 2, 1]], [nrm] * 3, colors)
+        part(mesh, "sol").add([p0, p1, p2], [[0, 1, 2]], [nrm] * 3, colors)     # matériau double face
 
 
 def log(mesh, a, b, radius, rng, color):
@@ -298,7 +298,7 @@ def fern(mesh, x, y, z, size, rng, color, fronds=7):
         p1 = [x + dx * L * 0.55, y + dy * L * 0.55, z + L * 0.45]
         p2 = [x + dx * L, y + dy * L, z + L * 0.25]
         verts = [p0, [p1[0] + px, p1[1] + py, p1[2]], [p1[0] - px, p1[1] - py, p1[2]], p2]
-        tris = [[0, 1, 2], [0, 2, 1], [1, 3, 2], [1, 2, 3]]
+        tris = [[0, 1, 2], [1, 3, 2]]                       # matériau double face : pas de faces dupliquées
         n = [dx * 0.3, dy * 0.3, 1]
         colors = np.array([[*col, 0.4], [*col, 0.8], [*col, 0.8], [*col, 1.0]])
         part(mesh, "sol").add(verts, tris, [n] * 4, colors)
@@ -314,7 +314,7 @@ def flower_patch(mesh, x, y, z, rng, color, stems=9, radius=0.5):
              ao=(None, None, 1.0), wobble=0, kind="sol")
 
 
-def pebbles(mesh, x, y, z, rng, color, count=6, spread=0.8):
+def pebbles(mesh, x, y, z, rng, color, count=3, spread=0.8):
     for _ in range(count):
         s = rng.uniform(0.08, 0.25)
         rock(mesh, x + rng.normal(0, spread), y + rng.normal(0, spread), z - s * 0.2, s, rng, color, subdiv=0)

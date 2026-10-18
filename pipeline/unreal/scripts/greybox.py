@@ -74,6 +74,7 @@ def material(name, color, emissive=False, roughness=0.9, specular=None, opacity=
     c.set_editor_property("constant", unreal.LinearColor(*color, 1.0))
     if emissive:
         mat.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_UNLIT)
+        mat.set_editor_property("float_precision_mode", unreal.MaterialFloatPrecisionMode.MFPM_FULL)   # Quest : pas de calcul en 16 bits
         mel.connect_material_property(c, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
     else:
         mat.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_DEFAULT_LIT)
@@ -177,6 +178,16 @@ float u = 0.5 + atan2(d.y, d.x) / (2.0 * PI) + T * {SKY_DRIFT};
 float e = asin(clamp(d.z, -1.0, 1.0));
 float v = clamp(0.82 - e / (0.5 * PI) * 0.82, 0.0, 1.0);
 return float2(u, v);"""
+# Lune peinte dans le ciel (et non plus une sphère devant lui) : cachée par les nuages clairs, direction du repère
+# « creature-lune » vue depuis la barque au sommet de S6 (la créature volante passe devant), haute de 22°.
+_lm = MARKS["creature-lune"]
+_pl = pose_at(_lm["t"])
+_dx, _dy = _lm["x"] - _pl["x"], _lm["y"] - _pl["y"]
+_dl = math.hypot(_dx, _dy)
+_mv = (_dx / _dl, -_dy / _dl, math.tan(math.radians(22)))
+_mn = math.sqrt(sum(c * c for c in _mv))
+MOON_DIR = tuple(c / _mn for c in _mv)
+MOON_RADIUS_DEG = 2.1
 SKY_STARS_CODE = """float3 d = normalize(-Dir);
 float3 sky = Tex * Teinte.rgb;
 float night = saturate(1.0 - dot(Teinte.rgb, float3(0.3, 0.5, 0.2)) * 3.0);
@@ -187,7 +198,15 @@ float2 f = frac(g) - 0.5;
 float star = step(0.985, h) * saturate(1.0 - length(f) * 3.0);
 float tw = 0.55 + 0.45 * sin(T * (1.5 + h * 3.0) + h * 80.0);
 float clouds = saturate(1.0 - dot(Tex, float3(0.3, 0.5, 0.2)) * 1.6);
-return sky + star * tw * night * clouds * saturate(d.z * 6.0) * 1.5;"""
+float3 col = sky + star * tw * night * clouds * saturate(d.z * 6.0) * 1.5;
+// lune : disque doux et halo, masqués là où le ciel peint est un nuage (zones claires et peu bleues)
+float md = dot(d, float3(%(mx).5f, %(my).5f, %(mz).5f));
+float cr = cos(radians(%(mr).2f));
+float disc = smoothstep(cr - 0.00004, cr + 0.00004, md);
+float halo = pow(saturate((md - cr) / (1.0 - cr) * 0.5 + 0.5), 60.0) * 0.25 + pow(saturate(md), 2000.0) * 0.15;
+float cloudy = saturate((Tex.r + 0.15 - Tex.b) * 3.0) * saturate(dot(Tex, float3(0.3, 0.5, 0.2)) * 2.0);
+col += float3(1.0, 0.97, 0.88) * (disc * 1.1 + halo * (0.4 + night)) * (1.0 - cloudy * 0.9);
+return col;""" % {"mx": MOON_DIR[0], "my": MOON_DIR[1], "mz": MOON_DIR[2], "mr": MOON_RADIUS_DEG}
 
 
 with open(os.path.join(ROOT, "pipeline", "layout", "water_map.json"), encoding="utf-8") as f:
@@ -210,8 +229,8 @@ float2 adv = fd * speed * 0.9;
 float2 q0 = (q - adv * ph0).yx, q1 = (q - adv * ph1).yx;
 float r0 = Texture2DSample(Rides, RidesSampler, q0 * float2(0.6, 2.2)).r;
 float r1 = Texture2DSample(Rides, RidesSampler, q1 * float2(0.6, 2.2) + 0.5).r;
-float r2 = Texture2DSample(Rides, RidesSampler, q.yx * float2(0.25, 1.1) + float2(T * 0.004, 0.37)).r;
-float rip = saturate(lerp(r0, r1, w) * 0.85 + r2 * 0.45);
+float rip = saturate(lerp(r0, r1, w) * 1.1);
+float r2 = saturate(r0 * 0.7 + r1 * 0.3 + 0.25);   // variation lente sans lecture supplémentaire
 // reflet du ciel peint, déformé par les rides
 float3 rd = float3(v.x, v.y, abs(v.z));
 float su = 0.5 + atan2(rd.y, rd.x) / (2.0 * PI) + T * %(drift)f;
@@ -303,14 +322,11 @@ col += albedo * CANDLE * lamp * (0.3 + 0.7 * saturate(dot(n, normalize(lp - WP.x
 return col;""" % {"lx": LANTERN_LOCAL[0], "lz": LANTERN_LOCAL[2], "cr": CANDLE_RGB[0], "cg": CANDLE_RGB[1], "cb": CANDLE_RGB[2]}
 
 
-TRI_CODE = """float3 n = abs(normalize(N.xyz));
-n = n * n * n * n;
-n /= (n.x + n.y + n.z);
-float3 p = P.xyz / Scale;
-float3 cx = Texture2DSample(Tex, TexSampler, p.yz).rgb;
-float3 cy = Texture2DSample(Tex, TexSampler, p.xz).rgb;
-float3 cz = Texture2DSample(Tex, TexSampler, p.xy).rgb;
-return cx * n.x + cy * n.y + cz * n.z;"""
+# Une seule lecture de texture par pixel (projection selon l'axe dominant de la normale), au lieu des trois
+# d'un vrai triplanaire : mesure du 18/10, GPU saturé sur Quest ; les bords de projection se perdent dans la touche.
+TRI_CODE = """float3 n = abs(N.xyz);
+float2 uv = (n.z >= n.x && n.z >= n.y) ? P.xy : ((n.x >= n.y) ? P.yz : P.xz);
+return Texture2DSample(Tex, TexSampler, uv / Scale).rgb;"""
 TOP_CODE = """return Texture2DSample(Tex, TexSampler, P.xy / Scale).rgb;"""
 DETAIL_CODE = """float3 a = pow(max(Albedo.rgb, 0.0), 2.2);
 float3 lw = float3(0.2126, 0.7152, 0.0722);
@@ -366,7 +382,7 @@ def peint_material():
     path = "/Game/Look/M_Peint"
     brush = brush_texture()
     default_tex = look_texture("tex-mousse")
-    digest = spec_digest("peint-v8", PEINT_CODE, TRI_CODE, TOP_CODE, DETAIL_CODE, sorted(DETAIL_SCALARS.items()),
+    digest = spec_digest("peint-v10", PEINT_CODE, TRI_CODE, TOP_CODE, DETAIL_CODE, sorted(DETAIL_SCALARS.items()),
                          MPC_DIGEST, eal.get_metadata_tag(brush, "source_sha1"))
     existing = eal.load_asset(path) if eal.does_asset_exist(path) else None
     if up_to_date(existing, digest):
@@ -374,6 +390,7 @@ def peint_material():
     mat = existing or tools.create_asset("M_Peint", "/Game/Look", unreal.Material, unreal.MaterialFactoryNew())
     mel.delete_all_material_expressions(mat)
     mat.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_UNLIT)
+    mat.set_editor_property("float_precision_mode", unreal.MaterialFloatPrecisionMode.MFPM_FULL)   # Quest : pas de calcul en 16 bits
     mat.set_editor_property("two_sided", True)
     vc = mel.create_material_expression(mat, unreal.MaterialExpressionVertexColor, -1100, -200)
     nrm = mel.create_material_expression(mat, unreal.MaterialExpressionVertexNormalWS, -1100, 0)
@@ -476,17 +493,18 @@ FIREFLY_CODE_BLINK = """float b = 0.5 + 0.5 * sin(T * (1.1 + UV.y) + UV.x * 40.0
 return 0.25 + 0.75 * b * b;"""
 
 
-def firefly_material(color=(4.0, 5.0, 1.2), amp_cm=30.0):
+def firefly_material(color=(4.0, 5.0, 1.2), amp_cm=30.0, name="Luciole"):
     """Lucioles : émissif non éclairé qui clignote, sommets déplacés en WPO (dérive lente, phase par luciole
     lue dans l'UV). Animation entièrement dans le shader : rien à évaluer sur le CPU du Quest."""
-    path = f"{GB}/M_GB_Luciole"
-    digest = spec_digest("luciole-v2", color, amp_cm, FIREFLY_CODE_WPO, FIREFLY_CODE_BLINK)
+    path = f"{GB}/M_GB_{name}"
+    digest = spec_digest("luciole-v3", color, amp_cm, FIREFLY_CODE_WPO, FIREFLY_CODE_BLINK)
     existing = eal.load_asset(path) if eal.does_asset_exist(path) else None
     if up_to_date(existing, digest):
         return existing
-    mat = existing or tools.create_asset("M_GB_Luciole", GB, unreal.Material, unreal.MaterialFactoryNew())
+    mat = existing or tools.create_asset(f"M_GB_{name}", GB, unreal.Material, unreal.MaterialFactoryNew())
     mel.delete_all_material_expressions(mat)
     mat.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_UNLIT)
+    mat.set_editor_property("float_precision_mode", unreal.MaterialFloatPrecisionMode.MFPM_FULL)   # Quest : pas de calcul en 16 bits
     mat.set_editor_property("two_sided", True)
     t = mel.create_material_expression(mat, unreal.MaterialExpressionTime, -900, 0)
     uv = mel.create_material_expression(mat, unreal.MaterialExpressionTextureCoordinate, -900, 150)
@@ -524,6 +542,8 @@ def firefly_material(color=(4.0, 5.0, 1.2), amp_cm=30.0):
 
 
 MATS["Luciole"] = firefly_material()
+# nuage de l'envol : grandes boucles irrégulières propres à chaque luciole (la trajectoire du nuage était trop droite)
+MATS["LucioleEnvol"] = firefly_material(amp_cm=260.0, name="LucioleEnvol")
 
 FLICKER = "(0.86 + 0.1 * sin(T * 11.0) * sin(T * 6.7 + 1.3) + 0.04 * sin(T * 23.0))"
 
@@ -539,12 +559,13 @@ def candle_materials():
                              f"return float3({CANDLE_RGB[0]}, {CANDLE_RGB[1]}, {CANDLE_RGB[2]}) * 0.09 * f * f * {FLICKER};",
              unreal.BlendMode.BLEND_ADDITIVE)):
         path = f"{GB}/M_GB_{name}"
-        digest = spec_digest("bougie-v2", code)
+        digest = spec_digest("bougie-v3", code)
         mat = eal.load_asset(path) if eal.does_asset_exist(path) else None
         if not up_to_date(mat, digest):
             mat = mat or tools.create_asset(f"M_GB_{name}", GB, unreal.Material, unreal.MaterialFactoryNew())
             mel.delete_all_material_expressions(mat)
             mat.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_UNLIT)
+            mat.set_editor_property("float_precision_mode", unreal.MaterialFloatPrecisionMode.MFPM_FULL)   # Quest : pas de calcul en 16 bits
             mat.set_editor_property("blend_mode", blend)
             node = custom_node(mat, code, unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["T", "N", "V"], -400, 0)
             mel.connect_material_expressions(mel.create_material_expression(mat, unreal.MaterialExpressionTime, -700, 0), "", node, "T")
@@ -568,6 +589,7 @@ SURFACES = {
     "PeintSol": ("tex-herbe", None, 120.0, 0.6, 0.35),
     "PeintRoche": ("tex-roche", None, 140.0, 0.7, 0.35),
     "PeintTerrain": ("tex-terre", "tex-herbe", 350.0, 0.7, 0.4),
+    "PeintPlanches": ("tex-planches", None, 90.0, 0.7, 0.5),
 }
 
 
@@ -595,7 +617,7 @@ def surface_instance(name, tex1, tex2, scale, strength, mix):
 
 for name, spec in SURFACES.items():
     MATS[name] = surface_instance(name, *spec)
-MESH_MATS = {"Terrain": "PeintTerrain", "ArcheRacines": "PeintBois", "Lucioles": "Luciole", "LuciolesBerges": "Luciole",
+MESH_MATS = {"Terrain": "PeintTerrain", "ArcheRacines": "PeintBois", "Lucioles": "LucioleEnvol", "LuciolesBerges": "Luciole",
              "Roseaux": "PeintSol", "Nenuphars": "Peint"}
 
 
@@ -651,6 +673,9 @@ for name, data in VEG["meshes"].items():
     GEO["meshes"][name] = data
     MESH_MATS[name] = KIND_MATS.get(name.rsplit("_", 1)[-1], "Peint")
 MESHES = {name: build_mesh(name, data) for name, data in GEO["meshes"].items()}
+_fv = [[0.0, 0.0, 0.05]] + [[1.45 * math.cos(2 * math.pi * k / 32), 0.40 * math.sin(2 * math.pi * k / 32), 0.05] for k in range(32)]
+FLOOR_MESH = build_mesh("PlancherBarque", {"vertices": _fv, "triangles": [[0, 1 + k, 1 + (k + 1) % 32] for k in range(32)],
+                                           "normals": [[0, 0, 1]] * len(_fv), "color": [0.32, 0.22, 0.14, 0.8]})
 OBSOLETE = ["SM_Foret", "SM_ArbreColossal", "SM_ArbreLanternes", "M_GB_Foret"] + \
     [f"SM_{n}" for n in ("Lisiere", "ArbreColossalPeint", "ArbreLanternesPeint", "Collines")] + [f"SM_Vegetation{i:02d}" for i in range(12)]
 for old in OBSOLETE:   # remplacés (look peint, puis découpage par type de surface)
@@ -775,6 +800,12 @@ if model is not None:
     paper.root_component.set_editor_property("relative_rotation", unreal.Rotator(0, 0, 0))
     paper.root_component.set_editor_property("relative_scale3d", unreal.Vector(0.34, 0.34, 0.56 * BOAT_SCALE_Z / BOAT_SCALE))
     paper.static_mesh_component.set_editor_property("cast_shadow", False)
+    # Plancher de la barque : planches opaques juste au-dessus de la ligne de flottaison, dans la coque ; l'eau
+    # ne se voit plus à l'intérieur même si le masque du shader de l'eau échoue (retour d'Olivier).
+    fl = place_mesh(FLOOR_MESH, "PlancherBarque", "PeintPlanches", boat.get_actor_location())
+    fl.attach_to_actor(boat, "", unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, False)
+    fl.root_component.set_editor_property("relative_location", unreal.Vector(0, 0, 0))
+    fl.root_component.set_editor_property("relative_rotation", unreal.Rotator(0, 0, 0))
     halo = place_mesh(SPHERE, "HaloLanterne", "HaloLanterne", boat.get_actor_location())
     halo.attach_to_actor(boat, "", unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, False)
     halo.root_component.set_editor_property("relative_location", LANTERN)
@@ -830,7 +861,7 @@ p = pose_at(lm["t"])
 dx, dy = lm["x"] - p["x"], lm["y"] - p["y"]
 dist = math.hypot(dx, dy)
 moon_xy = (p["x"] + dx / dist * 900, p["y"] + dy / dist * 900)
-place_mesh(SPHERE, "GB_Lune", "Lune", ue(*moon_xy, 900 * math.tan(math.radians(22))), scale=(70, 70, 70))
+# (la lune elle-même est peinte dans le ciel : SKY_STARS_CODE)
 
 # Ciel peint provisoire (assets/sky/ciel.png, pipeline/comfy/sky.py) : panorama « paysage » dont l'horizon est à
 # ~82 % de la hauteur ; projeté sur la voûte (horizon → zénith) par la direction de vue, sur une sphère de 5 km
@@ -849,7 +880,7 @@ if os.path.exists(SKY_PNG):
         sky_tex = eal.load_asset(f"{GB}/ciel")
         eal.set_metadata_tag(sky_tex, "source_sha1", sky_digest)
         eal.save_loaded_asset(sky_tex)
-    SKY_WATER_VERSION = "ciel-eau-v5"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
+    SKY_WATER_VERSION = "ciel-eau-v6"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
     sky_mat_path = f"{GB}/M_GB_CielPeint"
     sky_mat = eal.load_asset(sky_mat_path) if eal.does_asset_exist(sky_mat_path) else None
     rebuild_sky_water = not up_to_date(sky_mat, spec_digest(SKY_WATER_VERSION, sky_digest, MPC_DIGEST, WATER_CODE,
@@ -859,6 +890,7 @@ if os.path.exists(SKY_PNG):
 if os.path.exists(SKY_PNG) and rebuild_sky_water:
     mel.delete_all_material_expressions(sky_mat)
     sky_mat.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_UNLIT)
+    sky_mat.set_editor_property("float_precision_mode", unreal.MaterialFloatPrecisionMode.MFPM_FULL)   # Quest : pas de calcul en 16 bits
     sky_mat.set_editor_property("is_sky", True)
     sky_mat.set_editor_property("two_sided", True)
     camv = mel.create_material_expression(sky_mat, unreal.MaterialExpressionCameraVectorWS, -700, 0)
@@ -889,6 +921,7 @@ if os.path.exists(SKY_PNG) and rebuild_sky_water:
     water = eal.load_asset(f"{GB}/M_GB_Eau")
     mel.delete_all_material_expressions(water)
     water.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_UNLIT)
+    water.set_editor_property("float_precision_mode", unreal.MaterialFloatPrecisionMode.MFPM_FULL)   # Quest : pas de calcul en 16 bits
     water.set_editor_property("blend_mode", unreal.BlendMode.BLEND_TRANSLUCENT)
     water.set_editor_property("two_sided", True)
     wcam = mel.create_material_expression(water, unreal.MaterialExpressionCameraVectorWS, -1000, 0)
@@ -945,39 +978,48 @@ CREATURES = {
 GLOW = {"GB_Abysses": (0.15, 1.6, 2.0)}   # bioluminescence : texture de couleur réutilisée en émissif, teintée
 
 
-def glow(dest_dir, tint):
-    """Rend le modèle lumineux : sa texture de couleur sert aussi d'émissif, multipliée par une teinte."""
-    mel = unreal.MaterialEditingLibrary
-    for path in eal.list_assets(f"{dest_dir}/model/Materials", recursive=True):
-        mi = eal.load_asset(path)
-        if not isinstance(mi, unreal.MaterialInstanceConstant):
-            continue
-        base = mel.get_material_instance_texture_parameter_value(mi, "BaseColorTexture")
-        if mel.get_material_instance_texture_parameter_value(mi, "EmissiveTexture") == base and \
-                mel.get_material_instance_vector_parameter_value(mi, "EmissiveFactor") == unreal.LinearColor(*tint, 1.0):
-            continue   # déjà lumineux : ne pas réécrire l'asset
-        mel.set_material_instance_texture_parameter_value(mi, "EmissiveTexture", base)
-        mel.set_material_instance_static_switch_parameter_value(mi, "bHasEmissiveTexture", True)
-        mel.set_material_instance_vector_parameter_value(mi, "EmissiveFactor", unreal.LinearColor(*tint, 1.0))
-        mel.update_material_instance(mi)
-        eal.save_loaded_asset(mi)
+# Animations sans squelette, en WPO dans le repère local du modèle (longueur sur +Y à l'import, travers X,
+# haut Z ; boîte englobante du modèle en constantes). Ph : phase propre à chaque acteur (donnée primitive 0).
+ANIM_CODES = {
+    # battement d'ailes : bouts d'ailes (loin de l'axe du corps) qui montent et descendent
+    "vol": """float hs = max(BXX - BXN, BYX - BYN) * 0.5;
+float n = saturate(abs((BXX - BXN) >= (BYX - BYN) ? LP.x - (BXX + BXN) * 0.5 : LP.y - (BYX + BYN) * 0.5) / hs);
+return float3(0, 0, hs * 0.22 * n * n * sin(T * 1.8 + Ph));""",
+    # marche : pattes en paires diagonales qui avancent et se lèvent, corps qui ondule légèrement
+    "marche": """float h = BZX - BZN;
+float legs = saturate((BZN + h * 0.45 - LP.z) / (h * 0.45));
+float side = LP.x > (BXX + BXN) * 0.5 ? 1.0 : -1.0;
+float fore = LP.y > (BYX + BYN) * 0.5 ? 1.0 : -1.0;
+float ph = T * 4.6 + Ph + (side * fore > 0.0 ? 0.0 : 3.1416);
+float stride = sin(ph) * h * 0.13 * legs;
+float lift = max(0.0, cos(ph)) * h * 0.06 * legs;
+float bob = sin((T * 4.6 + Ph) * 2.0) * h * 0.015;
+return float3(0, stride, lift + bob);""",
+    # nage : onde qui parcourt le corps, ailes larges qui ondulent (raie géante), lente
+    "nage": """float L = BYX - BYN, W = BXX - BXN;
+float a = (LP.y - BYN) / L;
+float lat = saturate(abs(LP.x - (BXX + BXN) * 0.5) / (W * 0.5));
+float wave = sin(a * 7.5 - T * 1.7 + Ph);
+return float3(wave * W * 0.04 * (1.0 - a), 0, wave * W * 0.09 * lat + sin(T * 0.8 + Ph) * W * 0.012);""",
+}
 
 
-FLAP_CODE = """float n = saturate(abs(dot(LP.xyz, Axis.xyz)) / Half);
-return float3(0, 0, Half * 0.22 * n * n * sin(T * 1.8));"""
-
-
-def peint_tex_material(name, texture, flap_axis=None, half_span=1.0):
+def peint_tex_material(name, texture, anim=None, box=None, glow=None):
     """Look peint pour un modèle texturé (créatures, barque) : couleur de la texture, même ombrage deux tons
-    que M_Peint. flap_axis : battement d'ailes procédural (WPO, axe d'envergure local, sans squelette)."""
+    que M_Peint. anim : animation procédurale (ANIM_CODES) ; glow : teinte de bioluminescence (abysses)."""
     path = f"/Game/Look/{name}"
-    digest = spec_digest("peint-tex-v2", PEINT_CODE, MPC_DIGEST, texture.get_path_name(), flap_axis, round(half_span, 2), FLAP_CODE)
+    box_def = ""
+    if box is not None:
+        box_def = "".join(f"#define {k} {v:.3f}\n" for k, v in zip(("BXN", "BXX", "BYN", "BYX", "BZN", "BZX"), box))
+    anim_code = box_def + ANIM_CODES[anim] if anim else None
+    digest = spec_digest("peint-tex-v4", PEINT_CODE, MPC_DIGEST, texture.get_path_name(), anim_code, glow)
     existing = eal.load_asset(path) if eal.does_asset_exist(path) else None
     if up_to_date(existing, digest):
         return existing
     mat = existing or tools.create_asset(name, "/Game/Look", unreal.Material, unreal.MaterialFactoryNew())
     mel.delete_all_material_expressions(mat)
     mat.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_UNLIT)
+    mat.set_editor_property("float_precision_mode", unreal.MaterialFloatPrecisionMode.MFPM_FULL)   # Quest : pas de calcul en 16 bits
     mat.set_editor_property("two_sided", True)
     tex = mel.create_material_expression(mat, unreal.MaterialExpressionTextureSample, -1300, -200)
     tex.set_editor_property("texture", texture)
@@ -1003,21 +1045,28 @@ def peint_tex_material(name, texture, flap_axis=None, half_span=1.0):
         cp.set_editor_property("collection", MPC)
         cp.set_editor_property("parameter_name", name_)
         mel.connect_material_expressions(cp, "", node, pin)
-    mel.connect_material_property(node, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
-    if flap_axis is not None:
+    out = node
+    if glow is not None:          # bioluminescence : la texture éclaire aussi par elle-même
+        gl = custom_node(mat, f"return C + Tex * float3({glow[0]}, {glow[1]}, {glow[2]});",
+                         unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["C", "Tex"], -250, 0)
+        mel.connect_material_expressions(node, "", gl, "C")
+        mel.connect_material_expressions(tex, "RGB", gl, "Tex")
+        out = gl
+    mel.connect_material_property(out, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
+    if anim_code is not None:
         lp = mel.create_material_expression(mat, unreal.MaterialExpressionLocalPosition, -900, 500)
         tt = mel.create_material_expression(mat, unreal.MaterialExpressionTime, -900, 600)
-        ax = mel.create_material_expression(mat, unreal.MaterialExpressionConstant3Vector, -900, 700)
-        ax.set_editor_property("constant", unreal.LinearColor(*flap_axis, 1.0))
-        hs = mel.create_material_expression(mat, unreal.MaterialExpressionConstant, -900, 800)
-        hs.set_editor_property("r", half_span)
-        fl = custom_node(mat, FLAP_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["LP", "T", "Axis", "Half"], -650, 600)
-        for src, pin in ((lp, "LP"), (tt, "T"), (ax, "Axis"), (hs, "Half")):
-            mel.connect_material_expressions(src, "", fl, pin)
+        ph = mel.create_material_expression(mat, unreal.MaterialExpressionScalarParameter, -900, 700)
+        ph.set_editor_property("parameter_name", "Phase")
+        ph.set_editor_property("use_custom_primitive_data", True)
+        ph.set_editor_property("primitive_data_index", 0)
+        an = custom_node(mat, anim_code, unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["LP", "T", "Ph"], -650, 600)
+        for src, pin in ((lp, "LP"), (tt, "T"), (ph, "Ph")):
+            mel.connect_material_expressions(src, "", an, pin)
         tr = mel.create_material_expression(mat, unreal.MaterialExpressionTransform, -400, 600)
         tr.set_editor_property("transform_source_type", unreal.MaterialVectorCoordTransformSource.TRANSFORMSOURCE_LOCAL)
         tr.set_editor_property("transform_type", unreal.MaterialVectorCoordTransform.TRANSFORM_WORLD)
-        mel.connect_material_expressions(fl, "", tr, "")
+        mel.connect_material_expressions(an, "", tr, "")
         mel.connect_material_property(tr, "", unreal.MaterialProperty.MP_WORLD_POSITION_OFFSET)
     mel.recompile_material(mat)
     if mel.get_statistics(mat).num_pixel_shader_instructions <= 0:
@@ -1026,8 +1075,10 @@ def peint_tex_material(name, texture, flap_axis=None, half_span=1.0):
     return mat
 
 
-def painted_model(model, name, flap=False):
+def painted_model(model, name, anim=None, glow=None):
     """Remplace les matériaux glTF du modèle par le look peint (texture de couleur conservée)."""
+    b = model.get_bounding_box()
+    box = (b.min.x, b.max.x, b.min.y, b.max.y, b.min.z, b.max.z)
     mats = []
     for i in range(model.get_num_sections(0) if hasattr(model, "get_num_sections") else 1):
         mi = model.get_material(i)
@@ -1037,21 +1088,17 @@ def painted_model(model, name, flap=False):
         if tex is None:
             mats.append(None)
             continue
-        axis, half_span = None, 1.0
-        if flap:
-            box = model.get_bounding_box()
-            ext = (box.max.x - box.min.x, box.max.y - box.min.y)
-            axis = (1.0, 0.0, 0.0) if ext[0] >= ext[1] else (0.0, 1.0, 0.0)
-            half_span = max(ext) / 2
-        mats.append(peint_tex_material(f"M_Peint_{name}{i}", tex, axis, half_span))
+        mats.append(peint_tex_material(f"M_Peint_{name}{i}", tex, anim, box, glow))
     return mats
+
+
+CREATURE_ANIM = {"GB_Volante": "vol", "GB_Troupeau": "marche", "GB_Abysses": "nage"}
+_phase = [0.0]
 
 
 def creature(label, kind, loc):
     rel_glb, mat, fallback, mscale, dz, max_tris = CREATURES[kind]
     model = import_glb(rel_glb, f"/Game/Assets/{kind[3:]}", max_tris)
-    if model is not None and kind in GLOW:
-        glow(f"/Game/Assets/{kind[3:]}", GLOW[kind])
     blk = place_mesh(SPHERE, label, mat, loc, scale=(1, 1, 1) if model else fallback)
     if model is None:
         return blk
@@ -1064,10 +1111,12 @@ def creature(label, kind, loc):
     m.root_component.set_editor_property("relative_location", unreal.Vector(0, 0, dz))
     m.root_component.set_editor_property("relative_rotation", unreal.Rotator(0, 0, -90.0))
     m.root_component.set_editor_property("relative_scale3d", unreal.Vector(*mscale))
-    if kind not in GLOW:      # les abysses gardent leur bioluminescence ; les autres prennent le look peint
-        for i, pm in enumerate(painted_model(model, kind[3:], flap=(kind == "GB_Volante"))):
-            if pm is not None:
-                m.static_mesh_component.set_material(i, pm)
+    # look peint et animation procédurale ; les abysses gardent leur bioluminescence (teinte GLOW)
+    for i, pm in enumerate(painted_model(model, kind[3:], CREATURE_ANIM.get(kind), GLOW.get(kind))):
+        if pm is not None:
+            m.static_mesh_component.set_material(i, pm)
+    _phase[0] += 1.7                                   # chaque animal à son pas
+    m.static_mesh_component.set_custom_primitive_data_float(0, _phase[0])
     return blk
 
 

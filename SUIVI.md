@@ -100,6 +100,17 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 
 ## Fait récemment
 
+- **72 Hz tenus sur toute la balade au Quest** (mesure du 18/10 à 14:34, GPU ≤ 92 %, `review/perf/greybox-20261018-1434.png`). Avant : 49-61 i/s de S2 à S5, GPU saturé.
+  - Les essais A/B en direct au casque (`pipeline/unreal/quest_ab.py`, commandes console par adb) ont montré une scène limitée par la géométrie, pas par les pixels. Mesures en S2 : MSAA 4x → 1x : -3,2 ms ; tous les maillages cachés : -8 ms ; résolution à 60 % : -0,6 ms ; eau : -0,5 ms ; brume : -0,7 ms.
+  - Correctifs : MSAA 2x ; faces dupliquées supprimées (herbe, fougères, roseaux) ; créatures cachées hors de leur passage (elles étaient dessinées sous le terrain) ; décor lointain caché pendant la brume dense de S1-S2 ; une seule lecture de texture de détail ; rendu fovéal activé.
+- **Retours du casque (14 h) corrigés** :
+  - Précision complète des shaders sur Quest. Le calcul en 16 bits pixellisait le ciel, le faisait bouger par à-coups et faussait le masque de l'eau dans la barque.
+  - Plancher opaque dans la barque, en plus du masque de l'eau.
+  - Lune peinte dans le ciel, derrière les nuages.
+  - Animations sans squelette : nage ondulante et lumineuse des abysses, marche du troupeau (pattes en diagonale, corps qui ondule).
+  - Envol des lucioles en spirale, avec des boucles propres à chaque luciole.
+  - Houppiers des arbres moyens plus ronds (touffes à 80 triangles au lieu de 20).
+- **Captures au casque** possibles par adb (outil de capture du Quest) : je peux relire ce que montre réellement le casque.
 - **APK de l'itération 10 installé sur le Quest** (586 Mo). La mesure de fréquence d'image n'a pas pu se faire : casque non porté, l'application ne rend rien et le Quest se met en pause. **À faire casque porté** (`python pipeline/unreal/quest_perf.py --variant greybox`, ou dis-moi « go »). C'est la mesure qui décide si j'ajoute encore du détail ou si j'allège (le décor est passé de ~250 k à ~530 k triangles, avec 5 lectures de texture par pixel sur le feuillage).
 - **Revue** : `planche-animatic.jpg` est produite automatiquement à chaque animatic (moments clés, rendu Movie Render Queue fidèle à la lumière par beat). Les captures de l'éditeur (`planche.jpg`) restent utiles pour les cadrages, pas pour la lumière.
 - **Itération 9-10 (rendu HD, polygones, eau, lanterne ; retours du 18/10 matin)** :

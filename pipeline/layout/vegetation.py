@@ -88,7 +88,7 @@ def main():
             pd = path_dist(px, py)
             if pd > 45 and rng.uniform() < 0.55:      # au loin, la lisière (plus bas) prend le relais
                 continue
-            detail = 2 if pd < 18 else 1 if pd < 38 else 0
+            detail = 2 if pd < 14 else 1 if pd < 34 else 0
             h = rng.uniform(10, 20) * (1.15 if pd > 30 else 1.0)
             m = chunk(px, py)
             if rng.uniform() < 0.25:
@@ -145,7 +145,7 @@ def main():
                     L = rng.uniform(2.5, 5)
                     P.log(chunk(px, py), [px, py, z + 0.15], [px + math.cos(a) * L, py + math.sin(a) * L, z + 0.25],
                           rng.uniform(0.15, 0.3), rng, COL["tronc"])
-            for _ in range(14):                                      # touffes d'herbe
+            for _ in range(11):                                      # touffes d'herbe
                 off = side * (p["width_m"] / 2 + rng.uniform(0.2, 9))
                 px, py = p["x"] + nx * off + rng.uniform(-0.5, 0.5), p["y"] + ny * off + rng.uniform(-0.5, 0.5)
                 z, d = F.at(px, py)
