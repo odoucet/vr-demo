@@ -71,6 +71,8 @@ def main():
         print(f"  {t:g} s → {dest.relative_to(ROOT)}", flush=True)
     adb("shell", "am", "broadcast", "-a", "com.oculus.vrpowermanager.automation_disable")
     adb("shell", "am", "force-stop", PKG)
+    # planche de toutes les captures du dossier (une reprise partielle remplace ses images sans perdre les autres)
+    shots = sorted((int(q.stem.rstrip("s")), q) for q in out_dir.glob("*s.jpg"))
     w = 480
     cols = 3
     rows = (len(shots) + cols - 1) // cols

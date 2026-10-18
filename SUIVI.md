@@ -57,6 +57,7 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 | D11 | Lanterne de proue dans le champ de vision : vue depuis la place assise, elle est au centre, juste au-dessus des yeux, pendant toute la balade (`review/iter-002/`) | place assise reculée sur le banc arrière (-1,20 m) et lanterne en papier lumineux ; alternatives : perche déportée sur le côté, lanterne plus haute, ou spectateur assis de biais | régénérer l'asset barque ou déplacer la caméra (`greybox.py`) | |
 | D12 | Placement des stems autour de la barque | stems Suno déposés le 18/10, placés selon `pipeline/audio/stems.yaml` | déposer les stems dans `audio/music/stems/` (créer le dossier), puis `python pipeline/build.py stems` : placement automatique autour de la barque (`pipeline/audio/stems.yaml` : piano devant à droite, cordes larges derrière, basses sous la barque, bois devant à gauche en hauteur, cuivres au loin, celesta au-dessus) | |
 | D13 | Versionner tes nouveaux fichiers audio (`audio/music/Luminous Wonder.wav` + 10 stems, ~460 Mo) | non versionnés (quota LFS GitHub) ; l'ancien MP3 supprimé de ton côté n'est pas non plus retiré du dépôt | je les ajoute au dépôt (LFS) et retire le MP3 | |
+| D14 | Marge de performance au Quest (S2 à 71,5 i/s, à la limite) | MSAA 2× gardé (bords nets) ; arbres lointains éclaircis | MSAA 1× : +2,7 ms de marge, bords crénelés qui scintillent ; ou alléger encore la végétation (moins de détail) ; ou plugin Meta XR pour demander le niveau GPU maximal (+10 %, installation à autoriser) | |
 | D9 | M'autoriser à installer Blender portable (sans droits admin, sur G:) | j'attends ; nettoyage des maillages via les nœuds ComfyUI en attendant | — | |
 
 ## 🔴 Bloquants
@@ -103,13 +104,28 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 
 ## Fait récemment
 
+- **Performance au Quest et reflet de la lisière (18/10, 19 h 45)** — **72 i/s de S3 à S7, 71,5 en S2** (regard droit devant, `review/perf/greybox-20261018-1943.png`). Avant : 62 en S2, 63 en S3. Captures au casque : `review/iter-019/planche-casque.jpg`.
+  - **Piège de mesure** : le casque posé sur le bureau ne regarde pas toujours au même endroit. Tourné vers le ciel, il donne 72 i/s ; droit devant, 62 avec la même version. Je vérifie désormais le cadrage par une capture avant de comparer deux mesures.
+  - **Diagnostic** avec le profileur GPU du casque (`ovrgpuprofiler`) : la scène est limitée par la géométrie (binning 4,5-4,9 ms par image) plus que par les pixels. Baisser la résolution ne change rien ; le MSAA coûte 3 ms.
+  - **Ombres du soleil coupées** : une carte d'ombres 4096 × 2048 coûtait 1,4 ms par image, pour rien, puisque le décor est non éclairé. La recapture du ciel à chaque image est coupée aussi. Gain : +4 i/s en S2, +7 en S3.
+  - **Herbe, fougères et fleurs en 3 niveaux de détail** : tronçon proche complet, 45 % puis 15 % des touffes au loin. La lisière est découpée en 8 morceaux, ce qui est hors du champ n'est plus traité.
+  - **Arbres lointains éclaircis** : à plus de 65 m de la rivière, 7 sur 10 sont retirés (cachés par les premiers rangs et la brume), sauf autour du lac. On passe de 2 325 à 1 900 arbres. À vérifier au casque : la forêt paraît-elle moins dense par les trouées ?
+  - **Écartés après mesure** :
+    - prépassage de profondeur (27 i/s) ;
+    - calculs du shader peint déplacés vers les sommets (pire : −3 i/s) ;
+    - résolution d'œil réduite à 0,9 (sans effet) ;
+    - suppression de la couche de profondeur OpenXR (sans effet) ;
+    - distance d'affichage des arbres (sans effet).
+    Une variante d'APK `exp` (`package_android.py --variant exp --cvars "…"`) permet ces essais sans toucher à la version normale.
+  - **Marge restante** : passer le MSAA de 2× à 1× ferait gagner 2,7 ms, mais les bords crénelés scintillent dans le casque. Je ne l'applique pas (voir D14).
+  - **Reflet de la lisière dans l'eau** : la masse sombre des arbres se reflète sur les côtés, le ciel au milieu du chenal, selon l'angle de vue réel. Une seule lecture de texture : la distance aux deux rives est précalculée dans la carte de l'eau, et le lac est traité par une intersection exacte avec son cercle.
 - **Corrections de l'enquête (18/10 au soir)** :
   - Plancher de la barque : texture projetée dans le repère de l'objet, elle ne défile plus.
   - Lucioles de l'envol et créatures : trajectoires en courbes (interpolation cubique), plus de virage sec à chaque clé.
   - Troncs couchés : parallèles à la berge, sol mesuré aux deux bouts, plus aucun bout en l'air ni dans l'eau (vérifié sur les 5).
   - Ambiance du lac : lue à partir de 35 s (Whisper ne détecte plus de parole).
   - **Brouillard** : densités calculées (50 % à ~32 m en S2, ~50 m en S3-S5, ~78 m en S6-S7), atténuation en hauteur 0,6 au lieu de 1,4 (les cimes restent dans la brume), début à 8 m ; la nuit, brume plus claire que les ombres.
-  - **Performance** : après ces ajouts, S2-S3 étaient tombés à 57-59 i/s (GPU saturé, `review/perf/greybox-20261018-1801.png`). Le calcul sous l'eau tournait sur tous les pixels, arbres compris. Il est maintenant réservé aux matériaux qui touchent l'eau (terrain, roches, racines, ponton, créature) ; feuillage, herbe, arbres et troncs couchés ont un matériau « sec ». **72 i/s sur toute la balade, GPU ≤ 85 %** (`review/perf/greybox-20261018-1812.png`). Captures au casque : `review/iter-017/planche-casque.jpg` (brume visible, rendu inchangé).
+  - **Performance** : calcul sous l'eau réservé aux matériaux qui touchent l'eau (terrain, roches, racines, ponton, créature) ; feuillage, herbe, arbres et troncs couchés ont un matériau « sec ». Le « 72 i/s » annoncé dans ce commit était faux : pendant cette mesure, le casque posé regardait le ciel. Mesures corrigées dans l'entrée suivante.
   - **Eau** : les objets immergés (pieux du ponton, racines, fond, corps de la créature) s'éteignent vers la couleur de l'eau profonde selon la longueur du trajet sous la surface, calculée exactement pour une eau plate. Liseré clair là où ils traversent la surface, halo lumineux de la créature sur l'eau, surface un peu plus opaque vers le bas (0,68 au lieu de 0,5).
 - **Enquête du 18/10 au soir (sans casque ni 3D locale)** : corrigée (entrée ci-dessus), diagnostic gardé pour mémoire :
   - **Sol de la barque qui défile** : le plancher utilise le matériau peint, dont la texture de détail est projetée en coordonnées monde ; la barque avance, la texture reste fixe dans le monde. Correctif : projection dans le repère de l'objet pour ce qui bouge (plancher, et toute pièce attachée à la barque).

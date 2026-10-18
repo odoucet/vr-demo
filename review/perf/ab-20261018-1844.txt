@@ -1,0 +1,5 @@
+Essais A/B à t = 40 s (temps GPU de l'application, moyenne sur 6 s)
+
+foliage.LODDistanceScale 0.6           réf 15.52 ms (57.6 i/s) → 14.82 ms (60.4 i/s)  gain +0.70 ms
+r.StaticMeshLODDistanceScale 1.6       réf 14.75 ms (59.6 i/s) → 14.90 ms (61.0 i/s)  gain -0.14 ms
+foliage.LODDistanceScale 0.4           réf 14.48 ms (61.4 i/s) → 13.93 ms (63.6 i/s)  gain +0.55 ms

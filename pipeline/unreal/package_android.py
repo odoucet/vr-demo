@@ -3,6 +3,7 @@
     python pipeline/unreal/package_android.py                 # Development → builds/android/
     python pipeline/unreal/package_android.py --config Shipping
     python pipeline/unreal/package_android.py --variant greybox   # J2 : greybox jouable, paquet distinct
+    python pipeline/unreal/package_android.py --variant exp --cvars "r.Mobile.EarlyZPass=1"   # essai de réglage
 
 Journal complet : builds/android/package.log. L'APK et son script d'installation sont archivés dans
 builds/android/Android_ASTC/. L'éditeur peut rester ouvert (le cook lit les assets sauvegardés).
@@ -28,6 +29,8 @@ VARIANTS = {
     # loin, pas de culling des arbres, MSAA 4x. Même contenu que greybox, autres réglages.
     "hd": ("/Game/Maps/Barque_Greybox.Barque_Greybox", "com.odoucet.barque.hd", "android_hd",
            "foliage.LODDistanceScale=8;foliage.CullDistanceScale=20;r.MSAACount=4;r.StaticMeshLODDistanceScale=0.2"),
+    # Essais de réglages de rendu en lecture seule (ex. r.Mobile.EarlyZPass), passés par --cvars : paquet distinct.
+    "exp": ("/Game/Maps/Barque_Greybox.Barque_Greybox", "com.odoucet.barque.exp", "android_exp", ""),
 }
 
 
@@ -35,13 +38,15 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--config", default="Development", choices=["Development", "Shipping"])
     ap.add_argument("--variant", default="j1", choices=list(VARIANTS))
+    ap.add_argument("--cvars", default="", help='variables ajoutées à celles de la variante, "a=1;b=2"')
     args = ap.parse_args()
     default_map, package_name, out_name, *extra = VARIANTS[args.variant]
+    extra = [";".join(x for x in (extra[0] if extra else "", args.cvars) if x)]
     OUT = OUT_ROOT / out_name
     OUT.mkdir(parents=True, exist_ok=True)
     # Écrit la configuration de la variante, empaquette, puis restaure la configuration par défaut (J1).
     env = dict(os.environ, BARQUE_DEFAULT_MAP=default_map, BARQUE_PACKAGE_NAME=package_name,
-               BARQUE_EXTRA_CVARS=extra[0] if extra else "")
+               BARQUE_EXTRA_CVARS=extra[0])
     subprocess.run([sys.executable, str(ROOT / "pipeline/unreal/create_project.py")], env=env, check=True)
     try:
         package(args, OUT)

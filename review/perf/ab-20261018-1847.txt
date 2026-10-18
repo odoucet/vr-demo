@@ -1,0 +1,3 @@
+Essais A/B à t = 40 s (temps GPU de l'application, moyenne sur 6 s)
+
+r.MSAACount 1                          réf 14.24 ms (62.8 i/s) → 11.44 ms (71.4 i/s)  gain +2.80 ms

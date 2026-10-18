@@ -1,0 +1,7 @@
+Essais A/B à t = 40 s (temps GPU de l'application, moyenne sur 6 s)
+
+r.MSAACount 1                          réf 15.92 ms (58.0 i/s) → 12.64 ms (69.2 i/s)  gain +3.28 ms
+vr.PixelDensity 0.85                   réf 14.96 ms (61.2 i/s) → 14.49 ms (60.6 i/s)  gain +0.47 ms
+showflag.instancedstaticmeshes 0       réf 14.64 ms (61.2 i/s) →  9.47 ms (70.2 i/s)  gain +5.17 ms
+showflag.staticmeshes 0                réf 13.92 ms (65.4 i/s) →  3.72 ms (71.4 i/s)  gain +10.20 ms
+showflag.fog 0                         réf 12.61 ms (69.4 i/s) → 12.42 ms (71.8 i/s)  gain +0.18 ms

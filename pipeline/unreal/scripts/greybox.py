@@ -222,9 +222,10 @@ with open(os.path.join(ROOT, "pipeline", "layout", "water_map.json"), encoding="
 WATER_CODE = """float3 v = -normalize(Dir.xyz);                       // de la caméra vers le point d'eau
 float2 rp = float2(WP.x, -WP.y) / 100.0;                   // repère du tracé, mètres
 float4 m = Texture2DSample(Map, MapSampler, (rp - float2(%(x0)f, %(y0)f)) / %(size)f);
-float2 flow = float2(m.r * 2.0 - 1.0, -(m.g * 2.0 - 1.0));  // courant, repère Unreal
-float speed = length(flow);
-float2 fd = speed > 0.01 ? flow / speed : float2(1.0, 0.0);
+float ca = (m.r - 0.5) * 0.5 * PI;                          // cap du courant (repère du tracé)
+float2 fd = float2(cos(ca), -sin(ca));                      // sens du courant, repère Unreal
+float lake = 1.0 - saturate((m.a - 0.5 + m.g) * 20.0);      // lac : courant presque nul
+float speed = lerp(1.0, 0.25, lake);
 float shore = m.b;                                          // 0 sur la rive, 1 à 8 m
 // rides dans le repère monde (traits le long de la rivière, qui tourne peu) ; flowmap à deux phases : elles
 // avancent avec le courant local sans s'étirer ni se casser là où il change de direction
@@ -246,8 +247,19 @@ float se = min(asin(clamp(rd.z, 0.0, 1.0)), 0.96);   // pas au-delà de 55° : a
 float sv = clamp(0.82 - se / (0.5 * PI) * 0.82 + (rip - 0.3) * 0.025, 0.0, 1.0);
 float3 sky = Texture2DSample(Sky, SkySampler, float2(su, sv)).rgb * Teinte.rgb;
 float fr = 0.06 + 0.94 * pow(1.0 - abs(v.z), 4.0);
-// reflet sombre des arbres de la rive (masses vert-bleu), plus marqué au ras de l'eau
-float trees = 1.0 - smoothstep(0.04, 0.35, shore + (r2 - 0.5) * 0.06);
+// reflet de la lisière : le rayon réfléchi part vers le haut, vers la rive qu'il rencontre (distance aux rives
+// précalculée dans la carte ; dans le lac, intersection exacte avec le cercle de la rive) ; les arbres (~15 m,
+// cime irrégulière) masquent le ciel sous l'angle de leur cime
+float2 hd = normalize(rd.xy + float2(1e-4, 0.0));
+float tanE = rd.z / max(length(rd.xy), 1e-3) + (rip - 0.3) * 0.06;
+float c = dot(hd, float2(fd.y, -fd.x));                     // vers la rive gauche si > 0
+float dist = c > 0.0 ? (m.a - 0.5) * 8000.0 / max(c, 0.05) : m.g * 4000.0 / max(-c, 0.05);
+float2 pc = WP.xy - float2(%(lkx).1f, %(lky).1f);
+float bq = dot(pc, hd);
+dist = max(lerp(dist, -bq + sqrt(max(%(lkr2).1f - dot(pc, pc) + bq * bq, 0.0)), lake), 50.0);
+float2 hp = WP.xy + hd * dist;
+float crown = 1500.0 * (0.78 + 0.14 * sin(hp.x * 0.0031 + sin(hp.y * 0.0023) * 2.0) + 0.08 * sin(hp.y * 0.0071 - hp.x * 0.0043));
+float trees = max(1.0 - smoothstep(0.02, 0.15, shore), saturate((crown / dist - tanE) * 3.0));
 float3 forest = Lumiere.rgb * float3(0.035, 0.065, 0.055) + Teinte.rgb * float3(0.01, 0.02, 0.03);
 float3 refl = lerp(sky, forest, trees * 0.85);
 float3 deep = (Lumiere.rgb * 0.5 + 0.2) * lerp(float3(0.02, 0.06, 0.07), float3(0.008, 0.03, 0.045), shore);
@@ -278,7 +290,8 @@ float halo = exp(-dot(da, da) / (420.0 * 420.0)) * saturate(1.0 + Ab.z / 900.0) 
 col += float3(0.15, 1.6, 2.0) * 0.18 * halo * (0.6 + 0.4 * rip);
 float op = max(lerp(0.68, 0.97, fr), max(foam, boatfoam * 0.8));
 op *= smoothstep(0.9, 1.02, hull);
-return float4(col, op);""" % {"lantx": LANTERN_LOCAL[0], "cr": CANDLE_RGB[0], "cg": CANDLE_RGB[1], "cb": CANDLE_RGB[2], "x0": WATER_MAP["x0"], "y0": WATER_MAP["y0"], "size": WATER_MAP["size_m"], "drift": SKY_DRIFT}
+return float4(col, op);""" % {"lantx": LANTERN_LOCAL[0], "cr": CANDLE_RGB[0], "cg": CANDLE_RGB[1], "cb": CANDLE_RGB[2], "x0": WATER_MAP["x0"], "y0": WATER_MAP["y0"], "size": WATER_MAP["size_m"], "drift": SKY_DRIFT,
+   "lkx": RIVER["lake"]["x"] * 100, "lky": -RIVER["lake"]["y"] * 100, "lkr2": (RIVER["lake"]["radius_m"] * 100) ** 2}
 
 
 BRUSH_PNG = os.path.join(ROOT, "assets", "textures", "pinceau.png")
@@ -757,7 +770,7 @@ KIND_MATS = {"feuillage": "PeintFeuillage", "bois": "PeintBoisSec", "sol": "Pein
 for name, data in VEG["meshes"].items():
     GEO["meshes"][name] = data
     MESH_MATS[name] = KIND_MATS.get(name.rsplit("_", 1)[-1], "Peint")
-MESHES = {name: build_mesh(name, data) for name, data in GEO["meshes"].items()}
+CHUNK_LOD_SCREEN = (1.0, 0.5, 0.28)    # tronçon de 30 m : fin à moins de ~37 m de son centre, allégé jusqu'à ~66 m
 _fv = [[0.0, 0.0, 0.05]] + [[1.45 * math.cos(2 * math.pi * k / 32), 0.40 * math.sin(2 * math.pi * k / 32), 0.05] for k in range(32)]
 def build_lod_mesh(name, lods, screen_sizes=(1.0, 0.85, 0.42)):
     """Maillage statique à plusieurs niveaux de détail (LOD0 le plus fin) ; reconstruit si une source change."""
@@ -780,6 +793,8 @@ def build_lod_mesh(name, lods, screen_sizes=(1.0, 0.85, 0.42)):
 
 TREE_KIND_MATS = {"feuillage": "PeintArbre", "bois": "PeintTronc"}
 TREE_MESHES = {}
+MESHES = {name: (build_lod_mesh(name, data["lods"], CHUNK_LOD_SCREEN) if "lods" in data else build_mesh(name, data))
+          for name, data in GEO["meshes"].items()}
 for pname, lods in VEG.get("prototypes", {}).items():
     for kind in TREE_KIND_MATS:
         if kind in lods["lod0"]:
@@ -789,7 +804,8 @@ for pname, lods in VEG.get("prototypes", {}).items():
 FLOOR_MESH = build_mesh("PlancherBarque", {"vertices": _fv, "triangles": [[0, 1 + k, 1 + (k + 1) % 32] for k in range(32)],
                                            "normals": [[0, 0, 1]] * len(_fv), "color": [0.32, 0.22, 0.14, 0.8]})
 OBSOLETE = ["SM_Foret", "SM_ArbreColossal", "SM_ArbreLanternes", "M_GB_Foret"] + \
-    [f"SM_{n}" for n in ("Lisiere", "ArbreColossalPeint", "ArbreLanternesPeint", "Collines")] + [f"SM_Vegetation{i:02d}" for i in range(12)]
+    [f"SM_{n}" for n in ("Lisiere", "ArbreColossalPeint", "ArbreLanternesPeint", "Collines")] + [f"SM_Vegetation{i:02d}" for i in range(12)] + \
+    ["SM_Lisiere_feuillage", "SM_Lisiere_bois"]    # lisière découpée en 8 morceaux
 for old in OBSOLETE:   # remplacés (look peint, puis découpage par type de surface)
     if eal.does_asset_exist(f"{GB}/{old}"):
         eal.delete_asset(f"{GB}/{old}")
@@ -1045,7 +1061,7 @@ if os.path.exists(SKY_PNG):
         sky_tex = eal.load_asset(f"{GB}/ciel")
         eal.set_metadata_tag(sky_tex, "source_sha1", sky_digest)
         eal.save_loaded_asset(sky_tex)
-    SKY_WATER_VERSION = "ciel-eau-v9"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
+    SKY_WATER_VERSION = "ciel-eau-v12"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
     sky_mat_path = f"{GB}/M_GB_CielPeint"
     sky_mat = eal.load_asset(sky_mat_path) if eal.does_asset_exist(sky_mat_path) else None
     rebuild_sky_water = not up_to_date(sky_mat, spec_digest(SKY_WATER_VERSION, sky_digest, MPC_DIGEST, WATER_CODE,
@@ -1372,9 +1388,12 @@ sun = tag(actors.spawn_actor_from_class(unreal.DirectionalLight, unreal.Vector(0
 sun.light_component.set_editor_property("intensity", 14.0)
 sun.light_component.set_editor_property("light_color", unreal.Color(255, 170, 120, 255))
 sun.light_component.set_editor_property("atmosphere_sun_light", True)
+# pas d'ombres : tout le décor est non éclairé (M_Peint) ; trace GPU au Quest du 18/10 : la carte d'ombres
+# (4096 × 2048) coûtait 1,4 ms par image pour rien
+sun.light_component.set_editor_property("cast_shadows", False)
 tag(actors.spawn_actor_from_class(unreal.SkyAtmosphere, unreal.Vector(0, 0, 0)), "Ciel")
 sky = tag(actors.spawn_actor_from_class(unreal.SkyLight, unreal.Vector(0, 0, 500)), "LumiereCiel")
-sky.light_component.set_editor_property("real_time_capture", True)
+sky.light_component.set_editor_property("real_time_capture", False)   # capture unique : rien d'éclairé ne bouge le ciel
 sky.light_component.set_editor_property("intensity", 4.0)
 fog = tag(actors.spawn_actor_from_class(unreal.ExponentialHeightFog, unreal.Vector(0, 0, 0)), "Brume")
 fc = fog.component

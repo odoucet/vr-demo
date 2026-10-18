@@ -1,0 +1,4 @@
+Essais A/B à t = 40 s (temps GPU de l'application, moyenne sur 6 s)
+
+showflag.translucency 0                réf 15.33 ms (57.0 i/s) → 14.53 ms (59.6 i/s)  gain +0.80 ms
+showflag.fog 0                         réf 14.99 ms (60.8 i/s) → 13.89 ms (61.0 i/s)  gain +1.10 ms

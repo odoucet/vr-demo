@@ -1,0 +1,7 @@
+Mesure : exp-20261018-1856.log, 96 échantillons (1/s), chargement estimé à 0.0 s
+
+beat          FPS min  FPS moy  images perdues  GPU % max  CPU % max
+S1-NOIR             1     24.5             767         97         52  ⚠
+S2-PONTON          24     27.6            1227         92         24  ⚠
+S3-ABYSSE          24     28.8            2342         99         34  ⚠
+S4-GUE             33     35.3             115         98         27  ⚠

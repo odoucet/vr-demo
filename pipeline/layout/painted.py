@@ -61,6 +61,13 @@ class Mesh:
     def __init__(self):
         self.v, self.t, self.n, self.c = [], [], [], []
         self.count = 0
+        self.g, self.group = [], -1      # groupe de détail de chaque ajout (-1 : toujours gardé)
+
+    def detail(self):
+        """Ouvre un groupe de détail (une touffe d'herbe, une fougère, un massif de fleurs) : les niveaux de détail
+        allégés gardent ou retirent le groupe entier (to_dict(keep))."""
+        self.group = len(self.g) + 1
+        return self
 
     def add(self, verts, tris, normals, colors):
         verts, normals = np.asarray(verts, float), np.asarray(normals, float)
@@ -72,6 +79,7 @@ class Mesh:
         self.n.append(normals)
         self.c.append(colors)
         self.t.append(np.asarray(tris, int) + self.count)
+        self.g.append(self.group)
         self.count += len(verts)
 
     def extend(self, other):
@@ -82,19 +90,33 @@ class Mesh:
             self.n.append(n)
             self.c.append(c)
             self.t.append(t + offset)
+        self.g.extend([-1] * len(other.v))
         self.count += other.count
 
     @property
     def triangles(self):
         return sum(len(t) for t in self.t)
 
-    def to_dict(self):
+    @property
+    def has_detail(self):
+        return any(g >= 0 for g in self.g)
+
+    def to_dict(self, keep=1.0):
+        """keep < 1 : niveau de détail allégé, ne garde qu'une part des groupes de détail (tirage fixe par groupe)."""
         if not self.v:
             return {"vertices": [], "triangles": [], "normals": [], "colors": []}
-        return {"vertices": np.round(np.concatenate(self.v), 3).tolist(),
-                "triangles": np.concatenate(self.t).tolist(),
-                "normals": np.round(np.concatenate(self.n), 3).tolist(),
-                "colors": np.round(np.concatenate(self.c), 3).tolist()}
+        sel = [i for i, g in enumerate(self.g) if g < 0 or keep >= 1.0 or (g * 0.6180339887) % 1.0 < keep]
+        v, t, n, c, base = [], [], [], [], 0
+        for i in sel:
+            v.append(self.v[i])
+            n.append(self.n[i])
+            c.append(self.c[i])
+            t.append(self.t[i] - self.t[i].min() + base if len(self.t[i]) else self.t[i])
+            base += len(self.v[i])
+        return {"vertices": np.round(np.concatenate(v), 3).tolist(),
+                "triangles": np.concatenate(t).tolist(),
+                "normals": np.round(np.concatenate(n), 3).tolist(),
+                "colors": np.round(np.concatenate(c), 3).tolist()}
 
 
 class Bundle:
@@ -112,6 +134,22 @@ class Bundle:
 
 def part(mesh, kind):
     return mesh.parts[kind] if isinstance(mesh, Bundle) else mesh
+
+
+def detail_group(fn):
+    """Primitive de détail au sol (touffe, fougère, fleurs) : un groupe que les niveaux de détail allégés gardent
+    ou retirent en entier."""
+    import functools
+
+    @functools.wraps(fn)
+    def wrapped(mesh, *a, **k):
+        m = part(mesh, "sol")
+        m.detail()
+        try:
+            return fn(mesh, *a, **k)
+        finally:
+            m.group = -1
+    return wrapped
 
 
 def ao_vertical(z, z0, z1, low=0.45):
@@ -263,6 +301,7 @@ def rock(mesh, x, y, z, size, rng, color, subdiv=1):
          ao=(z - r[2] * 0.2, z + r[2] * 1.2, 0.45), wobble=0.22, kind="roche")
 
 
+@detail_group
 def grass_tuft(mesh, x, y, z, height, rng, color, blades=7):
     """Touffe d'herbe : lames triangulaires double face, normales vers le haut et l'extérieur (lumière franche)."""
     col = jitter(color, rng, 0.08)
@@ -285,6 +324,7 @@ def log(mesh, a, b, radius, rng, color):
     cylinder(mesh, a, b, radius, radius * 0.9, jitter(color, rng), sides=7, ao_low=0.55, cap=True)
 
 
+@detail_group
 def fern(mesh, x, y, z, size, rng, color, fronds=7):
     """Fougère : frondes arquées en éventail (deux segments), double face."""
     col = jitter(color, rng, 0.08)
@@ -304,6 +344,7 @@ def fern(mesh, x, y, z, size, rng, color, fronds=7):
         part(mesh, "sol").add(verts, tris, [n] * 4, colors)
 
 
+@detail_group
 def flower_patch(mesh, x, y, z, rng, color, stems=9, radius=0.5):
     """Massif de fleurs : tiges fines et têtes colorées (petites boules)."""
     for _ in range(stems):

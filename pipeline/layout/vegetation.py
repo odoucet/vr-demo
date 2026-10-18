@@ -27,6 +27,7 @@ OUT = LAYOUT / "vegetation.json"
 LOOK = yaml.safe_load((ROOT / "pipeline" / "style" / "look.yaml").read_text(encoding="utf-8"))
 COL = {k: ([P.hex_rgb(c) for c in v] if isinstance(v, list) else P.hex_rgb(v)) for k, v in LOOK.items()}
 CHUNK_S = 30          # un tronçon par 30 s de parcours
+DETAIL_KEEP = (1.0, 0.45, 0.15)   # part des touffes gardée par niveau de détail des tronçons (mesure Quest du 18/10)
 
 
 class Field:
@@ -96,6 +97,12 @@ def main():
             pd = path_dist(px, py)
             if pd > 45 and rng.uniform() < 0.55:      # au loin, la lisière (plus bas) prend le relais
                 continue
+            # au-delà de 65 m de la rivière, cachés par les premiers rangs et la brume : 7 sur 10 retirés (tirage
+            # fixe par position, sans décaler les autres arbres), sauf autour du lac, vu de loin. Mesure Quest du
+            # 18/10 : la forêt instanciée coûte ~5 ms par image, surtout par le nombre d'instances.
+            far_lake = math.hypot(px - river["lake"]["x"], py - river["lake"]["y"]) > river["lake"]["radius_m"] + 70
+            if pd > 65 and far_lake and (math.sin(px * 12.9898 + py * 78.233) * 43758.5453) % 1.0 < 0.7:
+                continue
             h = rng.uniform(10, 20) * (1.15 if pd > 30 else 1.0)
             conifer = rng.uniform() < 0.25
             name = f"Resineux{rng.integers(3)}" if conifer else f"Feuillu{rng.integers(6)}"
@@ -114,10 +121,11 @@ def main():
                                                 for l in range(3)) + f" triangles, {len(instances[name])} instances")
 
     # --- Lisière : masses de feuillage en bord de terrain, qui ferment le monde ---------------------------------
-    edge = P.Bundle()
+    edges = {}       # découpée en 8 morceaux (côté × moitié) : ce qui est hors du champ n'est plus traité par le GPU
     for _ in range(620):
         side = rng.integers(4)
         u = rng.uniform()
+        edge = edges.setdefault(f"Lisiere{side}{int(u * 2)}", P.Bundle())
         px = b["x0"] + (b["x1"] - b["x0"]) * (u if side < 2 else (0.02 if side == 2 else 0.98)) + rng.normal(0, 4)
         py = b["y0"] + (b["y1"] - b["y0"]) * ((0.02 if side == 0 else 0.98) if side < 2 else u) + rng.normal(0, 4)
         z, d = F.at(min(max(px, b["x0"]), b["x1"] - 1), min(max(py, b["y0"]), b["y1"] - 1))
@@ -287,7 +295,8 @@ def main():
                    normal_center=c - [0, 0, 30], ao=(-20, rad * 0.2, 0.6), wobble=0.08)
 
     bundles = dict(sorted(chunks.items()))
-    bundles.update({"Lisiere": edge, "ArbreColossalPeint": colossal, "ArbreLanternesPeint": lantern, "Collines": hills})
+    bundles.update(dict(sorted(edges.items())))
+    bundles.update({"ArbreColossalPeint": colossal, "ArbreLanternesPeint": lantern, "Collines": hills})
     meshes, total = {}, 0
     for k, bnd in bundles.items():
         print(f"  {k:22s} {bnd.triangles:8d} triangles  " +
@@ -297,7 +306,9 @@ def main():
             if m.triangles:
                 meshes[f"{k}_{kind}"] = m
     print(f"  {'total':22s} {total:8d} triangles hors arbres ({trees} arbres instanciés)")
-    OUT.write_text(json.dumps({"units": "m", "meshes": {k: m.to_dict() for k, m in meshes.items()},
+    # herbe, fougères et fleurs des tronçons : 3 niveaux de détail (tous les groupes, DETAIL_KEEP[1], DETAIL_KEEP[2])
+    out = {k: ({"lods": [m.to_dict(f) for f in DETAIL_KEEP]} if m.has_detail else m.to_dict()) for k, m in meshes.items()}
+    OUT.write_text(json.dumps({"units": "m", "meshes": out,
                                "lanternes": lanterns, "prototypes": prototypes, "instances": instances}),
                    encoding="utf-8")
     print(f"→ {OUT.relative_to(ROOT)} ({OUT.stat().st_size / 1e6:.1f} Mo)")

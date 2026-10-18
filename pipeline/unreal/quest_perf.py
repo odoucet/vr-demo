@@ -29,7 +29,7 @@ from tools import CONFIG, from_windows  # noqa: E402
 
 OUT = ROOT / "review" / "perf"
 PACKAGES = {"j1": "com.odoucet.barque", "greybox": "com.odoucet.barque.greybox", "j1b": "com.odoucet.barque.j1b",
-            "hd": "com.odoucet.barque.hd"}
+            "hd": "com.odoucet.barque.hd", "exp": "com.odoucet.barque.exp"}
 ACTIVITY = "com.epicgames.unreal.GameActivity"
 LINE = re.compile(r"FPS=(\d+)/(\d+).*?Stale=(\d+).*?GPU%=([\d.]+).*?CPU%=([\d.]+)")
 TARGET_FPS = 72

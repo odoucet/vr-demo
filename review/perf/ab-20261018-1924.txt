@@ -1,0 +1,5 @@
+Essais A/B à t = 40 s (temps GPU de l'application, moyenne sur 6 s)
+
+foliage.CullDistanceScale 0.6          réf 13.69 ms (65.4 i/s) → 13.71 ms (67.2 i/s)  gain -0.01 ms
+foliage.CullDistanceScale 0.4          réf 13.07 ms (69.2 i/s) → 13.44 ms (69.6 i/s)  gain -0.37 ms
+r.MSAACount 1                          réf 12.94 ms (69.6 i/s) → 10.23 ms (71.8 i/s)  gain +2.71 ms

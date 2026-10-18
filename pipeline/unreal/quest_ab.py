@@ -54,13 +54,14 @@ def main():
     ap.add_argument("--at", type=float, default=25.0, help="secondes après le lancement")
     ap.add_argument("--undo", nargs="*", default=None, help="commandes d'annulation (même ordre)")
     ap.add_argument("--dwell", type=float, default=6.0)
+    ap.add_argument("--package", default=PKG, help="paquet lancé (ex. com.odoucet.barque.exp)")
     args = ap.parse_args()
     if "Asleep" in adb("shell", "dumpsys", "power").stdout:     # réveil seulement si endormi (sinon ouvre le menu)
         adb("shell", "input", "keyevent", "KEYCODE_WAKEUP")
     adb("shell", "cmd", "media_session", "volume", "--stream", "3", "--set", "1")   # volume bas (Olivier, 18/10)
     adb("shell", "am", "broadcast", "-a", "com.oculus.vrpowermanager.prox_close")
-    adb("shell", "am", "force-stop", PKG)
-    adb("shell", "am", "start", "-n", f"{PKG}/com.epicgames.unreal.GameActivity")
+    adb("shell", "am", "force-stop", args.package)
+    adb("shell", "am", "start", "-n", f"{args.package}/com.epicgames.unreal.GameActivity")
     time.sleep(args.at)
     report = [f"Essais A/B à t = {args.at:.0f} s (temps GPU de l'application, moyenne sur {args.dwell:.0f} s)", ""]
     for i, cmd in enumerate(args.commands):

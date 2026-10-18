@@ -2,10 +2,12 @@
 
     python pipeline/layout/water_map.py      # → assets/textures/eau_carte.png + pipeline/layout/water_map.json
 
-Canaux : R, G = direction du courant (cap du tracé le plus proche, encodé 0-1) ; B = distance à la berge dans
-l'eau (0 sur la rive, 1 à 8 m et plus) ; A = 1. Le matériau s'en sert pour faire couler les rides dans le sens
-du courant, poser l'écume le long des berges, assombrir le reflet des arbres près des rives et foncer le
-chenal profond. Emprise (repère du tracé, m) dans water_map.json. 1024 px de côté. Déterministe.
+Canaux : R = cap du courant (cap du tracé le plus proche, ±45° encodés 0-1) ; G = distance à la rive droite (0-40 m
+→ 0-1), A = 0,5 + distance à la rive gauche (0-40 m → 0,5-1 : jamais transparent, l'import PNG d'Unreal remplace
+la couleur des pixels d'alpha nul), perpendiculairement au tracé ; dans le lac (courant presque nul) G = 0, A = 0,5 ;
+B = distance à la berge la plus proche dans l'eau (0 sur la rive, 1 à 8 m et plus). Le matériau s'en sert pour
+faire couler les rides dans le sens du courant, poser l'écume le long des berges, foncer le chenal profond et
+placer le reflet de la lisière (distance à la rive dans la direction du rayon réfléchi, une seule lecture). Emprise (repère du tracé, m) dans water_map.json. 1024 px de côté. Déterministe.
 """
 import json
 import math
@@ -42,12 +44,12 @@ def main():
     d = np.minimum(d_river, d_lake)
     shore = np.clip(-d / 8.0, 0, 1)
     flow_h = head[seg]
-    # Lac : courant presque nul, direction tournante douce
+    # écart latéral au tracé (positif à gauche) → distances aux deux rives ; lac : 0 et 0 (courant presque nul)
+    lat = -(gx - px[seg]) * np.sin(flow_h) + (gy - py[seg]) * np.cos(flow_h)
     calm = d_lake < d_river
-    fx, fy = np.cos(flow_h), np.sin(flow_h)
-    fx = np.where(calm, fx * 0.25, fx)
-    fy = np.where(calm, fy * 0.25, fy)
-    img = np.stack([fx * 0.5 + 0.5, fy * 0.5 + 0.5, shore, np.ones_like(shore)], axis=-1)
+    d_left = np.where(calm, 0.0, np.clip(width[seg] / 2 - lat, 0, 40))
+    d_right = np.where(calm, 0.0, np.clip(width[seg] / 2 + lat, 0, 40))
+    img = np.stack([np.degrees(flow_h) / 90.0 + 0.5, d_right / 40.0, shore, 0.5 + d_left / 80.0], axis=-1)
     OUT.parent.mkdir(parents=True, exist_ok=True)
     Image.fromarray((np.clip(img, 0, 1) * 255).astype(np.uint8), "RGBA").save(OUT)
     (LAYOUT / "water_map.json").write_text(json.dumps({"x0": b["x0"], "y0": b["y0"], "size_m": size}), encoding="utf-8")
