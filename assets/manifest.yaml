@@ -393,14 +393,91 @@ assets:
   source: calculée sur le terrain du greybox, pipeline/layout/water_map.py
   licence: généré localement
   generated: '2026-10-18'
-- id: texture/arbres-atlas
+- id: sprite/arbres
   type: texture
   placeholder: true
-  file: assets/textures/arbres_atlas.png
-  source: 8 arbres peints générés en local (Z-Image Turbo), détourés (BiRefNet, nœud RemoveBackground), assemblés en atlas 4 × 2 ; variante B de la comparaison des arbres
+  file: assets/textures/sprite_arbres.png
+  source: 8 images peintes générées en local (Z-Image Turbo), détourées (BiRefNet, nœud RemoveBackground), atlas 4 × 2 ; images sources dans assets/textures/sprites/arbres/
   workflow: pipeline/comfy/workflows/z_image_turbo_t2i.json + LoadBackgroundRemovalModel / RemoveBackground
-  script: pipeline/comfy/trees.py
-  seed: 1000-1007
-  prompt: pipeline/comfy/trees.py (BASE + KINDS, bloc de style du ciel)
+  script: pipeline/comfy/sprites.py arbres
+  seed: 1000-1007 (sauf graines propres indiquées dans sprites.yaml)
+  prompt: pipeline/comfy/sprites.yaml (famille arbres, gabarit tree)
   licence: généré localement
-  generated: '2026-10-18'
+  generated: '2026-10-19'
+- id: sprite/arbres2
+  type: texture
+  placeholder: true
+  file: assets/textures/sprite_arbres2.png
+  source: 8 images peintes générées en local (Z-Image Turbo), détourées (BiRefNet, nœud RemoveBackground), atlas 4 × 2 ; images sources dans assets/textures/sprites/arbres2/
+  workflow: pipeline/comfy/workflows/z_image_turbo_t2i.json + LoadBackgroundRemovalModel / RemoveBackground
+  script: pipeline/comfy/sprites.py arbres2
+  seed: 1100-1107 (sauf graines propres indiquées dans sprites.yaml)
+  prompt: pipeline/comfy/sprites.yaml (famille arbres2, gabarit tree)
+  licence: généré localement
+  generated: '2026-10-19'
+- id: sprite/buissons
+  type: texture
+  placeholder: true
+  file: assets/textures/sprite_buissons.png
+  source: 8 images peintes générées en local (Z-Image Turbo), détourées (BiRefNet, nœud RemoveBackground), atlas 4 × 2 ; images sources dans assets/textures/sprites/buissons/
+  workflow: pipeline/comfy/workflows/z_image_turbo_t2i.json + LoadBackgroundRemovalModel / RemoveBackground
+  script: pipeline/comfy/sprites.py buissons
+  seed: 1200-1207 (sauf graines propres indiquées dans sprites.yaml)
+  prompt: pipeline/comfy/sprites.yaml (famille buissons, gabarit plant)
+  licence: généré localement
+  generated: '2026-10-19'
+- id: sprite/fourres
+  type: texture
+  placeholder: true
+  file: assets/textures/sprite_fourres.png
+  source: 8 images peintes générées en local (Z-Image Turbo), détourées (BiRefNet, nœud RemoveBackground), atlas 4 × 2 ; images sources dans assets/textures/sprites/fourres/
+  workflow: pipeline/comfy/workflows/z_image_turbo_t2i.json + LoadBackgroundRemovalModel / RemoveBackground
+  script: pipeline/comfy/sprites.py fourres
+  seed: 1300-1307 (sauf graines propres indiquées dans sprites.yaml)
+  prompt: pipeline/comfy/sprites.yaml (famille fourres, gabarit plant)
+  licence: généré localement
+  generated: '2026-10-19'
+- id: sprite/lisieres
+  type: texture
+  placeholder: true
+  file: assets/textures/sprite_lisieres.png
+  source: 4 images peintes générées en local (Z-Image Turbo), détourées (BiRefNet, nœud RemoveBackground), atlas 1 × 4 ; images sources dans assets/textures/sprites/lisieres/
+  workflow: pipeline/comfy/workflows/z_image_turbo_t2i.json + LoadBackgroundRemovalModel / RemoveBackground
+  script: pipeline/comfy/sprites.py lisieres
+  seed: 1400-1403 (sauf graines propres indiquées dans sprites.yaml)
+  prompt: pipeline/comfy/sprites.yaml (famille lisieres, gabarit strip)
+  licence: généré localement
+  generated: '2026-10-19'
+- id: sprite/feuillages
+  type: texture
+  placeholder: true
+  file: assets/textures/sprite_feuillages.png
+  source: 8 images peintes générées en local (Z-Image Turbo), détourées (BiRefNet, nœud RemoveBackground), atlas 4 × 2 ; images sources dans assets/textures/sprites/feuillages/
+  workflow: pipeline/comfy/workflows/z_image_turbo_t2i.json + LoadBackgroundRemovalModel / RemoveBackground
+  script: pipeline/comfy/sprites.py feuillages
+  seed: 1500-1507 (sauf graines propres indiquées dans sprites.yaml)
+  prompt: pipeline/comfy/sprites.yaml (famille feuillages, gabarit foliage)
+  licence: généré localement
+  generated: '2026-10-19'
+- id: sprite/vie
+  type: texture
+  placeholder: true
+  file: assets/textures/sprite_vie.png
+  source: 8 images peintes générées en local (Z-Image Turbo), détourées (BiRefNet, nœud RemoveBackground), atlas 4 × 2 ; images sources dans assets/textures/sprites/vie/
+  workflow: pipeline/comfy/workflows/z_image_turbo_t2i.json + LoadBackgroundRemovalModel / RemoveBackground
+  script: pipeline/comfy/sprites.py vie
+  seed: 1600-1607 (sauf graines propres indiquées dans sprites.yaml)
+  prompt: pipeline/comfy/sprites.yaml (famille vie, gabarit small)
+  licence: généré localement
+  generated: '2026-10-19'
+- id: sprite/eau
+  type: texture
+  placeholder: true
+  file: assets/textures/sprite_eau.png
+  source: 8 images peintes générées en local (Z-Image Turbo), détourées (BiRefNet, nœud RemoveBackground), atlas 4 × 2 ; images sources dans assets/textures/sprites/eau/
+  workflow: pipeline/comfy/workflows/z_image_turbo_t2i.json + LoadBackgroundRemovalModel / RemoveBackground
+  script: pipeline/comfy/sprites.py eau
+  seed: 1700-1707 (sauf graines propres indiquées dans sprites.yaml)
+  prompt: pipeline/comfy/sprites.yaml (famille eau, gabarit top)
+  licence: généré localement
+  generated: '2026-10-19'

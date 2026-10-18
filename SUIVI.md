@@ -62,6 +62,35 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 | D16 | Arbres (« le plus moche ») ou autre décor (statues géantes ?) | arbres actuels ; pistes à débattre (voir « Priorités ») | — | |
 | D9 | M'autoriser à installer Blender portable (sans droits admin, sur G:) | j'attends ; nettoyage des maillages via les nœuds ComfyUI en attendant | — | |
 
+## ▶ Chantier « tout en images peintes » (18/10 au soir, 8 h d'autonomie)
+
+Retour d'Olivier : les arbres peints (variante B) « rendent vachement bien » ; il faut exploiter l'idée à fond pour donner
+vie et volume au parcours (la scène paraît « vide » et « low poly »). Plan :
+1. **Système générique de sprites peints** : catalogue `pipeline/comfy/sprites.yaml` (7 familles : arbres ×2, buissons,
+   fourrés, lisières, feuillages, petite faune), générées en local et détourées (`pipeline/comfy/sprites.py`), placées par
+   `pipeline/layout/sprites_layout.py`, matériau unique à 4 modes (face, sphère, fixe, sol) dans `greybox.py`.
+2. **Scène repeuplée** : forêt peinte redensifiée, premier rang d'arbres de berge, berges et sous-bois garnis, bandes de
+   lisière et de collines peintes à l'horizon, houppiers de l'arbre colossal et de l'arbre de l'île en touffes peintes,
+   lotus et pétales sur l'eau. La forêt 3D et la lisière en boules sont retirées.
+3. **Vie** : oiseaux, papillons, libellules, feuilles qui tombent (animés dans le shader).
+4. Vérifications au casque et mesures à chaque étape ; un commit par étape.
+
+**Étape 1 faite (19/10, nuit)** — scène repeuplée en images peintes, **72 i/s sur toute la balade au Quest, GPU ≤ 95 %**
+(`review/perf/`, captures `review/iter-025/planche-casque.jpg`). Remplacer la forêt 3D par des plans peints a libéré du budget,
+alors que la scène est bien plus dense :
+- **9 familles de sprites** générées en local : arbres ×2 (16), buissons, fourrés, bandes de lisière et de collines, touffes
+  de feuillage, nénuphars et lotus vus de dessus, petite faune volante, faune des berges. 64 images, toutes détourées.
+- **~7 800 sprites posés** : forêt redensifiée, premier rang d'arbres de berge (saules, aulnes, bouleaux, cerisiers), berges
+  et sous-bois garnis (buissons, fougères, iris, lys, digitales, massettes au ras de l'eau), voûte de branches et lianes
+  au-dessus de l'eau, deux anneaux de lisières et de collines, houppiers des grands arbres en touffes peintes,
+  nénuphars peints (les nénuphars 3D sont retirés).
+- **Vie** : hérons qui tournent haut, hirondelles au ras de l'eau, papillons qui ferment les ailes, libellules, feuilles et
+  pétales qui tombent (tout animé dans le shader). Oiseaux et insectes partent à la tombée de la nuit. Faune posée :
+  cerfs qui boivent, renards, lapins, canards, grenouilles, martin-pêcheur sur le ponton, chouettes sur des souches (nuit),
+  tortues.
+- Retirés : forêt 3D, lisière et collines en boules, buissons, fougères et fleurs 3D des berges (gardés : herbe, roseaux,
+  rochers, troncs couchés).
+
 ## ▶ APK de comparaison des arbres (installé au Quest, 18/10)
 
 La forêt change toutes les 12 s pendant toute la balade, avec une étiquette à la proue :

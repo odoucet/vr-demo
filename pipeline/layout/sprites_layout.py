@@ -1,0 +1,299 @@
+"""Placement des sprites peints (pipeline/comfy/sprites.py) le long du parcours.
+
+    python pipeline/layout/sprites_layout.py      # → pipeline/layout/sprites.json (lu par greybox.py)
+
+Retour d'Olivier (18/10) : les arbres peints tournés vers l'œil « rendent vachement bien » ; la scène paraissait vide
+et « low poly ». Les images peintes coûtent 2 triangles chacune : la forêt est redensifiée, les berges se garnissent de
+buissons, fougères et fleurs, des bandes de lisière et de collines ferment l'horizon, les grands houppiers deviennent
+des touffes peintes, des lotus et des pétales flottent.
+
+Modes (matériaux de greybox.py) :
+- face   : plan vertical tourné vers l'œil autour de la verticale, pied au sol (arbres, buissons) ;
+- sphere : plan face à l'œil dans toutes les directions, centré (touffes des grands houppiers, vues d'en dessous) ;
+- fixe   : plan vertical immobile, pied au sol, tourné vers la rivière (bandes de lisière et de collines) ;
+- sol    : plan horizontal immobile posé sur l'eau (lotus, pétales).
+Instance : [x, y, z, hauteur (m), case, orientation (degrés, repère du tracé ; modes fixe et sol), éclat].
+Repère du tracé (m, x avant au départ, y gauche, z haut). Déterministe.
+"""
+import json
+import math
+import sys
+from pathlib import Path
+
+import numpy as np
+
+LAYOUT = Path(__file__).resolve().parent
+ROOT = LAYOUT.parents[1]
+sys.path.insert(0, str(LAYOUT))
+from greybox_geometry import herd_crossing  # noqa: E402
+from vegetation import Field  # noqa: E402
+
+OUT = LAYOUT / "sprites.json"
+SPRITES = ROOT / "assets" / "textures" / "sprites"
+
+# Choix des cases par usage : (famille, case, hauteur min, hauteur max, poids)
+CONIFERS = [("arbres", 3), ("arbres", 7), ("arbres2", 3), ("arbres2", 7)]
+RIVERSIDE = [("arbres", 5), ("arbres2", 0), ("arbres2", 4), ("arbres", 4), ("arbres2", 5)]
+BROADLEAF = [("arbres", 0), ("arbres", 1), ("arbres", 2), ("arbres", 6), ("arbres2", 1), ("arbres2", 2), ("arbres2", 6),
+             ("arbres", 4)]
+BANK = [("buissons", 0, 1.4, 2.4, 3), ("buissons", 1, 1.3, 2.1, 2), ("buissons", 2, 1.1, 1.7, 2), ("buissons", 3, 0.9, 1.4, 3),
+        ("buissons", 4, 0.9, 1.4, 3), ("buissons", 6, 0.55, 0.9, 2), ("buissons", 7, 1.0, 1.5, 1), ("fourres", 0, 1.5, 2.3, 2),
+        ("fourres", 2, 0.7, 1.0, 2), ("fourres", 3, 0.7, 1.0, 2), ("fourres", 5, 1.0, 1.7, 1), ("fourres", 6, 0.8, 1.1, 1),
+        ("fourres", 7, 1.0, 1.5, 2)]
+WATERLINE = [("buissons", 5, 1.3, 2.0, 3), ("fourres", 3, 0.7, 1.0, 1), ("buissons", 4, 0.9, 1.3, 1)]
+FLOOR = [("buissons", 0, 1.6, 2.6, 3), ("buissons", 3, 1.0, 1.5, 3), ("fourres", 0, 1.6, 2.6, 2), ("fourres", 1, 3.0, 5.0, 2),
+         ("fourres", 4, 2.5, 4.0, 2), ("fourres", 5, 1.2, 2.0, 1), ("fourres", 6, 0.9, 1.3, 1), ("buissons", 7, 1.1, 1.6, 1)]
+
+
+def pick(rng, table):
+    w = np.array([t[-1] for t in table], float)
+    return table[rng.choice(len(table), p=w / w.sum())]
+
+
+def main():
+    river = json.loads((LAYOUT / "river.json").read_text(encoding="utf-8"))
+    veg = json.loads((LAYOUT / "vegetation.json").read_text(encoding="utf-8"))
+    F = Field(river)
+    b = F.bounds
+    s = river["samples"]
+    sx, sy = np.array([p["x"] for p in s]), np.array([p["y"] for p in s])
+    marks = {m["id"]: m for m in river["landmarks"]}
+    clearing = next(p for p in s if p["t"] >= 180)
+    arch = marks["arche-racines"]
+    arch_pose = min(s, key=lambda p: abs(p["t"] - arch["t"]))
+    ah = math.radians(arch_pose["heading_deg"])
+    colossal_xy = (arch["x"] - math.sin(ah) * 16, arch["y"] + math.cos(ah) * 16)
+    isl = marks["ile-lanternes"]
+    lake = river["lake"]
+    hx, hy, hux, huy = herd_crossing(river)
+    pm = marks["ponton"]
+    rng = np.random.default_rng(31)
+    sets = {}
+
+    def add(name, mode, inst):
+        sets.setdefault(name, {"mode": mode, "instances": []})["instances"].append([round(float(v), 3) for v in inst])
+
+    def path_dist(x, y):
+        return float(np.sqrt(np.min((sx - x) ** 2 + (sy - y) ** 2)))
+
+    def excluded(x, y, big=False):
+        r = 1.0 if big else 0.6                       # les petits sujets peuvent s'approcher davantage
+        return (math.hypot(x - clearing["x"], y - clearing["y"]) < 30 * r
+                or math.hypot(x - colossal_xy[0], y - colossal_xy[1]) < 22 * r
+                or math.hypot(x - arch["x"], y - arch["y"]) < 12
+                or math.hypot(x - isl["x"], y - isl["y"]) < 12
+                or math.hypot(x - pm["x"], y - pm["y"]) < 6
+                or (abs((x - hx) * huy - (y - hy) * hux) < 4 and abs((x - hx) * hux + (y - hy) * huy) < 60))
+
+    # --- Forêt : positions de vegetation.py, redensifiée au loin (les plans peints ne coûtent presque rien) --------
+    for x, y, z, h, conifer in veg["forest"]:
+        pd = path_dist(x, y)
+        near_water = F.at(x, y)[1] is not None and F.at(x, y)[1] < 9
+        table = CONIFERS if conifer else (RIVERSIDE if near_water and rng.uniform() < 0.6 else BROADLEAF)
+        fam, cell = table[rng.integers(len(table))]
+        add(fam, "face", [x, y, z, h * rng.uniform(0.95, 1.1), cell, 0, rng.uniform(0.85, 1.05)])
+        if pd > 40 and rng.uniform() < 0.8:          # rétablit la densité éclaircie pour la forêt 3D
+            a, r = rng.uniform(0, 2 * math.pi), rng.uniform(2.2, 3.6)
+            qx, qy = x + math.cos(a) * r, y + math.sin(a) * r
+            qz, qd = F.at(qx, qy)
+            if qz is not None and qd > 3 and not excluded(qx, qy, True):
+                fam, cell = (CONIFERS if rng.uniform() < 0.25 else BROADLEAF)[rng.integers(4)]
+                add(fam, "face", [qx, qy, qz - 0.1, rng.uniform(11, 21), cell, 0, rng.uniform(0.8, 1.0)])
+
+    # --- Premier rang d'arbres au bord de l'eau (cadre la rivière) et berges garnies ----------------------------
+    for p in s:
+        if p["t"] < 8:
+            continue
+        h0 = math.radians(p["heading_deg"])
+        nx, ny = -math.sin(h0), math.cos(h0)
+        for side in (-1, 1):
+            edge = p["width_m"] / 2
+            if p["t"] % 7 == (3 if side > 0 else 0):     # un arbre de berge tous les ~7 m de chaque côté
+                off = side * (edge + rng.uniform(2.0, 4.5))
+                x, y = p["x"] + nx * off + rng.uniform(-1, 1), p["y"] + ny * off + rng.uniform(-1, 1)
+                z, d = F.at(x, y)
+                if z is not None and d > 1.2 and not excluded(x, y, True):
+                    fam, cell = RIVERSIDE[rng.integers(len(RIVERSIDE))]
+                    add(fam, "face", [x, y, z - 0.1, rng.uniform(8, 14), cell, 0, rng.uniform(0.9, 1.05)])
+            for _ in range(3):                           # buissons, fougères, fleurs sur la berge (0,3 à 9 m de l'eau)
+                off = side * (edge + 0.3 + 8.7 * rng.uniform() ** 1.5)
+                x, y = p["x"] + nx * off + rng.uniform(-0.5, 0.5), p["y"] + ny * off + rng.uniform(-0.5, 0.5)
+                z, d = F.at(x, y)
+                if z is None or d < 0.25 or excluded(x, y):
+                    continue
+                fam, cell, h1, h2, _w = pick(rng, BANK)
+                add(fam, "face", [x, y, z - 0.05, rng.uniform(h1, h2), cell, 0, rng.uniform(0.85, 1.05)])
+            if rng.uniform() < 0.55:                     # massettes et iris au ras de l'eau
+                off = side * (edge + rng.uniform(-0.6, 0.5))
+                x, y = p["x"] + nx * off, p["y"] + ny * off
+                z, _d = F.at(x, y)
+                if z is not None and not excluded(x, y):
+                    fam, cell, h1, h2, _w = pick(rng, WATERLINE)
+                    add(fam, "face", [x, y, max(z, -0.25), rng.uniform(h1, h2), cell, 0, rng.uniform(0.85, 1.0)])
+
+    # --- Sous-bois : entre les arbres, jusqu'à 45 m de la rivière ----------------------------------------------
+    for _ in range(2600):
+        p = s[rng.integers(len(s))]
+        h0 = math.radians(p["heading_deg"])
+        side = rng.choice([-1, 1])
+        off = side * (p["width_m"] / 2 + rng.uniform(8, 45))
+        x, y = p["x"] - math.sin(h0) * off + rng.uniform(-3, 3), p["y"] + math.cos(h0) * off + rng.uniform(-3, 3)
+        z, d = F.at(x, y)
+        if z is None or d < 6 or excluded(x, y):
+            continue
+        fam, cell, h1, h2, _w = pick(rng, FLOOR)
+        add(fam, "face", [x, y, z - 0.05, rng.uniform(h1, h2), cell, 0, rng.uniform(0.8, 1.0)])
+
+    # --- Lisières et collines peintes : deux anneaux de bandes tournées vers la rivière -------------------------
+    def strip_ring(lateral, height, cells, step, shift):
+        for k, p in enumerate(s[int(shift)::step]):
+            h0 = math.radians(p["heading_deg"])
+            for side in (-1, 1):
+                off = side * (p["width_m"] / 2 + lateral * rng.uniform(0.9, 1.1))
+                x, y = p["x"] - math.sin(h0) * off, p["y"] + math.cos(h0) * off
+                x = min(max(x, b["x0"] + 4), b["x1"] - 4)
+                y = min(max(y, b["y0"] + 4), b["y1"] - 4)
+                if math.hypot(x - lake["x"], y - lake["y"]) < lake["radius_m"] + 25:
+                    continue
+                z, _d = F.at(x, y)
+                # face à la rivière (normale vers le point du tracé), légère rotation pour casser l'alignement
+                yaw = math.degrees(math.atan2(p["y"] - y, p["x"] - x)) + rng.uniform(-12, 12)
+                cell = cells[rng.integers(len(cells))]
+                # collines et second anneau plus sombres et plus bleutés par la brume : ils reculent
+                add("lisieres", "fixe", [x, y, (z or 0) - 1.5, height * rng.uniform(0.85, 1.15), cell, yaw,
+                                          rng.uniform(0.6, 0.72) if (cell == 2 or lateral > 80) else rng.uniform(0.85, 1.0)])
+
+    strip_ring(60.0, 22.0, [0, 1, 3], 40, 0)
+    strip_ring(115.0, 34.0, [0, 1, 2], 55, 20)
+    # autour du lac : couronne de forêt et collines au loin (vue dégagée de S7)
+    for k in range(16):
+        a = 2 * math.pi * k / 16
+        for dist, height, cells in ((lake["radius_m"] + 30, 22.0, [0, 1, 3]), (lake["radius_m"] + 80, 38.0, [2])):
+            x, y = lake["x"] + math.cos(a) * dist, lake["y"] + math.sin(a) * dist
+            if not (b["x0"] < x < b["x1"] and b["y0"] < y < b["y1"]) or path_dist(x, y) < 25:
+                continue
+            z, _d = F.at(x, y)
+            yaw = math.degrees(math.atan2(lake["y"] - y, lake["x"] - x))
+            add("lisieres", "fixe", [x, y, (z or 0) - 1.5, height * rng.uniform(0.9, 1.1), cells[rng.integers(len(cells))], yaw, 0.95])
+
+    # --- Grands houppiers : enveloppe remplie de touffes peintes (arbre colossal, arbre de l'île) ---------------
+    # touffes face à l'œil dans toutes les directions : le houppier paraît plein sous tous les angles, même par en dessous
+    for cx, cy, cz, rx, ry, rz, tree in veg.get("crowns", []):
+        n_surf, n_core = (240, 50) if tree == "colossal" else (80, 16)
+        for k in range(n_surf + n_core):
+            d = rng.normal(0, 1, 3)
+            d /= np.linalg.norm(d)
+            r = rng.uniform(0.8, 1.02) if k < n_surf else rng.uniform(0.35, 0.65)
+            x, y, z = cx + d[0] * rx * r, cy + d[1] * ry * r, cz + d[2] * rz * r
+            size = (rx * rng.uniform(0.32, 0.48)) if k < n_surf else rx * rng.uniform(0.5, 0.7)
+            top = d[2] > -0.2
+            cell = int(rng.choice([0, 2, 4, 6]) if top and k < n_surf else rng.choice([1, 3, 5, 7] if d[2] < -0.5 else [1, 3]))
+            bright = rng.uniform(0.9, 1.08) if top else rng.uniform(0.7, 0.85)
+            add("feuillages", "sphere", [x, y, z, size, cell, 0, bright])
+
+    # --- Voûte : branches feuillues qui s'avancent au-dessus de l'eau (tronçons boisés), lianes qui pendent ------
+    for p in s:
+        if not (18 <= p["t"] <= 62 or 84 <= p["t"] <= 128 or 150 <= p["t"] <= 172):
+            continue
+        h0 = math.radians(p["heading_deg"])
+        for side in (-1, 1):
+            if rng.uniform() < 0.35:
+                continue
+            off = side * (p["width_m"] / 2 - rng.uniform(-1.0, 3.0))
+            x, y = p["x"] - math.sin(h0) * off, p["y"] + math.cos(h0) * off
+            if excluded(x, y, True):
+                continue
+            add("feuillages", "sphere", [x, y, rng.uniform(8.5, 14.0), rng.uniform(4.5, 8.0), int(rng.choice([0, 2, 4, 6, 5])), 0,
+                                         rng.uniform(0.8, 1.0)])
+            if rng.uniform() < 0.3:                     # rideau de lianes sous la branche, jusqu'à ~2 m de l'eau
+                add("feuillages@face", "face", [x + rng.uniform(-1, 1), y + rng.uniform(-1, 1), rng.uniform(1.8, 3.0),
+                                                rng.uniform(5.0, 8.0), 7, 0, rng.uniform(0.8, 0.95)])
+
+    # --- Sur l'eau : nénuphars, lotus, lentilles d'eau, feuilles et pétales peints vus de dessus ------------------
+    WATER = [(0, 1.0, 1.8, 3), (1, 0.4, 0.7, 3), (2, 0.9, 1.5, 2), (3, 0.5, 1.0, 2), (4, 0.4, 0.7, 2), (5, 0.8, 1.4, 2),
+             (6, 1.0, 1.7, 2), (7, 0.5, 0.8, 1)]
+    wts = np.array([w[3] for w in WATER], float)
+    for _ in range(900):
+        if rng.uniform() < 0.25:                     # lac : près des rives
+            a, r = rng.uniform(0, 2 * math.pi), lake["radius_m"] * rng.uniform(0.55, 0.95)
+            x, y = lake["x"] + math.cos(a) * r, lake["y"] + math.sin(a) * r
+        else:                                        # rivière : plus dense dans le calme de S3 (0:48-1:30)
+            p = s[rng.integers(len(s))] if rng.uniform() < 0.5 else min(s, key=lambda q: abs(q["t"] - rng.uniform(48, 90)))
+            h0 = math.radians(p["heading_deg"])
+            off = rng.choice([-1, 1]) * rng.uniform(2.0, max(p["width_m"] / 2 - 0.3, 2.1))
+            x, y = p["x"] - math.sin(h0) * off, p["y"] + math.cos(h0) * off
+        z, d = F.at(x, y)
+        if z is None or z > -0.15 or path_dist(x, y) < 2.0:
+            continue
+        cell, s1, s2, _w = WATER[rng.choice(len(WATER), p=wts / wts.sum())]
+        add("eau", "sol", [x, y, 0.03, rng.uniform(s1, s2), cell, rng.uniform(0, 360), rng.uniform(0.85, 1.05)])
+
+    # --- Faune des berges (sujets posés, aux moments du parcours où on les voit bien) ----------------------------
+    def bank_spot(t, side, off):
+        p = min(s, key=lambda q: abs(q["t"] - t))
+        h0 = math.radians(p["heading_deg"])
+        o = side * (p["width_m"] / 2 + off)
+        x, y = p["x"] - math.sin(h0) * o, p["y"] + math.cos(h0) * o
+        z, _d = F.at(x, y)
+        return x, y, (z if z is not None else 0.0)
+
+    for t, side in ((34, 1), (96, -1), (163, 1)):                    # cerfs qui boivent, au bord de l'eau
+        x, y, z = bank_spot(t, side, rng.uniform(0.1, 0.6))
+        add("faune", "face", [x, y, max(z, -0.1), 1.45, 0, 0, 0.95])
+    for t, side in ((52, -1), (118, 1)):                             # renards
+        x, y, z = bank_spot(t, side, rng.uniform(1.5, 3.0))
+        add("faune", "face", [x, y, z, 0.75, 1, 0, 0.95])
+    for t in (28, 44, 66, 103, 131, 146):                            # lapins
+        x, y, z = bank_spot(t, rng.choice([-1, 1]), rng.uniform(1.5, 5.0))
+        add("faune", "face", [x, y, z, 0.38, 2, 0, 0.95])
+    for t, n in ((40, 3), (72, 4), (124, 2), (198, 5)):              # canards sur l'eau, en petits groupes
+        x0, y0, _ = bank_spot(t, rng.choice([-1, 1]), -2.5)
+        for _ in range(n):
+            add("faune", "face", [x0 + rng.uniform(-1.5, 1.5), y0 + rng.uniform(-1.5, 1.5), -0.04, 0.42, 3, 0, 0.95])
+    for _ in range(8):                                               # grenouilles près des nénuphars (S3)
+        x, y, _z = bank_spot(rng.uniform(50, 88), rng.choice([-1, 1]), -rng.uniform(1.0, 3.0))
+        add("faune", "face", [x, y, 0.02, 0.16, 4, 0, 0.95])
+    add("faune", "face", [pm["x"] + 0.4, pm["y"] - 0.2, 0.95, 0.28, 5, 0, 1.0])   # martin-pêcheur sur le ponton
+    for t, side in ((150, -1), (172, 1)):                            # chouettes sur une souche (nuit)
+        x, y, z = bank_spot(t, side, rng.uniform(2.0, 3.5))
+        add("fourres", "face", [x, y, z - 0.05, 1.0, 6, 0, 0.9])
+        add("faune", "face", [x, y, z + 0.62, 0.42, 6, 0, 0.95])
+    for t in (58, 84, 110, 190):                                     # tortues au ras de l'eau
+        x, y, z = bank_spot(t, rng.choice([-1, 1]), rng.uniform(-0.2, 0.3))
+        add("faune", "face", [x, y, max(z, -0.05), 0.22, 7, 0, 0.95])
+
+    # --- Vie animée dans le shader (greybox.py, VIE_WPO_CODE) : [x, y, z, type, vitesse, rayon, phase] ----------
+    # types : 0 héron (grand cercle lent, haut), 1 hirondelle (rase l'eau), 2 papillon, 3 libellule, 4-6 feuille, pétale,
+    # feuille morte (tombent en boucle). Centres le long du parcours, là où chaque animal a du sens.
+    vie = []
+
+    def along(t0, t1, n, lateral, z, typ, speed, radius):
+        for _ in range(n):
+            p = min(s, key=lambda q: abs(q["t"] - rng.uniform(t0, t1)))
+            h0 = math.radians(p["heading_deg"])
+            off = rng.choice([-1, 1]) * rng.uniform(*lateral)
+            x, y = p["x"] - math.sin(h0) * off, p["y"] + math.cos(h0) * off
+            zz = z if isinstance(z, float) else rng.uniform(*z)
+            if lateral[1] > p["width_m"] / 2:                  # sur la berge : hauteur du terrain
+                g = F.at(x, y)[0]
+                zz += max(g or 0.0, 0.0)
+            vie.append([x, y, zz, typ, rng.uniform(*speed), rng.uniform(*radius), rng.uniform()])
+
+    along(22, 110, 4, (0, 30), (22.0, 34.0), 0, (0.04, 0.07), (25, 45))       # hérons
+    along(60, 175, 14, (0, 5), (0.8, 3.0), 1, (0.35, 0.6), (5, 14))             # hirondelles au ras de l'eau
+    along(25, 170, 46, (6, 12), (0.4, 1.8), 2, (0.15, 0.3), (1.0, 2.5))         # papillons sur les berges fleuries
+    along(25, 200, 30, (2, 7), (0.3, 1.0), 3, (0.3, 0.6), (1.5, 4.0))           # libellules au-dessus de l'eau
+    along(20, 230, 260, (3, 14), (7.0, 12.0), 4, (0.25, 0.5), (0.5, 1.0))       # feuilles qui tombent
+    along(40, 120, 90, (3, 12), (6.0, 10.0), 5, (0.25, 0.45), (0.5, 1.0))       # pétales (cerisiers)
+    along(120, 230, 120, (3, 14), (7.0, 12.0), 6, (0.25, 0.5), (0.5, 1.0))      # feuilles mortes
+
+    out = {"units": "m", "sets": sets, "vie_animee": [[round(float(v), 3) for v in a] for a in vie]}
+    OUT.write_text(json.dumps(out), encoding="utf-8")
+    total = sum(len(v["instances"]) for v in sets.values())
+    print(f"→ {OUT.relative_to(ROOT)} : {total} sprites, {len(vie)} animaux et feuilles animés")
+    for k, v in sets.items():
+        print(f"  {k:10s} {v['mode']:6s} {len(v['instances'])}")
+
+
+if __name__ == "__main__":
+    main()

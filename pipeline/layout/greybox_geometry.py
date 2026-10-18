@@ -196,6 +196,9 @@ def reeds(river, field, bounds, seed=5):
     return mesh_dict(verts, tris)
 
 
+LILY_SPRITES = True    # nénuphars peints (famille « eau » des sprites, pipeline/layout/sprites_layout.py) au lieu des 3D
+
+
 def lily_pads(river, seed=9):
     """Nénuphars (S3) : feuilles rondes au bord irrégulier, avec l'encoche en V et le bord légèrement relevé,
     une teinte par feuille ; posées sur l'eau entre 0:48 et 1:30, à plus de 2 m de la trajectoire."""
@@ -305,7 +308,7 @@ def main():
             "LuciolesBerges": bank_fireflies(river),
             "LuciolesLac": lake_fireflies(river),
             "Roseaux": reeds(river, field, bounds),
-            "Nenuphars": lily_pads(river),
+            **({} if LILY_SPRITES else {"Nenuphars": lily_pads(river)}),
         },
     }
     # Couleur unique (look peint) pour les maillages sans couleurs par sommet ; alpha = occlusion.

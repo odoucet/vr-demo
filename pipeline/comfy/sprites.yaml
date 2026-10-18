@@ -1,0 +1,165 @@
+# Familles de sprites peints (pipeline/comfy/sprites.py) : images générées en local (Z-Image Turbo), détourées
+# (BiRefNet), assemblées en atlas assets/textures/sprite_<famille>.png, posées dans la scène par
+# pipeline/layout/vegetation.py et pipeline/unreal/scripts/greybox.py.
+#
+# type : gabarit de prompt (PROMPTS ci-dessous) ; cell : taille d'une case de l'atlas [l, h] ; grid : [colonnes,
+# lignes] ; size : image générée [l, h] ; seed : graine de la première image (+1 par image) ; items : [nom, sujet,
+# options] (options : drop: green = retirer la végétation ajoutée derrière un animal ; crown: true = garder le houppier
+# seul ; seed: graine propre à l'image).
+# Le nom de fichier de chaque image est <famille>_<n>.png (identifiant d'asset).
+
+prompts:
+  tree: >-
+    single isolated tree, the whole tree visible from the base of the trunk to the top of the crown, {kind}, lit by
+    soft warm dusk light from the left, darker cool shadow side, centered, plain flat light grey background, no ground,
+    no grass, no shadow on the ground, hand-painted, {style}
+  plant: >-
+    single isolated {kind}, the whole plant visible from its base to its top, lit by soft warm dusk light from the
+    left, centered, plain flat light grey background, no ground, no shadow, nothing else in the image, hand-painted,
+    {style}
+  strip: >-
+    wide panoramic band of {kind}, seen from far away across a river, flat silhouette band whose bottom edge is a
+    straight ground line, filling the whole width, empty plain flat pale grey sky behind with no clouds at all,
+    hand-painted, {style}
+  foliage: >-
+    single isolated dense mass of leaves, {kind}, round painted clump of foliage with no trunk and no branches visible,
+    lit from above, plain flat light grey background, hand-painted, {style}
+  top: >-
+    {kind}, seen from directly above, isolated on an empty plain flat light grey background, nothing else in the image,
+    hand-painted, {style}
+  small: >-
+    single isolated {kind}, centered, plain flat light grey background, nothing else in the image, no plants,
+    hand-painted, {style}
+
+sets:
+  arbres:
+    type: tree
+    cell: [512, 1024]
+    grid: [4, 2]
+    size: [832, 1216]
+    seed: 1000
+    items:
+      - [feuillu-rond, "broad deciduous tree with a wide rounded crown made of big billowing foliage clumps, thick trunk"]
+      - [feuillu-haut, "tall deciduous tree with a tall oval crown of layered foliage clumps, slender trunk"]
+      - [chene, "old gnarled oak tree with a broad irregular crown of dense foliage masses, twisted trunk and branches"]
+      - [resineux, "tall conical fir tree with layered drooping branches, dark blue-green needles"]
+      - [feuillu-leger, "young deciduous tree with an airy crown of small foliage clumps and visible branches"]
+      - [saule, "weeping willow tree with long cascading foliage hanging down, rounded silhouette"]
+      - [feuillu-large, "massive spreading deciduous tree with a flat-topped umbrella crown of foliage clumps"]
+      - [resineux-fin, "slender pine tree with a tall straight trunk and a few dark foliage tufts near the top"]
+  arbres2:
+    type: tree
+    cell: [512, 1024]
+    grid: [4, 2]
+    size: [832, 1216]
+    seed: 1100
+    items:
+      - [bouleau, "slender birch tree with a white trunk and a light airy crown of small leaves"]
+      - [erable, "maple tree with a dense round crown of layered leaf clusters, some warm orange leaves"]
+      - [vieux-chene, "very old massive tree with a thick mossy trunk, exposed roots and a huge dark crown"]
+      - [cedre, "cedar tree with flat horizontal layered tiers of dark foliage"]
+      - [aulne, "riverside alder tree leaning slightly, irregular crown of dense dark green leaves"]
+      - [cerisier, "wild cherry tree with a rounded crown covered in pale pink blossoms among green leaves"]
+      - [hetre, "tall beech tree with a smooth grey trunk and a large dome-shaped crown of bright leaves"]
+      - [sapin-sombre, "tall dark spruce tree with a narrow pointed silhouette and dense drooping branches"]
+  buissons:
+    type: plant
+    cell: [512, 512]
+    grid: [4, 2]
+    size: [1024, 1024]
+    seed: 1200
+    items:
+      - [buisson-rond, "low wide round shrub with dense leaves growing right down to the ground, no visible trunk"]
+      - [buisson-fleuri, "low wide shrub covered with small white flowers, leaves down to the ground, no visible trunk"]
+      - [hortensia, "hydrangea bush with big round clusters of blue and violet flowers"]
+      - [fougere, "large fern clump with long arching fronds"]
+      - [herbes-hautes, "clump of tall wild grass with feathery seed heads"]
+      - [massettes, "clump of cattails and tall reeds growing at a riverbank"]
+      - [fleurs-jaunes, "clump of wild yellow flowers and green stems"]
+      - [ronces, "bramble bush with dark leaves and small red berries"]
+  fourres:
+    type: plant
+    cell: [512, 512]
+    grid: [4, 2]
+    size: [1024, 1024]
+    seed: 1300
+    items:
+      - [buisson-large, "very wide low shrub with dense layered foliage masses down to the ground, no visible trunk"]
+      - [jeune-arbre, "small young sapling with a few leafy branches"]
+      - [lys-orange, "clump of orange day lilies with long leaves"]
+      - [iris, "clump of blue wild irises with sword-shaped leaves"]
+      - [fougere-arborescente, "tall tree fern with a crown of long feathery fronds"]
+      - [mousse-rocher, "large boulder covered with thick green moss and small ferns"]
+      - [souche, "old mossy tree stump with small mushrooms and ferns"]
+      - [digitales, "clump of tall foxglove flowers in pink and purple"]
+  lisieres:
+    type: strip
+    cell: [2048, 512]
+    grid: [1, 4]
+    size: [1536, 640]
+    seed: 1400
+    items:
+      - [foret-dense, "dense forest edge, a continuous wall of many rounded deciduous tree crowns of varied greens"]
+      - [foret-mixte, "mixed forest edge with rounded tree crowns and a few tall dark conifers rising above"]
+      - [collines, "distant rolling hills completely covered with soft rounded forest, bluish with distance"]
+      - [foret-sombre, "dark deep forest edge with tall tree trunks and heavy shadowed foliage"]
+  feuillages:
+    type: foliage
+    cell: [512, 512]
+    grid: [4, 2]
+    size: [1024, 1024]
+    seed: 1500
+    items:
+      - [touffe-claire, "bright green leaves lit by warm light on top", {crown: true}]
+      - [touffe-sombre, "deep dark green leaves in shadow", {crown: true}]
+      - [touffe-moyenne, "medium green layered leaves", {crown: true}]
+      - [touffe-bleutee, "blue-green leaves in cool shade", {crown: true}]
+      - [touffe-dense, "very dense small leaves forming a puffy cloud shape", {crown: true}]
+      - [touffe-retombante, "drooping hanging leaves and thin vines", {crown: true}]
+      - [touffe-doree, "leaves glowing golden green in the evening sun", {crown: true}]
+      - [lianes, "curtain of hanging vines and moss strands", {crown: true}]
+  vie:
+    type: small
+    cell: [512, 512]
+    grid: [4, 2]
+    size: [1024, 1024]
+    seed: 1600
+    items:
+      - [heron, "white egret in flight seen from the side, wings fully spread, long neck folded, legs trailing behind", {drop: green}]
+      - [oiseaux, "small dark swallow bird gliding with wings spread, seen from below"]
+      - [papillon, "blue butterfly with open wings seen from above"]
+      - [libellule, "dragonfly with transparent wings seen from above"]
+      - [feuille, "single green leaf, slightly curled"]
+      - [petale, "single pale pink cherry blossom petal, macro view, alone on an empty plain grey background, no landscape, no clouds", {seed: 1661}]
+      - [lotus, "pink water lily flower open on the water, seen from slightly above"]
+      - [feuille-morte, "close-up of one single orange maple leaf filling the frame, isolated on an empty plain grey background", {seed: 1677}]
+  eau:
+    type: top
+    cell: [512, 512]
+    grid: [4, 2]
+    size: [1024, 1024]
+    seed: 1700
+    items:
+      - [nenuphars-groupe, "a cluster of four round green lily pads with notches, one small white water lily flower"]
+      - [nenuphar-seul, "one single round green lily pad with a notch and visible veins"]
+      - [nenuphar-rose, "one pink water lily flower open among three round green lily pads"]
+      - [lentilles, "a small irregular patch of floating duckweed with a few tiny round leaves"]
+      - [feuilles-flottantes, "three fallen green and yellow leaves floating flat"]
+      - [nenuphars-jaunes, "small yellow water lily flowers among five small round floating leaves"]
+      - [lotus-feuilles, "two large round lotus leaves overlapping, bluish green"]
+      - [petales-flottants, "a few scattered pale pink cherry blossom petals floating flat"]
+  faune:
+    type: small
+    cell: [512, 512]
+    grid: [4, 2]
+    size: [1024, 1024]
+    seed: 1800
+    items:
+      - [cerf, "a deer standing with its head lowered as if drinking, seen from the side, whole body visible", {drop: green}]
+      - [renard, "a red fox sitting and looking to the side, whole body visible", {drop: green}]
+      - [lapin, "a small brown rabbit sitting upright, whole body visible", {drop: green}]
+      - [canard, "a mallard duck swimming, seen from the side, whole body visible"]
+      - [grenouille, "a small green frog sitting, seen from the side, whole body visible"]
+      - [martin-pecheur, "a kingfisher bird perched, seen from the side, bright blue and orange, whole bird visible"]
+      - [chouette, "a small brown owl perched, facing forward, whole bird visible", {drop: green}]
+      - [tortue, "a small pond turtle resting, seen from the side, whole body visible"]

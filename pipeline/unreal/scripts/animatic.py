@@ -267,38 +267,6 @@ if "GB_LuciolesLac" in by_label:
     transform_track(by_label["GB_LuciolesLac"], [(0.0, (0.0, 0.0, 0.0), 0.0), (T_REVEAL - 4.0, (0.0, 0.0, 0.0), 0.0),
                                                  (DURATION, (0.0, 0.0, 400.0), 0.0)], interp=SMOOTH)
     visible_between("GB_LuciolesLac", T_REVEAL - 4.5, DURATION + 1)
-# Comparaison des pistes d'arbres (APK de revue du 18/10) : la forêt passe A → B → C toutes les VARIANT_S secondes
-# (A : arbres actuels, B : arbres peints face à l'œil, C : touffes ombrées une à une), étiquette à la proue.
-VARIANT_S = 12.0
-
-
-def _merge(ws):
-    out = []
-    for w in sorted(ws):
-        if out and w[0] <= out[-1][1] + 1e-6:
-            out[-1] = (out[-1][0], max(out[-1][1], w[1]))
-        else:
-            out.append(w)
-    return out
-
-
-_vw = {"A": [(0.0, MUSIC_OFFSET)], "B": [], "C": []}
-_t, _k = MUSIC_OFFSET, 0
-while _t < DURATION:
-    _vw["ABC"[_k % 3]].append((_t, min(_t + VARIANT_S, DURATION + 1)))
-    _t, _k = _t + VARIANT_S, _k + 1
-_vw = {v: _merge(w) for v, w in _vw.items()}
-if "GB_ForetB" in by_label:
-    for label in list(by_label):
-        if label.startswith("GB_Foret_FeuilluC"):
-            visible_windows(label, _vw["C"])
-        elif label.startswith("GB_Foret_Feuillu"):
-            visible_windows(label, _vw["A"])
-        elif label.startswith("GB_Foret_Resineux"):
-            visible_windows(label, _merge(_vw["A"] + _vw["C"]))
-    visible_windows("GB_ForetB", _vw["B"])
-    for v in "ABC":
-        visible_windows(f"GB_Variante{v}", _vw[v])
 # sphère de fondu : affichée seulement pendant les fondus (une surface translucide plein écran coûte même transparente)
 visible_windows("GB_Fondu", [(0.0, MUSIC_OFFSET + 2.6), (T_FADE_OUT - 0.1, DURATION + 1)])
 visible_between("GB_Lucioles", t_env - 0.5, DURATION + 1)
@@ -338,6 +306,10 @@ if mpc is not None:
         msec.add_scalar_parameter_key("FinaleFade", frame(t), v)
     for t, v in FADE_KEYS:
         msec.add_scalar_parameter_key("Fondu", frame(t), v)
+    # oiseaux, papillons, libellules : partent pendant la tombée de la nuit (S6), les lucioles prennent le relais
+    t_nuit = _event_s("lucioles-envol", 137.8)
+    for t, v in ((0.0, 1.0), (t_nuit - 8.0, 1.0), (t_nuit + 12.0, 0.0), (DURATION, 0.0)):
+        msec.add_scalar_parameter_key("VieJour", frame(t), v)
     # créature des abysses : s'éteint en filant devant la barque, avant de quitter le chenal profond
     t_ab = MARKS["abysses-passage"]["t"]
     for t, v in ((0.0, 1.0), (t_ab + 4.0, 1.0), (t_ab + 11.0, 0.0), (DURATION, 0.0)):

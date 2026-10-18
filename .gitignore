@@ -50,3 +50,8 @@ builds/
 # Géométrie générée depuis le tracé (régénérée par build.py, volumineuse)
 pipeline/layout/greybox.json
 pipeline/layout/vegetation.json
+
+# sprites peints : intermédiaires régénérables (pipeline/comfy/sprites.py)
+assets/textures/sprites/**/*_brut.png
+assets/textures/sprites/**/*_masque.png
+assets/textures/sprites/**/essai_*.png

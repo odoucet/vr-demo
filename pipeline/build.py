@@ -35,6 +35,7 @@ STAGES = [
     ("brush", "texture de touches de pinceau (look peint)", [PY, "pipeline/style/brush_texture.py"], None),
     ("greybox-geometry", "géométrie du greybox (terrain peint, arche, roseaux)", [PY, "pipeline/layout/greybox_geometry.py"], None),
     ("vegetation", "végétation et décor peints (forêt, berges, grands arbres, collines)", [PY, "pipeline/layout/vegetation.py"], None),
+    ("sprites-layout", "placement des sprites peints (forêt, berges, lisières, houppiers, eau)", [PY, "pipeline/layout/sprites_layout.py"], None),
     ("creatures", "trajectoires des créatures (chenal, gué, vol)", [PY, "pipeline/layout/creatures.py"], None),
     ("water-map", "carte de l'eau (courant, distance aux berges)", [PY, "pipeline/layout/water_map.py"], None),
     ("unreal-greybox", "niveau greybox", [PY, "pipeline/unreal/run.py", "pipeline/unreal/scripts/greybox.py"], "unreal"),
@@ -42,7 +43,8 @@ STAGES = [
     ("unreal-j1", "scène de test J1 (sphère 360 stéréo)", [PY, "pipeline/unreal/run.py", "pipeline/unreal/scripts/j1_spike.py"], "unreal"),
     ("unreal-j1b", "scène de test J1b (calque stéréo équirectangulaire)", [PY, "pipeline/unreal/run.py", "pipeline/unreal/scripts/j1b_stereolayer.py"], "unreal"),
     # Non lancées par défaut (longues ou dépendantes d'Olivier) : review/shoot.py (éditeur ouvert),
-    # review/animatic.py (rendu MRQ), comfy/image_to_3d.py (GPU), unreal/package_android.py (APK).
+    # review/animatic.py (rendu MRQ), comfy/image_to_3d.py (GPU), comfy/sprites.py (GPU : images peintes, atlas versionnés),
+    # unreal/package_android.py (APK).
 ]
 
 # Étapes qui recréent tous leurs assets : relancées seulement si une entrée change ou si une sortie manque.

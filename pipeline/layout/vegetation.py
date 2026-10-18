@@ -27,6 +27,7 @@ OUT = LAYOUT / "vegetation.json"
 LOOK = yaml.safe_load((ROOT / "pipeline" / "style" / "look.yaml").read_text(encoding="utf-8"))
 COL = {k: ([P.hex_rgb(c) for c in v] if isinstance(v, list) else P.hex_rgb(v)) for k, v in LOOK.items()}
 CHUNK_S = 30          # un tronçon par 30 s de parcours
+SPRITES = True       # forêt, lisière et grands houppiers en sprites peints (pipeline/layout/sprites_layout.py)
 DETAIL_KEEP = (1.0, 0.45, 0.15)   # part des touffes gardée par niveau de détail des tronçons (mesure Quest du 18/10)
 
 
@@ -110,26 +111,19 @@ def main():
             instances[name].append([round(px, 2), round(py, 2), round(z - 0.1, 2), round(float(rng.uniform(0, 360)), 1),
                                     round(scale * rng.uniform(0.95, 1.05), 3), round(scale, 3)])
             trees += 1
-    # Comparaison des pistes d'arbres (18/10) : variante C = feuillus à touffes ombrées une à une (mêmes plans, mêmes
-    # positions) ; variante B = arbres peints face à l'œil (positions et case de l'atlas, greybox.py).
-    for i in range(6):
-        protos[f"FeuilluC{i}"] = ("feuillu-c", protos[f"Feuillu{i}"][1])
-        instances[f"FeuilluC{i}"] = instances[f"Feuillu{i}"]
-    builders = {"feuillu": P.build_broadleaf, "feuillu-c": P.build_broadleaf_c, "resineux": P.build_conifer}
-    brng = np.random.default_rng(23)
-    billboards = []      # x, y, z, échelle, case de l'atlas (résineux : cases 3 et 7)
-    for name, inst in instances.items():
-        if name.startswith("FeuilluC"):
-            continue
-        for x, y, z, _yaw, sxy, sz in inst:
-            cell = int(brng.choice([3, 7])) if name.startswith("Resineux") else int(brng.choice([0, 1, 2, 4, 5, 6]))
-            billboards.append([x, y, z, round(sz * float(brng.uniform(0.95, 1.1)), 3), cell])
+    # Positions des arbres : [x, y, z, hauteur (m), résineux]. En mode SPRITES (retour d'Olivier du 18/10 : les arbres
+    # peints « rendent vachement bien »), la forêt est faite d'arbres peints posés par pipeline/layout/sprites_layout.py ;
+    # sinon, forêt 3D instanciée à niveaux de détail (prototypes ci-dessous).
+    forest = [[x, y, z, round(sz * P.PROTO_HEIGHT, 2), int(name.startswith("Resineux"))]
+              for name, inst in instances.items() for x, y, z, _yaw, _sxy, sz in inst]
     prototypes = {}
-    for name, (kind, plan) in protos.items():
+    if SPRITES:
+        instances = {}
+    for name, (kind, plan) in ({} if SPRITES else protos).items():
         prototypes[name] = {}
         for lod in range(3):
             bnd = P.Bundle()
-            builders[kind](bnd, plan, lod)
+            (P.build_broadleaf if kind == "feuillu" else P.build_conifer)(bnd, plan, lod)
             prototypes[name][f"lod{lod}"] = {k: m.to_dict() for k, m in bnd.parts.items() if m.triangles}
         print(f"  {name:10s} LOD " + " / ".join(str(sum(len(m['triangles']) for m in prototypes[name][f'lod{l}'].values()))
                                                 for l in range(3)) + f" triangles, {len(instances[name])} instances")
@@ -164,6 +158,8 @@ def main():
                 z, d = F.at(px, py)
                 if z is None or d < 0.6 or excluded(px, py):
                     continue
+                if SPRITES:                                            # fougères et fleurs peintes (sprites)
+                    continue
                 if rng.uniform() < 0.45:
                     P.fern(chunk(px, py), px, py, z, rng.uniform(0.5, 1.1), rng, COL["herbe"][rng.integers(3)] * 0.85)
                 else:
@@ -186,7 +182,7 @@ def main():
                 if (za is not None and zb is not None and min(da, db) > 1.2 and abs(za - zb) < 0.8
                         and not excluded(px, py) and not excluded(qx, qy)):
                     P.log(chunk(px, py), [px, py, za + 0.12], [qx, qy, zb + 0.12], rng.uniform(0.15, 0.3), rng, COL["tronc"])
-            for _ in range(11):                                      # touffes d'herbe
+            for _ in range(6 if SPRITES else 11):                    # touffes d'herbe (moins : herbes peintes)
                 off = side * (p["width_m"] / 2 + rng.uniform(0.2, 9))
                 px, py = p["x"] + nx * off + rng.uniform(-0.5, 0.5), p["y"] + ny * off + rng.uniform(-0.5, 0.5)
                 z, d = F.at(px, py)
@@ -197,7 +193,7 @@ def main():
                 off = side * (p["width_m"] / 2 + rng.uniform(1.5, 9))
                 px, py = p["x"] + nx * off, p["y"] + ny * off
                 z, d = F.at(px, py)
-                if z is not None and d > 0.8 and not excluded(px, py):
+                if z is not None and d > 0.8 and not excluded(px, py) and not SPRITES:   # buissons peints en sprites
                     fl = COL["fleurs"][rng.integers(4)] if rng.uniform() < 0.55 else None
                     P.bush(chunk(px, py), px, py, z, rng.uniform(0.9, 2.2), rng, COL["feuillage"][rng.integers(5)], fl)
             if rng.uniform() < 0.25:                                  # rocher au bord de l'eau
@@ -258,16 +254,21 @@ def main():
                    [cx + math.cos(a) * 3, cy + math.sin(a) * 3, rng.uniform(7, 12)], 1.4, 2.6, P.jitter(bark, rng, 0.05),
                    sides=12, ao_low=0.35)
     crown_c = np.array([cx, cy, 52.0])
-    P.blob(colossal, crown_c, [30, 30, 18], P.jitter(COL["feuillage"][1], rng), rng, subdiv=2, normal_center=crown_c,
-           ao=(30, 72, 0.35))
+    core = 0.7 if SPRITES else 1.0                  # en sprites : cœur plus petit, habillé de touffes peintes (sprites_layout)
+    P.blob(colossal, crown_c, [30 * core, 30 * core, 18 * core], P.jitter(COL["feuillage"][1], rng), rng, subdiv=2,
+           normal_center=crown_c, ao=(30, 72, 0.35))
+    crowns = [[*crown_c.tolist(), 30.0, 30.0, 18.0, "colossal"]]   # enveloppes des grands houppiers (sprites)
     for i in range(60):                                                    # touffes, puis petites touffes en surface
         d = rng.normal(0, 1, 3)
         d[2] = d[2] * 0.4 if i < 24 else abs(d[2]) * 0.7 - 0.1
         d /= np.linalg.norm(d)
         c = crown_c + d * (np.array([26, 26, 14]) if i < 24 else np.array([31, 31, 18]))
         r = rng.uniform(9, 15) if i < 24 else rng.uniform(4, 7)
-        P.blob(colossal, c, [r, r, r * 0.8], P.jitter(COL["feuillage"][rng.integers(5)], rng, 0.05), rng,
-               subdiv=2 if i < 24 else 1, normal_center=crown_c, ao=(30, 72, 0.35))
+        col = P.jitter(COL["feuillage"][rng.integers(5)], rng, 0.05)
+        if SPRITES:                                       # touffes peintes autour d'un cœur sombre (sprites_layout.py)
+            pass                                          # touffes peintes posées par sprites_layout.py
+        else:
+            P.blob(colossal, c, [r, r, r * 0.8], col, rng, subdiv=2 if i < 24 else 1, normal_center=crown_c, ao=(30, 72, 0.35))
     for k in range(6):                                                     # branches maîtresses
         a = 2 * math.pi * k / 6 + 0.3
         P.cylinder(colossal, [cx, cy, 30], [cx + math.cos(a) * 18, cy + math.sin(a) * 18, 44], 2.2, 1.0, bark, sides=6)
@@ -280,15 +281,21 @@ def main():
         a = 2 * math.pi * k / 5
         P.cylinder(lantern, [lx, ly, 8], [lx + math.cos(a) * 7, ly + math.sin(a) * 7, 13], 0.6, 0.3, COL["tronc"], sides=5)
     lc = np.array([lx, ly, 15.0])
-    P.blob(lantern, lc, [12, 12, 6], P.jitter(COL["feuillage"][2], rng), rng, subdiv=2, normal_center=lc, ao=(9, 21, 0.35))
+    lcore = 0.7 if SPRITES else 1.0
+    P.blob(lantern, lc, [12 * lcore, 12 * lcore, 6 * lcore], P.jitter(COL["feuillage"][2], rng), rng, subdiv=2,
+           normal_center=lc, ao=(9, 21, 0.35))
+    crowns.append([*lc.tolist(), 12.5, 12.5, 6.0, "ile"])
     for i in range(40):
         d = rng.normal(0, 1, 3)
         d[2] = d[2] * 0.35 if i < 16 else abs(d[2]) * 0.6
         d /= np.linalg.norm(d)
         c = lc + d * (np.array([10, 10, 4]) if i < 16 else np.array([12.5, 12.5, 5.5]))
         r = rng.uniform(4, 6.5) if i < 16 else rng.uniform(1.8, 3)
-        P.blob(lantern, c, [r, r, r * 0.7], P.jitter(COL["feuillage"][2], rng, 0.05), rng, subdiv=1,
-               normal_center=lc, ao=(9, 21, 0.35))
+        col = P.jitter(COL["feuillage"][2], rng, 0.05)
+        if SPRITES:
+            pass
+        else:
+            P.blob(lantern, c, [r, r, r * 0.7], col, rng, subdiv=1, normal_center=lc, ao=(9, 21, 0.35))
     lanterns = []
     for i in range(48):                                                    # sous le houppier, sur ses bords
         a = rng.uniform(0, 2 * math.pi)
@@ -309,8 +316,10 @@ def main():
                    normal_center=c - [0, 0, 30], ao=(-20, rad * 0.2, 0.6), wobble=0.08)
 
     bundles = dict(sorted(chunks.items()))
-    bundles.update(dict(sorted(edges.items())))
-    bundles.update({"ArbreColossalPeint": colossal, "ArbreLanternesPeint": lantern, "Collines": hills})
+    if not SPRITES:                                       # remplacées par les bandes de lisière peintes
+        bundles.update(dict(sorted(edges.items())))
+        bundles["Collines"] = hills
+    bundles.update({"ArbreColossalPeint": colossal, "ArbreLanternesPeint": lantern})
     meshes, total = {}, 0
     for k, bnd in bundles.items():
         print(f"  {k:22s} {bnd.triangles:8d} triangles  " +
@@ -324,7 +333,7 @@ def main():
     out = {k: ({"lods": [m.to_dict(f) for f in DETAIL_KEEP]} if m.has_detail else m.to_dict()) for k, m in meshes.items()}
     OUT.write_text(json.dumps({"units": "m", "meshes": out,
                                "lanternes": lanterns, "prototypes": prototypes, "instances": instances,
-                               "billboards": billboards}),
+                               "forest": forest, "crowns": crowns}),
                    encoding="utf-8")
     print(f"→ {OUT.relative_to(ROOT)} ({OUT.stat().st_size / 1e6:.1f} Mo)")
 
