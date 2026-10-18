@@ -1163,6 +1163,11 @@ if FILTER is not None:
     # pas de flou de mouvement dans les rendus offline (il n'y en a pas au casque ; il étirait l'eau en rayons)
     settings.set_editor_property("override_motion_blur_amount", True)
     settings.set_editor_property("motion_blur_amount", 0.0)
+    # exposition fixe (pas d'exposition automatique au casque) : l'animatic montre la nuit comme le Quest
+    settings.set_editor_property("override_auto_exposure_method", True)
+    settings.set_editor_property("auto_exposure_method", unreal.AutoExposureMethod.AEM_MANUAL)
+    settings.set_editor_property("override_auto_exposure_apply_physical_camera_exposure", True)
+    settings.set_editor_property("auto_exposure_apply_physical_camera_exposure", False)
     ppv.set_editor_property("settings", settings)
 
 # Pas d'éclairage précalculé : le look peint est non éclairé (M_Peint) ; seuls la barque et les créatures

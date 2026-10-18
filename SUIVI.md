@@ -27,7 +27,7 @@ Dans le casque : Bibliothèque → Sources inconnues.
    Hauteur : le joueur est posé au niveau de l'eau, ta tête assise doit tomber vers 1,10 m (origine OpenXR « STAGE », au sol).
    Si tu es trop haut ou trop bas, dis-le-moi : c'est un réglage.
    Alternative sans APK : Quest Link + éditeur, niveau `Barque_Greybox`, Play → VR Preview.
-3. Sans casque : `review/iter-010/animatic.mp4` (4 min, musique + ambiances) et `review/iter-010/planche-animatic.jpg` (images de l'animatic aux moments clés).
+3. Sans casque : `review/iter-011/animatic.mp4` (4 min, musique + ambiances) et `review/iter-011/planche-animatic.jpg` (images de l'animatic aux moments clés).
 
 **Mesure de fréquence d'image (facultatif, 5 min)** : Quest branché en USB et casque porté, lance
 `python pipeline/unreal/quest_perf.py --variant greybox` (ou dis-moi « Quest branché » et je la lance). L'APK
@@ -81,7 +81,9 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 
 - 17/10 au soir : j'ai fait planter l'éditeur une fois (maillage sans UV, corrigé) ; la fenêtre du rapport de plantage Unreal peut être restée ouverte.
 - L'animatic (exposition de la caméra) est plus clair que les captures de revue (exposition fixe) : à harmoniser avec l'éclairage définitif.
-- Greybox très sombre (crépuscule sans exposition automatique) : lisible pour le timing, l'éclairage définitif viendra avec le look (J3).
+- Nuit (S6-S7) : ciel encore assez clair (ton ciel HD est plus lumineux que l'ancien) ; à juger au casque, la teinte se règle dans `pipeline/style/ambiance.yaml` (`ciel_teinte`).
+- Raccord du ciel : un nuage un peu fantôme au raccord gauche/droite (derrière le spectateur au départ).
+- Textures générées : l'écorce et la roche sont correctes mais moins belles que ta mousse ; des textures Midjourney (`tex-ecorce`, `tex-roche`, `tex-herbe`, `tex-terre`, `tex-feuillage` dans `PROMPTS.md`) remplaceraient directement les miennes (dépôt dans `refs/`, puis `python pipeline/comfy/textures.py`).
 - Roseaux : jaunâtres à contre-jour malgré un vert très sombre (lumière du soleil rasant sur des lames double face) ; à reprendre avec le matériau peint.
 
 - Clé Freesound collée dans la conversation : risque faible, à régénérer si tu préfères.
@@ -98,6 +100,8 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 
 ## Fait récemment
 
+- **APK de l'itération 10 installé sur le Quest** (586 Mo). La mesure de fréquence d'image n'a pas pu se faire : casque non porté, l'application ne rend rien et le Quest se met en pause. **À faire casque porté** (`python pipeline/unreal/quest_perf.py --variant greybox`, ou dis-moi « go »). C'est la mesure qui décide si j'ajoute encore du détail ou si j'allège (le décor est passé de ~250 k à ~530 k triangles, avec 5 lectures de texture par pixel sur le feuillage).
+- **Revue** : `planche-animatic.jpg` est produite automatiquement à chaque animatic (moments clés, rendu Movie Render Queue fidèle à la lumière par beat). Les captures de l'éditeur (`planche.jpg`) restent utiles pour les cadrages, pas pour la lumière.
 - **Itération 9-10 (rendu HD, polygones, eau, lanterne ; retours du 18/10 matin)** :
   - **Textures peintes** : ta mousse (`refs/tex-mousse.png`) sert de référence de style. Les autres textures (écorce, herbe, terre, roche, feuillage, planches) sont repeintes à partir d'elle en local (Qwen-Image-Edit, `pipeline/comfy/textures.py`, prompts dans `PROMPTS.md`). Elles sont projetées en coordonnées monde (triplanaire) par type de surface : feuillage = ta mousse, bois = écorce, sol = herbe, roche = roche, terrain = terre/herbe selon la couleur. Elles modulent la valeur des aplats et y mêlent leurs touches de couleur.
   - **Ciel HD** : ton `refs/ciel.png`, raccordé gauche/droite et agrandi en 4096×2048. Le raccord laisse un nuage un peu fantôme, derrière le spectateur au départ.
@@ -151,5 +155,5 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 |---|---|
 | J0 Bible de style | prompts prêts ; **palette par beat** (`review/bible/palettes.png`, `pipeline/style/palettes.yaml`) à partir de tes essais S2/S5/S6/S7 et de concepts provisoires S1/S3/S4 ; ciel peint provisoire ; attend tes images d'assets (I1) et le choix de l'image maîtresse (D1) |
 | J1 Spike vidéo 360 + Quest | scène J1_Spike construite par script (sphère 360 stéréo + séquence + témoin de synchro), matériau validé dans l'éditeur ; **APK prêt : `builds/android/Barque-arm64.apk`** (485 Mo) ; attend le test au casque (go / no-go) |
-| J2 Greybox + animatic | greybox construit par script (terrain, eau translucide, arche, forêt, lac, lune, blocs des créatures) ; séquence LS_Animatic calée sur la musique ; 18 captures et animatic vidéo avec musique ; **itérations 9-10 : textures peintes, ciel HD, ~530 k triangles de décor, eau peinte avec sillage, lanterne-bougie** ; look peint, lumière par beat, créatures corrigées (itération 8) ; lucioles animées (itération 7) ; brume par beat, roseaux, nénuphars (itération 6) ; eau qui reflète le ciel peint (itération 5), ciel peint (itération 4) (crépuscule → nuit) après les créatures 3D (itération 3) (abysses lumineuse, troupeau, créature volante) après la barque 3D en itération 2 (modèle TRELLIS.2 de ta vue 3/4, lanterne lumineuse, place assise sur le banc arrière) — `review/iter-010/planche-animatic.jpg` et `review/iter-010/animatic.mp4` ; à valider : timing et confort au casque |
+| J2 Greybox + animatic | greybox construit par script (terrain, eau translucide, arche, forêt, lac, lune, blocs des créatures) ; séquence LS_Animatic calée sur la musique ; 18 captures et animatic vidéo avec musique ; **itérations 9-10 : textures peintes, ciel HD, ~530 k triangles de décor, eau peinte avec sillage, lanterne-bougie** ; look peint, lumière par beat, créatures corrigées (itération 8) ; lucioles animées (itération 7) ; brume par beat, roseaux, nénuphars (itération 6) ; eau qui reflète le ciel peint (itération 5), ciel peint (itération 4) (crépuscule → nuit) après les créatures 3D (itération 3) (abysses lumineuse, troupeau, créature volante) après la barque 3D en itération 2 (modèle TRELLIS.2 de ta vue 3/4, lanterne lumineuse, place assise sur le banc arrière) — `review/iter-011/planche-animatic.jpg` et `review/iter-011/animatic.mp4` ; à valider : timing et confort au casque |
 | J3 à J6 | non commencés |
