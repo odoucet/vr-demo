@@ -4,10 +4,10 @@
 
 Repère du tracé (m, x avant au départ, y gauche, z haut), cap en degrés. Retours d'Olivier (2026-10-18) :
 - abysses : suit le chenal (et non plus en travers), plus vite que la barque : arrive de derrière, passe
-  sous la barque à t = 70 s, la dépasse, puis plonge dans une fosse devant (terrain : ABYSS_PIT_T) ;
+  sous la barque à t = 70 s, file devant, s'enfonce et s'éteint (paramètre AbyssFade) dans le chenal profond ;
 - troupeau : sort de la forêt à droite par un sentier creusé dans la berge, traverse le gué l'eau au poitrail
   et remonte sur la berge gauche ; la hauteur suit le terrain (plus de traversée « dans le sol ») ;
-- créature volante : passe devant la lune puis continue son vol jusqu'à sortir du champ, sans s'arrêter.
+- créature volante : passe lentement devant la lune puis continue son vol jusqu'à sortir du champ.
 Une clé par seconde (interpolation linéaire dans la séquence). Déterministe.
 """
 import json
@@ -19,7 +19,7 @@ import numpy as np
 
 LAYOUT = Path(__file__).resolve().parent
 sys.path.insert(0, str(LAYOUT))
-from greybox_geometry import ABYSS_PIT_T, GRID_M, herd_crossing, terrain  # noqa: E402
+from greybox_geometry import GRID_M, herd_crossing, terrain  # noqa: E402
 
 OUT = LAYOUT / "creatures.json"
 HIDDEN_Z = -60.0      # sous le terrain : créature cachée
@@ -51,10 +51,12 @@ def main():
 
     # --- Abysses : avance relative de -24 m (derrière) à +20 m (devant) entre 54 s et 84 s, puis plongée --------
     t0 = marks["abysses-passage"]["t"]
-    for t in np.arange(t0 - 22, t0 + 26, 1.0):
-        lead = np.interp(t, [t0 - 16, t0, t0 + 14], [-24.0, 0.0, 20.0])
+    for t in np.arange(t0 - 22, t0 + 13, 1.0):
+        # arrive de derrière, passe sous la barque, file devant puis s'enfonce et s'éteint en restant dans le
+        # chenal profond (retour d'Olivier : elle ne doit plus « disparaître dans le sol » sous la barque)
+        lead = np.interp(t, [t0 - 16, t0, t0 + 14], [-24.0, 0.0, 17.0])
         lead = lead if t >= t0 - 16 else -24.0 - (t0 - 16 - t) * 1.0
-        tau = min(t + lead, ABYSS_PIT_T)
+        tau = t + lead
         x, y, h = path(tau)
         wiggle = 0.8 * math.sin(t * 0.35)                       # léger serpentement dans le chenal
         x, y = x - math.sin(math.radians(h)) * wiggle, y + math.cos(math.radians(h)) * wiggle
@@ -62,8 +64,8 @@ def main():
         depth = min(max(-3.2, bed + 1.4), -2.8)                 # jamais près de la surface ; sous le fond = cachée
         if t < t0 - 12:                                         # avant : sous le fond, invisible, puis remonte
             depth = np.interp(t, [t0 - 22, t0 - 12], [bed - 3.0, depth])
-        if tau >= ABYSS_PIT_T - 1:                              # arrivée sur la fosse : plongée
-            depth = np.interp(t, [t0 + 14, t0 + 24], [depth, bed - 3.0])
+        if t > t0 + 4:                                          # s'enfonce doucement en s'éloignant
+            depth = np.interp(t, [t0 + 4, t0 + 12], [depth, -4.5])   # éteinte (AbyssFade) avant le haut-fond
         out["abysses"].append([round(float(t), 2), round(x, 3), round(y, 3), round(float(depth), 3), round(h, 2)])
 
     # --- Troupeau : sentier forêt droite → gué → forêt gauche, à 1,8 m/s, hauteur sur le terrain --------------
@@ -89,13 +91,13 @@ def main():
     hc = math.radians(pc["heading_deg"])
     alt = cl["ahead_m"] * math.tan(math.radians(22))
     fx, fy, lx, ly = math.cos(hc), math.sin(hc), -math.sin(hc), math.cos(hc)
-    for t in np.arange(cl["t"] - 20, cl["t"] + 40, 1.0):
-        u = (t - cl["t"]) / 12.0                                # -1 → 1 pendant le passage devant la lune
-        side = cl["side_m"] - 160.0 * u
-        ahead = cl["ahead_m"] + 60.0 * max(u - 1, 0) ** 1.2     # après le passage : s'éloigne
-        zz = alt + 6.0 * math.sin(u * 1.3) + 25.0 * max(u - 1, 0)
+    for t in np.arange(cl["t"] - 34, cl["t"] + 60, 1.0):
+        u = (t - cl["t"]) / 20.0                                # passage lent devant la lune (retour : trop rapide)
+        side = cl["side_m"] - 150.0 * u
+        ahead = cl["ahead_m"] + 45.0 * max(u - 1, 0) ** 1.2     # après le passage : s'éloigne
+        zz = alt + 6.0 * math.sin(u * 1.3) + 20.0 * max(u - 1, 0)
         x, y = pc["x"] + fx * ahead + lx * side, pc["y"] + fy * ahead + ly * side
-        yaw = math.degrees(math.atan2(-ly * 160 + fy * (60 if u > 1 else 0), -lx * 160 + fx * (60 if u > 1 else 0)))
+        yaw = math.degrees(math.atan2(-ly * 150 + fy * (45 if u > 1 else 0), -lx * 150 + fx * (45 if u > 1 else 0)))
         out["volante"].append([round(float(t), 2), round(x, 2), round(y, 2), round(zz, 2), round(yaw, 2)])
 
     OUT.write_text(json.dumps(out), encoding="utf-8")

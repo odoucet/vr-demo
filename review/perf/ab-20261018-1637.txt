@@ -1,0 +1,5 @@
+Essais A/B à t = 40 s (temps GPU de l'application, moyenne sur 6 s)
+
+showflag.instancedstaticmeshes 0       réf 15.69 ms (56.6 i/s) →  9.29 ms (69.8 i/s)  gain +6.40 ms
+showflag.translucency 0                réf 15.56 ms (61.6 i/s) → 14.30 ms (62.2 i/s)  gain +1.26 ms
+showflag.staticmeshes 0                réf 14.44 ms (59.8 i/s) →  3.60 ms (69.4 i/s)  gain +10.84 ms

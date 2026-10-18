@@ -1,0 +1,5 @@
+Essais A/B à t = 40 s (temps GPU de l'application, moyenne sur 6 s)
+
+showflag.fog 0                         réf 15.93 ms (56.4 i/s) → 15.08 ms (58.8 i/s)  gain +0.85 ms
+foliage.CullDistanceScale 0.5          réf 14.88 ms (60.0 i/s) → 14.64 ms (60.6 i/s)  gain +0.24 ms
+foliage.CullDistanceScale 0.3          réf 15.03 ms (59.2 i/s) → 14.72 ms (62.0 i/s)  gain +0.31 ms

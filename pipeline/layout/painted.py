@@ -375,7 +375,9 @@ def build_broadleaf(mesh, plan, lod):
     z0, z1 = c[2] - r, c[2] + r * 1.2
     cylinder(mesh, [0, 0, -0.3], [c[0], c[1], c[2] - r * 0.2], h * 0.035, h * 0.022, plan["trunk"], sides=sides)
     rng = np.random.default_rng(7)                    # ondulation identique d'un niveau à l'autre
-    blobs = plan["blobs"]
+    # de loin (niveau 2), la brume rend la silhouette floue : 4 touffes suffisent (mesure du 18/10 : ~1 200 arbres
+    # visibles à la fois, 208 → ~90 triangles chacun)
+    blobs = plan["blobs"] if lod < 2 else plan["blobs"][:4]
     for center, radii, col, level in blobs:
         sd = subs[level]
         if sd is None:

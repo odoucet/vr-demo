@@ -1,39 +1,38 @@
 # Séquencier de la démo, calé sur la musique (source de vérité des temps).
 # music_s = temps dans le morceau ; temps démo = offset_s + music_s.
-# Recalage du 2026-10-17 sur « Luminous Wonder » (Suno), d'après pipeline/audio/structure.py.
+# Recalage du 2026-10-18 sur la nouvelle « Luminous Wonder » (WAV et stems Suno d'Olivier, autre prise que le MP3
+# du 17/10, même durée), d'après pipeline/audio/structure.py (review/music/structure.png).
 
 music:
-  file: audio/music/Luminous Wonder.mp3
+  file: audio/music/Luminous Wonder.wav
   offset_s: 20          # la musique démarre à S2 ; S1 = clapotis seul
-  duration_s: 219.97    # fin de la démo à 3:59.97
+  duration_s: 219.44    # fin de la démo à 3:59.44
   tempo_bpm: 72         # détecté à 143,6 (double temps)
 
 beats:
   - id: S1-NOIR
     music_s: -20        # 0:00 démo, avant la musique
-    note: Noir, clapotis seul.
+    note: "Noir, clapotis seul."
   - id: S2-PONTON
     music_s: 0          # 0:20
-    note: Intro calme et sombre (824 Hz de brillance), départ du ponton dans la brume.
+    note: "Intro calme et sombre (824 Hz de brillance), départ du ponton dans la brume."
   - id: S3-ABYSSE
-    music_s: 24.0       # 0:44
-    note: Entrée des graves (10 % → 14 %) ; l'ombre géante glisse sous la barque.
+    music_s: 26.0       # 0:46
+    note: "Frontière la plus nette du début (entrée de l'orchestre après l'intro calme) ; l'ombre géante glisse sous la barque."
   - id: S4-GUE
-    music_s: 77.9       # 1:37.9
-    note: >-
-      Frontière la plus nette de la première moitié ; plus de graves (19 %) et plus brillant : arrivée du
-      troupeau. Alternative : 50.9 (1:10.9) pour équilibrer S3/S4 (27 s / 57 s au lieu de 54 s / 30 s).
+    music_s: 76.9       # 1:36.9
+    note: "Nouvelle section (frontière à 76,9 s) : arrivée du troupeau."
   - id: S5-RACINES
-    music_s: 107.8      # 2:07.8
-    note: Partie la plus brillante de la montée, puis respiration sombre à 124.8 (passage sous les racines).
+    music_s: 105.8      # 2:05.8
+    note: "Frontière à 105,8 s ; respiration plus sombre vers 127,8 s (passage sous les racines)."
   - id: S6-LUNE
     music_s: 137.8      # 2:37.8
     note: >-
       Modulation (changement de tonalité, plus forte frontière du morceau) : envol des lucioles vers la
       trouée, puis sommet 160.8-181.7 pour la créature devant la lune.
   - id: S7-LAC
-    music_s: 181.7      # 3:21.7
-    note: Outro calme (-30 dB) ; lac miroir et arbre aux lanternes.
+    music_s: 183.7      # 3:23.7
+    note: "Frontière nette (183,7 s) : retombée, outro calme ; lac miroir et arbre aux lanternes."
 
 # Points d'accroche à l'intérieur des beats (pour l'animatic et les repères sonores).
 events:
@@ -44,6 +43,6 @@ events:
   - id: creature-lune
     music_s: 160.8      # 3:00.8 : début du sommet (-18,6 dB)
   - id: lanternes-reveal
-    music_s: 203.7      # 3:43.7 : dernière montée, note grave tenue (50 % de graves)
+    music_s: 206.7      # 3:46.7 : dernière montée de l'outro
   - id: fondu-noir
-    music_s: 217.0      # 3:57 : extinction rapide (-24 → -51 dB en 2 s), pas de long fondu
+    music_s: 216.7      # 3:56.7 : extinction de la musique

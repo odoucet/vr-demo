@@ -1,0 +1,39 @@
+# Spatialisation de la musique par stems (retour d'Olivier, 18/10) : chaque piste est une source sonore attachée à la
+# barque (elle suit le spectateur), placée autour de lui. Les stems viennent de l'export « Get Stems » de Suno
+# (pistes d'origine du morceau, meilleure qualité qu'une séparation a posteriori) déposés dans audio/music/stems/.
+# Une piste est reconnue par un mot-clé de son nom de fichier (premier qui correspond) ; sans correspondance :
+# « autre » (non spatialisée, centrée).
+#
+# position : [devant, gauche, haut] en mètres depuis le spectateur assis ; large : stéréo gardée en deux sources
+# gauche / droite écartées de ±largeur ; volume en dB.
+
+stems:
+  - motif: [piano, keys, keyboard]
+    nom: piano
+    position: [3.0, -2.0, 0.3]        # devant à droite, à hauteur de la proue
+  - motif: [string, cordes, violin, viola, cello]
+    nom: cordes
+    position: [-2.0, 0.0, 1.5]
+    large: 5.0                        # nappe large derrière, de part et d'autre
+  - motif: [bass, contrabass, contrebasse]
+    nom: basses
+    position: [-1.0, 0.0, -1.0]       # sous la barque, comme la présence des abysses
+  - motif: [woodwind, flute, oboe, clarinet, bois]
+    nom: bois
+    position: [4.0, 2.5, 2.5]         # devant à gauche, en hauteur
+  - motif: [brass, horn, cuivre]
+    nom: cuivres
+    position: [12.0, 0.0, 4.0]        # au loin devant
+  - motif: [harp, celesta, bell, glock, harpe]
+    nom: celesta
+    position: [0.5, 0.0, 3.5]         # au-dessus, scintillant
+  - motif: [guitar, guitare]
+    nom: guitare
+    position: [1.5, 3.0, 0.5]         # à gauche, sur la berge
+  - motif: [synth, pad]
+    nom: nappe
+    position: [0.0, 0.0, 2.5]
+    large: 4.0                        # nappe enveloppante au-dessus
+  - motif: [percussion, drum, timpani]
+    nom: percussions
+    position: [-6.0, 0.0, 0.0]

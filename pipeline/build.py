@@ -31,6 +31,7 @@ STAGES = [
     ("unreal-probe", "vérification du projet", [PY, "pipeline/unreal/run.py", "pipeline/unreal/scripts/probe.py"], "unreal"),
     ("music-wav", "musique en WAV pour Unreal", [PY, "pipeline/audio/prepare_music.py"], None),
     ("sounds", "sons retenus normalisés + plan de mixage pour Unreal", [PY, "pipeline/audio/prepare_sounds.py"], None),
+    ("stems", "stems de la musique → sources spatialisées (si déposés)", [PY, "pipeline/audio/prepare_stems.py"], None),
     ("brush", "texture de touches de pinceau (look peint)", [PY, "pipeline/style/brush_texture.py"], None),
     ("greybox-geometry", "géométrie du greybox (terrain peint, arche, roseaux)", [PY, "pipeline/layout/greybox_geometry.py"], None),
     ("vegetation", "végétation et décor peints (forêt, berges, grands arbres, collines)", [PY, "pipeline/layout/vegetation.py"], None),

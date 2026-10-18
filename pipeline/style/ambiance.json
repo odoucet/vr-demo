@@ -10,7 +10,7 @@
         0.0206,
         0.0233
       ],
-      "densite": 0.08,
+      "densite": 0.1,
       "brume_hex": "#ddf2ff",
       "lumiere": [
         0.2,
@@ -32,6 +32,8 @@
         0.06,
         0.1
       ],
+      "fondu_s": 12,
+      "avance_s": 0.0,
       "soleil_dir": [
         0.9192,
         0.3345,
@@ -47,7 +49,7 @@
         0.1038,
         0.1631
       ],
-      "densite": 0.2,
+      "densite": 0.25,
       "brume_hex": "#aad1ff",
       "lumiere": [
         0.45,
@@ -69,6 +71,8 @@
         0.7,
         0.86
       ],
+      "fondu_s": 12,
+      "avance_s": 0.0,
       "soleil_dir": [
         0.8925,
         0.4162,
@@ -77,14 +81,14 @@
     },
     {
       "id": "S3-ABYSSE",
-      "debut_s": 44.0,
+      "debut_s": 46.0,
       "source": "assets/concepts/S3-ABYSSE.png",
       "brume_lineaire": [
         0.0666,
         0.1258,
         0.0816
       ],
-      "densite": 0.045,
+      "densite": 0.08,
       "brume_hex": "#c0ffd3",
       "lumiere": [
         1.0,
@@ -106,6 +110,8 @@
         0.92,
         0.95
       ],
+      "fondu_s": 12,
+      "avance_s": 0.0,
       "soleil_dir": [
         0.4806,
         0.8325,
@@ -114,14 +120,14 @@
     },
     {
       "id": "S4-GUE",
-      "debut_s": 97.9,
+      "debut_s": 96.9,
       "source": "assets/concepts/S4-GUE.png",
       "brume_lineaire": [
         0.1005,
         0.1286,
         0.0926
       ],
-      "densite": 0.045,
+      "densite": 0.08,
       "brume_hex": "#e5ffdd",
       "lumiere": [
         1.25,
@@ -143,6 +149,8 @@
         0.92,
         0.85
       ],
+      "fondu_s": 12,
+      "avance_s": 0.0,
       "soleil_dir": [
         -0.5865,
         0.773,
@@ -151,14 +159,14 @@
     },
     {
       "id": "S5-RACINES",
-      "debut_s": 127.8,
+      "debut_s": 125.8,
       "source": "refs/S5-RACINES.png",
       "brume_lineaire": [
         0.0479,
         0.0513,
         0.0435
       ],
-      "densite": 0.06,
+      "densite": 0.09,
       "brume_hex": "#f7ffed",
       "lumiere": [
         0.95,
@@ -180,9 +188,11 @@
         0.55,
         0.45
       ],
+      "fondu_s": 12,
+      "avance_s": 0.0,
       "soleil_dir": [
-        0.8361,
-        0.5258,
+        0.8359,
+        0.5262,
         0.1564
       ]
     },
@@ -195,7 +205,7 @@
         0.0218,
         0.0234
       ],
-      "densite": 0.03,
+      "densite": 0.06,
       "brume_hex": "#c2f7ff",
       "lumiere": [
         0.16,
@@ -217,6 +227,8 @@
         0.13,
         0.16
       ],
+      "fondu_s": 26,
+      "avance_s": 8,
       "soleil_dir": [
         0.81,
         0.3065,
@@ -225,14 +237,14 @@
     },
     {
       "id": "S7-LAC",
-      "debut_s": 201.7,
+      "debut_s": 203.7,
       "source": "refs/S7-LAC.png",
       "brume_lineaire": [
         0.0266,
         0.0182,
         0.0185
       ],
-      "densite": 0.035,
+      "densite": 0.06,
       "brume_hex": "#ffd8da",
       "lumiere": [
         0.13,
@@ -254,9 +266,11 @@
         0.07,
         0.13
       ],
+      "fondu_s": 12,
+      "avance_s": 0.0,
       "soleil_dir": [
-        0.8238,
-        0.3778,
+        0.8244,
+        0.3766,
         0.4226
       ]
     }

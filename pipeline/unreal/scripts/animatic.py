@@ -50,13 +50,38 @@ by_label = {a.get_actor_label(): a for a in actors.get_all_level_actors()}
 
 # --- Musique (WAV dérivé du MP3 d'Olivier, importé une fois) ------------------------------------------------
 music_path = "/Game/Audio/Music/Luminous_Wonder"
-if not eal.does_asset_exist(music_path):
+
+
+def streamed(wave):
+    """Lecture en flux (chargée au fil de l'eau) : une piste de 4 min décompressée pèse ~23 Mo par canal ; avec la
+    musique et dix stems, tout charger d'un coup saturerait la mémoire du Quest. Compression à l'empaquetage."""
+    try:
+        wave.set_editor_property("loading_behavior", unreal.SoundWaveLoadingBehavior.LOAD_ON_DEMAND)
+    except Exception as e:      # propriété absente selon les versions : la valeur par défaut du projet s'applique
+        unreal.log_warning(f"loading_behavior : {e}")
+    return wave
+
+
+def import_wav(wav, dest_dir, name):
+    """Importe un WAV seulement si son contenu a changé (empreinte en métadonnée)."""
+    import hashlib
+    path = f"{dest_dir}/{name}"
+    with open(wav, "rb") as f:
+        digest = hashlib.sha1(f.read()).hexdigest()[:12]
+    if eal.does_asset_exist(path) and eal.get_metadata_tag(eal.load_asset(path), "source_sha1") == digest:
+        return eal.load_asset(path)
     task = unreal.AssetImportTask()
-    task.filename = os.path.join(ROOT, "Unreal", "Saved", "import", "Luminous_Wonder.wav")
-    task.destination_path = "/Game/Audio/Music"
+    task.filename, task.destination_path = wav, dest_dir
     task.automated, task.replace_existing, task.save = True, True, True
     tools.import_asset_tasks([task])
-music = eal.load_asset(music_path)
+    wave = streamed(eal.load_asset(path))
+    eal.set_metadata_tag(wave, "source_sha1", digest)
+    eal.save_loaded_asset(wave)
+    return wave
+
+
+# (réimportée si le WAV change : nouvelle musique d'Olivier le 18/10)
+music = import_wav(os.path.join(ROOT, "Unreal", "Saved", "import", "Luminous_Wonder.wav"), "/Game/Audio/Music", "Luminous_Wonder")
 
 # --- Séquence ------------------------------------------------------------------------------------------
 path = f"{SEQ_DIR}/{SEQ_NAME}"
@@ -72,6 +97,19 @@ seq.set_playback_end(end)
 
 def frame(t):
     return unreal.FrameNumber(int(round(t * FPS)))
+
+
+def beat_hold(beats, i):
+    """Intervalle où le beat i est tenu : entre la fin de son fondu d'entrée et le début du fondu vers le suivant.
+    Fondu propre à chaque beat (fondu_s), centré sur son début avancé de avance_s (ambiance.json)."""
+    b = beats[i]
+    t_in = 0.0 if i == 0 else b["debut_s"] - b["avance_s"] + b["fondu_s"] / 2
+    if i + 1 < len(beats):
+        n = beats[i + 1]
+        t_out = n["debut_s"] - n["avance_s"] - n["fondu_s"] / 2
+    else:
+        t_out = DURATION
+    return t_in, max(t_in, t_out)
 
 
 def transform_track(actor, keys, scale=None):
@@ -108,11 +146,14 @@ cut = cut_track.add_section()
 cut.set_range(0, end)
 cut.set_camera_binding_id(seq.get_binding_id(cam_binding))
 
-# Musique.
-audio_track = seq.add_track(unreal.MovieSceneAudioTrack)
-audio = audio_track.add_section()
-audio.set_sound(music)
-audio.set_range(frame(MUSIC_OFFSET).value, end)
+# Musique : stéréo d'origine, ou stems spatialisés autour de la barque s'ils ont été déposés (voir plus bas).
+_stems_json = os.path.join(ROOT, "Unreal", "Saved", "import", "stems.json")
+STEMS = json.load(open(_stems_json, encoding="utf-8"))["stems"] if os.path.exists(_stems_json) else []
+if not STEMS:
+    audio_track = seq.add_track(unreal.MovieSceneAudioTrack)
+    audio = audio_track.add_section()
+    audio.set_sound(music)
+    audio.set_range(frame(MUSIC_OFFSET).value, end)
 
 # Fondus : noir pendant S1, fondu d'entrée en 2 s, fondu de sortie sur l'extinction de la musique.
 fade = seq.add_track(unreal.MovieSceneFadeTrack).add_section()
@@ -162,7 +203,9 @@ for label in list(by_label):
         start = 30.0 * k - 45.0                  # 45 m avant l'entrée du tronçon (barque à 1 m/s)
         if start > 0:
             visible_between(label, min(start, FOG_LIFT_S) if start < 80 else start - 60.0, DURATION + 1)
-    elif label.split("_")[1] in ("Lisiere", "ArbreColossalPeint", "ArbreLanternesPeint", "Collines") if label.startswith("GB_") and "_" in label[3:] else False:
+    # lisière et collines : cachées dans la brume dense de S1-S2 (invisibles de toute façon, maintenant que la brume
+    # est rendue au casque) ; l'arbre colossal reste affiché dès le début (il « apparaissait d'un coup »)
+    elif label.startswith(("GB_Lisiere", "GB_Collines")):
         visible_between(label, FOG_LIFT_S, DURATION + 1)
 
 transform_track(by_label["GB_Abysses"], creature_keys(CREA["abysses"]))
@@ -209,10 +252,8 @@ if mpc is not None:
     # tenus pendant le beat avec le même fondu que la brume. Direction : repère du tracé → Unreal (y inversé).
     with open(os.path.join(ROOT, "pipeline", "style", "ambiance.json"), encoding="utf-8") as f:
         amb = json.load(f)
-    half_l = amb["fondu_s"] / 2
     for i, b in enumerate(amb["beats"]):
-        t_in = 0.0 if i == 0 else b["debut_s"] + half_l
-        t_out = amb["beats"][i + 1]["debut_s"] - half_l if i + 1 < len(amb["beats"]) else DURATION
+        t_in, t_out = beat_hold(amb["beats"], i)
         sx_, sy_, sz_ = b["soleil_dir"]
         values = {"Lumiere": b["lumiere"], "Ombre": b["ombre"], "CielAppoint": b["ciel"], "SoleilDir": [sx_, -sy_, sz_],
                   "CielTeinte": b["ciel_teinte"]}
@@ -226,6 +267,10 @@ if mpc is not None:
         msec.add_scalar_parameter_key("LucioleFade", frame(t), v)
     for t, v in ((0.0, 0.0), (t_env_fade - 0.5, 0.0), (t_env_fade + 6.0, 1.0)):
         msec.add_scalar_parameter_key("EnvolFade", frame(t), v)
+    # créature des abysses : s'éteint en filant devant la barque, avant de quitter le chenal profond
+    t_ab = MARKS["abysses-passage"]["t"]
+    for t, v in ((0.0, 1.0), (t_ab + 4.0, 1.0), (t_ab + 11.0, 0.0), (DURATION, 0.0)):
+        msec.add_scalar_parameter_key("AbyssFade", frame(t), v)
     # Barque (x, y cm, z = 0, lacet en radians) pour les shaders : lumière de la lanterne sur le décor et l'eau,
     # sillage et masque de l'eau dans la coque.
     for t, (bx, by, _), yaw in boat_keys:
@@ -246,12 +291,9 @@ dens_sec.set_property_name_and_path("FogDensity", "FogDensity")
 dens_sec = dens_sec.add_section()
 dens_sec.set_range(0, end)
 rgba = color_sec.get_all_channels()[:4]
-half = AMBIANCE["fondu_s"] / 2
 beats = AMBIANCE["beats"]
 for i, b in enumerate(beats):
-    t_in = 0.0 if i == 0 else b["debut_s"] + half
-    t_out = beats[i + 1]["debut_s"] - half if i + 1 < len(beats) else DURATION
-    for t in (t_in, max(t_in, t_out)):
+    for t in beat_hold(beats, i):
         for ch, v in zip(rgba, b["brume_lineaire"] + [1.0]):
             ch.add_key(frame(t), v)
         dens_sec.get_all_channels()[0].add_key(frame(t), b["densite"])
@@ -318,6 +360,34 @@ for snd in SOUNDSCAPE:
     vol.add_key(frame(snd["start"] + snd["fade_in"]), snd["volume"], interpolation=LIN)
     vol.add_key(frame(snd["end"] - snd["fade_out"]), snd["volume"], interpolation=LIN)
     vol.add_key(frame(snd["end"]), 0.0, interpolation=LIN)
+
+# Stems spatialisés : chaque piste joue sur sa source attachée à la barque (atténuation douce : volume quasi
+# constant, seule la direction compte) ; les pistes sans position restent en 2D.
+if STEMS:
+    stem_att_path = "/Game/Audio/ATT_Stems"
+    stem_att = eal.load_asset(stem_att_path) if eal.does_asset_exist(stem_att_path) else tools.create_asset(
+        "ATT_Stems", "/Game/Audio", unreal.SoundAttenuation, unreal.SoundAttenuationFactory())
+    sa = stem_att.get_editor_property("attenuation")
+    sa.set_editor_property("spatialize", True)
+    sa.set_editor_property("attenuation_shape_extents", unreal.Vector(1500.0, 0, 0))
+    sa.set_editor_property("falloff_distance", 3000.0)
+    stem_att.set_editor_property("attenuation", sa)
+    eal.save_loaded_asset(stem_att, only_if_is_dirty=True)
+    for st in STEMS:
+        wave = import_wav(os.path.join(ROOT, st["wav"]), "/Game/Audio/Stems", st["id"])
+        want = stem_att if st["position"] else None
+        if wave.get_editor_property("attenuation_settings") != want:
+            wave.set_editor_property("attenuation_settings", want)
+            eal.save_loaded_asset(wave)
+        if st["position"] and st["id"] in by_label:
+            track = seq.add_possessable(by_label[st["id"]]).add_track(unreal.MovieSceneAudioTrack)
+        else:
+            track = seq.add_track(unreal.MovieSceneAudioTrack)
+            track.set_display_name(st["id"])
+        sec = track.add_section()
+        sec.set_sound(wave)
+        sec.set_range(frame(MUSIC_OFFSET).value, end)
+        sec.get_all_channels()[0].set_default(10 ** (st["volume_db"] / 20.0))
 
 # Lecture automatique en jeu (PIE / casque).
 for a in actors.get_all_level_actors():

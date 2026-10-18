@@ -3,8 +3,8 @@
  "axes": "x avant au départ, y gauche, z haut",
  "speed_mps": 1.0,
  "eye_height_m": 1.1,
- "duration_s": 239.97,
- "length_m": 240.0,
+ "duration_s": 239.44,
+ "length_m": 239.0,
  "max_yaw_rate_deg_s": 1.146,
  "min_radius_m": 40,
  "beats": [
@@ -24,24 +24,24 @@
   },
   {
    "id": "S3-ABYSSE",
-   "t": 44.0,
-   "x": 44.0,
+   "t": 46.0,
+   "x": 46.0,
    "y": 0.0,
    "heading_deg": 0.0
   },
   {
    "id": "S4-GUE",
-   "t": 97.9,
-   "x": 96.67,
-   "y": 10.08,
+   "t": 96.9,
+   "x": 95.71,
+   "y": 9.78,
    "heading_deg": 17.19
   },
   {
    "id": "S5-RACINES",
-   "t": 127.8,
-   "x": 125.33,
-   "y": 18.94,
-   "heading_deg": 17.16
+   "t": 125.8,
+   "x": 123.41,
+   "y": 18.35,
+   "heading_deg": 17.19
   },
   {
    "id": "S6-LUNE",
@@ -52,10 +52,10 @@
   },
   {
    "id": "S7-LAC",
-   "t": 201.7,
-   "x": 196.38,
-   "y": 37.15,
-   "heading_deg": 24.64
+   "t": 203.7,
+   "x": 198.2,
+   "y": 37.98,
+   "heading_deg": 24.55
   }
  ],
  "landmarks": [
@@ -571,7 +571,7 @@
    "heading_deg": 0.0,
    "curvature": 0.0,
    "width_m": 16.0,
-   "beat": "S3-ABYSSE"
+   "beat": "S2-PONTON"
   },
   {
    "t": 45.0,
@@ -581,7 +581,7 @@
    "heading_deg": 0.0,
    "curvature": 0.0,
    "width_m": 16.13,
-   "beat": "S3-ABYSSE"
+   "beat": "S2-PONTON"
   },
   {
    "t": 46.0,
@@ -1101,7 +1101,7 @@
    "heading_deg": 17.189,
    "curvature": 0.0,
    "width_m": 27.6,
-   "beat": "S3-ABYSSE"
+   "beat": "S4-GUE"
   },
   {
    "t": 98.0,
@@ -1391,7 +1391,7 @@
    "heading_deg": 17.189,
    "curvature": 0.0,
    "width_m": 26.0,
-   "beat": "S4-GUE"
+   "beat": "S5-RACINES"
   },
   {
    "t": 127.0,
@@ -1401,7 +1401,7 @@
    "heading_deg": 17.189,
    "curvature": 0.0,
    "width_m": 24.83,
-   "beat": "S4-GUE"
+   "beat": "S5-RACINES"
   },
   {
    "t": 128.0,
@@ -2151,7 +2151,7 @@
    "heading_deg": 24.637,
    "curvature": 0.0,
    "width_m": 25.67,
-   "beat": "S7-LAC"
+   "beat": "S6-LUNE"
   },
   {
    "t": 203.0,
@@ -2161,7 +2161,7 @@
    "heading_deg": 24.622,
    "curvature": -0.00054,
    "width_m": 26.5,
-   "beat": "S7-LAC"
+   "beat": "S6-LUNE"
   },
   {
    "t": 204.0,
@@ -2518,16 +2518,6 @@
    "s": 239.0,
    "x": 231.577,
    "y": 48.308,
-   "heading_deg": 14.61,
-   "curvature": 0.0,
-   "width_m": 34.0,
-   "beat": "S7-LAC"
-  },
-  {
-   "t": 240.0,
-   "s": 240.0,
-   "x": 232.545,
-   "y": 48.56,
    "heading_deg": 14.61,
    "curvature": 0.0,
    "width_m": 34.0,

@@ -68,6 +68,7 @@ def main():
             "brume_hex": "#%02x%02x%02x" % tuple(int(round(v * 255)) for v in linear_to_srgb(lin / max(lin.max(), 1e-6))),
             "lumiere": params["lumiere"], "ombre": params["ombre"], "ciel": params["ciel"],
             "ciel_teinte": params["ciel_teinte"],
+            "fondu_s": params.get("fondu_s", cfg["fondu_s"]), "avance_s": params.get("avance_s", 0.0),
             "soleil_dir": sun_direction(river, offset + b["music_s"], *params["soleil"]),
         })
     (STYLE / "ambiance.json").write_text(json.dumps(out, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")

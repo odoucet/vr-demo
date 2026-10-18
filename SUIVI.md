@@ -55,6 +55,7 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 | D7 | Sons Freesound (9 ambiances et bruitages, tous CC0) | un candidat retenu par besoin d'après titre et fiabilité, sans écoute : `audio/sfx/*.ogg` ; alternatives dans `audio/sfx/candidates/README.md` | `freesound.py pick <besoin> <id>` | |
 | D8 | Cadrages des caméras de revue | `pipeline/review/cameras.yaml` actuel | éditer le YAML | |
 | D11 | Lanterne de proue dans le champ de vision : vue depuis la place assise, elle est au centre, juste au-dessus des yeux, pendant toute la balade (`review/iter-002/`) | place assise reculée sur le banc arrière (-1,20 m) et lanterne en papier lumineux ; alternatives : perche déportée sur le côté, lanterne plus haute, ou spectateur assis de biais | régénérer l'asset barque ou déplacer la caméra (`greybox.py`) | |
+| D12 | Placement des stems autour de la barque | stems Suno déposés le 18/10, placés selon `pipeline/audio/stems.yaml` | déposer les stems dans `audio/music/stems/` (créer le dossier), puis `python pipeline/build.py stems` : placement automatique autour de la barque (`pipeline/audio/stems.yaml` : piano devant à droite, cordes larges derrière, basses sous la barque, bois devant à gauche en hauteur, cuivres au loin, celesta au-dessus) | |
 | D9 | M'autoriser à installer Blender portable (sans droits admin, sur G:) | j'attends ; nettoyage des maillages via les nœuds ComfyUI en attendant | — | |
 
 ## 🔴 Bloquants
@@ -100,6 +101,18 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 
 ## Fait récemment
 
+- **Nouvelle musique et stems (18/10, 16 h 30)** : ta nouvelle « Luminous Wonder » en WAV est une autre prise que le MP3 (corrélation quasi nulle), de même durée (219,44 s). Séquencier recalé sur l'analyse de structure (`review/music/structure.png`) : S3 +2 s (frontière nette à 26 s), S4 −1 s, S5 −2 s, S6 inchangé, S7 +2 s ; révélation des lanternes sur la dernière montée de l'outro (206,7 s). Les repères du parcours restent dans leurs beats.
+  - **Stems spatialisés** : tes 10 stems Suno deviennent 12 sources attachées à la barque (`pipeline/audio/stems.yaml`). Piano devant à droite, cordes larges derrière, basses sous la barque, bois devant à gauche en hauteur, cuivres au loin, guitare à gauche, nappe de synthé au-dessus, percussions derrière ; « Other » reste en stéréo. La musique stéréo n'est plus jouée quand les stems sont là.
+  - **Mémoire et APK** : les WAV restent les sources ; Unreal les recompresse à l'empaquetage (pas besoin d'Opus). Toutes les pistes sont lues en flux : décompressées d'un coup, elles prendraient plus de 200 Mo.
+- **Brouillard** : il n'était **jamais rendu au casque** (le Quest le calcule dans une passe séparée qui exige le HDR mobile, désactivé). Il est maintenant calculé dans le rendu de base, en **brouillard bas** : épais au ras de l'eau, il s'éclaircit avec la hauteur et le ciel reste dégagé. Densités relevées, eau en grille de 5 m (le brouillard est calculé aux sommets).
+- **Recentrage VR** : au lancement, origine au sol sous le joueur, puis après 1 s recentrage position et cap. Le spectateur est sur le banc, face à la proue, quels que soient la zone de jeu et le dernier recentrage du Quest.
+- **Créatures et ambiance** :
+  - Abysses : la créature file devant puis s'enfonce et s'éteint dans le chenal profond, au lieu de disparaître dans le sol.
+  - Créature volante : passage devant la lune 40 % plus lent.
+  - Nuit : le passage à S6 commence 8 s plus tôt et dure 26 s au lieu de 12.
+  - Arbre colossal : affiché dès le début, il n'apparaît plus d'un coup.
+  - Eau : le reflet ne monte plus au-delà de 55° (au zénith, le ciel équirectangulaire s'étirait en rayons sur l'eau).
+- **Arbres** : fondu tramé entre niveaux de détail retiré. Il empêchait le GPU de rejeter tôt les pixels cachés : la forêt coûtait 6,4 ms. La brume, maintenant visible, adoucit les changements de niveau au loin.
 - **Retours du 18/10 après-midi** :
   - **Lucioles en particules** : lueurs douces face à l'œil, qui s'allument une à une (berges à la fin du noir, nuage de l'envol en sortant de l'eau). Elles ne s'affichaient plus du tout dans les deux dernières versions : les carrés de taille nulle étaient supprimés à la construction du maillage. Corrigé et vérifié sur PC, **pas encore vu au casque** (pause demandée).
   - **Ponton et arche des racines** : tes modèles 3D (TRELLIS.2 depuis `refs/ponton.png` et `refs/racine.png`) remplacent les cubes et le tube du greybox, avec le look peint et une teinte raccordée au décor.

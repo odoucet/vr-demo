@@ -106,7 +106,7 @@ MPC_PATH = f"{GB}/MPC_Ambiance"
 MPC_VECTORS = {"SoleilDir": (0.9, -0.4, 0.2), "Lumiere": (1.0, 0.95, 0.85), "Ombre": (0.3, 0.35, 0.55),
                "CielAppoint": (0.1, 0.12, 0.2), "CielTeinte": (1.0, 1.0, 1.0), "Barque": (0.0, 0.0, 0.0)}
 # CielLuminosite (ancien), apparition progressive des lucioles des berges et du nuage de l'envol
-MPC_SCALARS = {"CielLuminosite": 1.0, "LucioleFade": 1.0, "EnvolFade": 0.0}
+MPC_SCALARS = {"CielLuminosite": 1.0, "LucioleFade": 1.0, "EnvolFade": 0.0, "AbyssFade": 1.0}
 MPC_DIGEST = spec_digest("mpc-v5", sorted(MPC_VECTORS), sorted(MPC_SCALARS))
 
 
@@ -239,7 +239,7 @@ float r2 = saturate(r0 * 0.7 + r1 * 0.3 + 0.25);   // variation lente sans lectu
 // reflet du ciel peint, déformé par les rides
 float3 rd = float3(v.x, v.y, abs(v.z));
 float su = 0.5 + atan2(rd.y, rd.x) / (2.0 * PI) + T * %(drift)f;
-float se = asin(clamp(rd.z, 0.0, 1.0));
+float se = min(asin(clamp(rd.z, 0.0, 1.0)), 0.96);   // pas au-delà de 55° : au zénith l'équirectangulaire s'étire en rayons
 float sv = clamp(0.82 - se / (0.5 * PI) * 0.82 + (rip - 0.3) * 0.025, 0.0, 1.0);
 float3 sky = Texture2DSample(Sky, SkySampler, float2(su, sv)).rgb * Teinte.rgb;
 float fr = 0.06 + 0.94 * pow(1.0 - abs(v.z), 4.0);
@@ -488,7 +488,9 @@ def peint_material(name="M_Peint", dithered=False):
 
 MATS = {
     "Peint": peint_material(),
-    "PeintArbreBase": peint_material("M_PeintArbre", dithered=True),
+    # sans fondu tramé : il empêche le GPU du Quest de rejeter tôt les pixels cachés (houppiers superposés) ;
+    # mesure du 18/10 : la forêt coûtait 6,4 ms avec lui
+    "PeintArbreBase": peint_material("M_PeintArbre", dithered=False),
     "Terrain": material("Terrain", (0.16, 0.22, 0.08)),
     "Eau": material("Eau", (0.01, 0.025, 0.035), roughness=0.7, specular=0.08, opacity=0.55),
     "Bois": material("Bois", (0.18, 0.11, 0.06)),
@@ -702,8 +704,16 @@ def build_mesh(name, data, uv_scale_cm=400.0):
 
 
 b = GEO["bounds"]
-GEO["meshes"]["Eau"] = {"vertices": [[b["x0"], b["y0"], 0], [b["x1"], b["y0"], 0], [b["x1"], b["y1"], 0], [b["x0"], b["y1"], 0]],
-                        "triangles": [[0, 1, 2], [0, 2, 3]]}
+# Eau en grille de 5 m (et non plus un seul carré) : sur Quest la brume est calculée aux sommets.
+_n = 5.0
+_nx, _ny = int((b["x1"] - b["x0"]) / _n) + 1, int((b["y1"] - b["y0"]) / _n) + 1
+_wv = [[b["x0"] + i * _n, b["y0"] + j * _n, 0.0] for j in range(_ny + 1) for i in range(_nx + 1)]
+_wt = []
+for j in range(_ny):
+    for i in range(_nx):
+        a0 = j * (_nx + 1) + i
+        _wt += [[a0, a0 + 1, a0 + _nx + 2], [a0, a0 + _nx + 2, a0 + _nx + 1]]
+GEO["meshes"]["Eau"] = {"vertices": _wv, "triangles": _wt, "normals": [[0, 0, 1]] * len(_wv)}
 MESH_MATS["Eau"] = "Eau"
 with open(os.path.join(ROOT, "pipeline", "layout", "vegetation.json"), encoding="utf-8") as f:
     VEG = json.load(f)
@@ -999,7 +1009,7 @@ if os.path.exists(SKY_PNG):
         sky_tex = eal.load_asset(f"{GB}/ciel")
         eal.set_metadata_tag(sky_tex, "source_sha1", sky_digest)
         eal.save_loaded_asset(sky_tex)
-    SKY_WATER_VERSION = "ciel-eau-v7"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
+    SKY_WATER_VERSION = "ciel-eau-v8"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
     sky_mat_path = f"{GB}/M_GB_CielPeint"
     sky_mat = eal.load_asset(sky_mat_path) if eal.does_asset_exist(sky_mat_path) else None
     rebuild_sky_water = not up_to_date(sky_mat, spec_digest(SKY_WATER_VERSION, sky_digest, MPC_DIGEST, WATER_CODE,
@@ -1131,7 +1141,7 @@ def peint_tex_material(name, texture, anim=None, box=None, glow=None, tint=None)
     if box is not None:
         box_def = "".join(f"#define {k} {v:.3f}\n" for k, v in zip(("BXN", "BXX", "BYN", "BYX", "BZN", "BZX"), box))
     anim_code = box_def + ANIM_CODES[anim] if anim else None
-    digest = spec_digest("peint-tex-v5", PEINT_CODE, MPC_DIGEST, texture.get_path_name(), anim_code, glow, tint)
+    digest = spec_digest("peint-tex-v6", PEINT_CODE, MPC_DIGEST, texture.get_path_name(), anim_code, glow, tint)
     existing = eal.load_asset(path) if eal.does_asset_exist(path) else None
     if up_to_date(existing, digest):
         return existing
@@ -1168,10 +1178,15 @@ def peint_tex_material(name, texture, anim=None, box=None, glow=None, tint=None)
         mel.connect_material_expressions(cp, "", node, pin)
     out = node
     if glow is not None:          # bioluminescence : la texture éclaire aussi par elle-même
-        gl = custom_node(mat, f"return C + Tex * float3({glow[0]}, {glow[1]}, {glow[2]});",
-                         unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["C", "Tex"], -250, 0)
+        # s'éteint en s'éloignant (AbyssFade, animé par la séquence)
+        gl = custom_node(mat, f"return (C + Tex * float3({glow[0]}, {glow[1]}, {glow[2]})) * saturate(F);",
+                         unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["C", "Tex", "F"], -250, 0)
         mel.connect_material_expressions(node, "", gl, "C")
         mel.connect_material_expressions(tex, "RGB", gl, "Tex")
+        fd = mel.create_material_expression(mat, unreal.MaterialExpressionCollectionParameter, -500, 200)
+        fd.set_editor_property("collection", MPC)
+        fd.set_editor_property("parameter_name", "AbyssFade")
+        mel.connect_material_expressions(fd, "", gl, "F")
         out = gl
     mel.connect_material_property(out, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
     if anim_code is not None:
@@ -1299,6 +1314,18 @@ if racine is not None:
         if a.get_actor_label() == "GB_ArcheRacines":       # l'ancien tube
             actors.destroy_actor(a)
 
+# Stems de la musique (pipeline/audio/prepare_stems.py) : une source par stem, attachée à la barque autour du
+# spectateur ; la séquence y joue la piste (animatic.py). Sans stems déposés : rien.
+_stems_json = os.path.join(ROOT, "Unreal", "Saved", "import", "stems.json")
+STEMS = json.load(open(_stems_json, encoding="utf-8"))["stems"] if os.path.exists(_stems_json) else []
+for st in STEMS:
+    if st["position"] is None:
+        continue
+    fwd, left, up = st["position"]
+    em = tag(actors.spawn_actor_from_class(unreal.TargetPoint, boat.get_actor_location()), st["id"])
+    em.attach_to_actor(boat, "", unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, False)
+    em.root_component.set_editor_property("relative_location", unreal.Vector(SEAT_X_CM + fwd * 100.0, -left * 100.0, EYE_CM + up * 100.0))
+
 # Lumière de crépuscule, ciel, brume.
 sun = tag(actors.spawn_actor_from_class(unreal.DirectionalLight, unreal.Vector(0, 0, 3000), unreal.Rotator(0, -8, ue_yaw(start["heading_deg"]) + 150)), "Soleil")
 sun.light_component.set_editor_property("intensity", 14.0)
@@ -1316,6 +1343,9 @@ with open(os.path.join(ROOT, "pipeline", "style", "ambiance.json"), encoding="ut
 fc.set_editor_property("fog_density", fog_s2["densite"])
 fc.set_editor_property("fog_inscattering_luminance", unreal.LinearColor(*fog_s2["brume_lineaire"], 1.0))
 fc.set_editor_property("start_distance", 1500.0)
+# brume basse (retour d'Olivier) : épaisse au ras de l'eau, sa densité diminue de moitié tous les ~7 m de hauteur ;
+# le ciel peint (matériau « ciel ») n'est pas embrumé
+fc.set_editor_property("fog_height_falloff", 1.4)
 tag(actors.spawn_actor_from_class(unreal.PlayerStart, ue(start["x"], start["y"], 0.2)), "Depart")
 
 # Pas de réglage d'exposition : l'exposition auto est coupée dans le projet (VR) et le moteur ignore alors
@@ -1394,8 +1424,11 @@ if FILTER is not None:
 # quelle que soit la zone de jeu (retour d'Olivier : on se retrouvait derrière la barque). Blueprint écrit par
 # script avec les outils Blueprint du plugin EditorToolset (catégories localisées de l'éditeur).
 def recentering_blueprint():
+    """BP_Recentrage : BeginPlay → origine LocalFloor → attente 1 s (pose de tête valide) → recentrage position et
+    cap (la hauteur reste celle du sol : hauteur assise réelle). Le spectateur est sur le banc, face à la proue,
+    quelle que soit la zone de jeu ou le dernier recentrage du Quest."""
     from editor_toolset.toolsets.blueprint import BlueprintTools as BT
-    path, version = "/Game/Look/BP_Recentrage", "recentrage-v1"
+    path, version = "/Game/Look/BP_Recentrage", "recentrage-v2"
     bp = eal.load_asset(path) if eal.does_asset_exist(path) else None
     if bp is not None and eal.get_metadata_tag(bp, "source_sha1") == version:
         return bp
@@ -1403,13 +1436,23 @@ def recentering_blueprint():
         eal.delete_asset(path)
     bp = BT.create("/Game/Look", "BP_Recentrage", unreal.Actor.static_class())
     g = next(g for g in BT.list_graphs(bp) if "EventGraph" in g.get_name())
-    begin = next(n for n in BT.find_nodes(g) if "BeginPlay" in str(BT._get_node_info(n).type_id))
-    bi = BT._get_node_info(begin)
-    types = BT.find_node_types(g, "SetTrackingOrigin")
-    node = BT._get_node_info(BT.create_node(g, next(t for t in types if t.endswith("|SetTrackingOrigin")), unreal.IntPoint(300, 0)))
-    BT.connect_pins(next(p_.pin_id for p_ in bi.output_pins if str(p_.name) == "then"),
-                    next(p_.pin_id for p_ in node.input_pins if str(p_.name) == "execute"))
-    BT.set_pin_value(next(p_.pin_id for p_ in node.input_pins if str(p_.name) == "Origin"), "LocalFloor")
+
+    def node(suffix, x):
+        tid = next(t for t in BT.find_node_types(g, suffix) if t.endswith("|" + suffix))
+        return BT._get_node_info(BT.create_node(g, tid, unreal.IntPoint(x, 0)))
+
+    def pin(info, name, out=False):
+        return next(p_.pin_id for p_ in (info.output_pins if out else info.input_pins) if str(p_.name) == name)
+
+    begin = BT._get_node_info(next(n for n in BT.find_nodes(g) if "BeginPlay" in str(BT._get_node_info(n).type_id)))
+    origin = node("SetTrackingOrigin", 300)
+    delay = node("Delay", 600)
+    reset = node("ResetOrientationandPosition", 900)
+    BT.connect_pins(pin(begin, "then", True), pin(origin, "execute"))
+    BT.set_pin_value(pin(origin, "Origin"), "LocalFloor")
+    BT.connect_pins(pin(origin, "then", True), pin(delay, "execute"))
+    BT.set_pin_value(pin(delay, "Duration"), "1.0")
+    BT.connect_pins(pin(delay, "then", True), pin(reset, "execute"))      # sortie « Completed » nommée « then »
     BT.compile_blueprint(bp)
     eal.set_metadata_tag(bp, "source_sha1", version)
     eal.save_loaded_asset(bp)

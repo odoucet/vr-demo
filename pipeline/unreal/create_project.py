@@ -63,6 +63,9 @@ r.DefaultFeature.MotionBlur=False
 r.DefaultFeature.LensFlare=False
 ; ajouté par l'éditeur pour Meta Quest
 r.Mobile.UseHWsRGBEncoding=True
+; brume dans le rendu de base (par sommet) : par défaut le Quest la calcule dans une passe séparée qui exige le HDR
+; mobile, désactivé ici ; elle n'était donc jamais rendue au casque (retour d'Olivier, 18/10)
+r.Mobile.DisableVertexFog=False
 ; rendu fovéal (bords de l'image moins définis, invisible au casque) : mesure du 18/10, GPU saturé en S2-S5
 r.VRS.Enable=True
 xr.OpenXRFBFoveationLevel=3
