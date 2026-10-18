@@ -62,6 +62,17 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 | D16 | Arbres (« le plus moche ») ou autre décor (statues géantes ?) | arbres actuels ; pistes à débattre (voir « Priorités ») | — | |
 | D9 | M'autoriser à installer Blender portable (sans droits admin, sur G:) | j'attends ; nettoyage des maillages via les nœuds ComfyUI en attendant | — | |
 
+## Priorités (18/10 au soir)
+
+1. **Arbres (D16)** : ce sont des boules texturées, d'où l'aspect « jeu des années 90 ». Pistes, à tester petit avant de choisir :
+   - **arbres peints en plans** : silhouettes de feuillage peintes (générées en local dans ComfyUI, dans le style du ciel), posées en croix ou face à l'œil pour le milieu et le fond de la forêt. C'est le procédé des décors d'animation, et c'est aussi moins coûteux en sommets (notre goulot au Quest) ;
+   - houppiers à bord découpé en touffes (silhouette « nuage » festonnée), plus de sommets ;
+   - autre décor (statues ou ruines géantes envahies de mousse, design original) : change l'ambiance, à décider ensemble.
+2. **Créature des abysses** au casque : vérifier qu'elle se voit à droite vers 1:06-1:14 ; sinon la rapprocher ou la faire remonter.
+3. **Marge de perf (D14)** : S2 à 71,5 i/s, et toute nouvelle géométrie se paiera.
+4. **J1 (sphère vidéo 360 + synchro)** : go/no-go jamais fait au casque, alors que c'est la base de l'architecture proche / lointain.
+5. Sons : repères sonores des créatures, écoute des ambiances (D7) ; caméras de revue et planche à remettre à jour pour la PR.
+
 ## 🔴 Bloquants
 
 | # | Blocage | Bloque | Ce qu'il faut | Contournement en cours |
