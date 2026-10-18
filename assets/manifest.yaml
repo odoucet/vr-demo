@@ -393,3 +393,14 @@ assets:
   source: calculée sur le terrain du greybox, pipeline/layout/water_map.py
   licence: généré localement
   generated: '2026-10-18'
+- id: texture/arbres-atlas
+  type: texture
+  placeholder: true
+  file: assets/textures/arbres_atlas.png
+  source: 8 arbres peints générés en local (Z-Image Turbo), détourés (BiRefNet, nœud RemoveBackground), assemblés en atlas 4 × 2 ; variante B de la comparaison des arbres
+  workflow: pipeline/comfy/workflows/z_image_turbo_t2i.json + LoadBackgroundRemovalModel / RemoveBackground
+  script: pipeline/comfy/trees.py
+  seed: 1000-1007
+  prompt: pipeline/comfy/trees.py (BASE + KINDS, bloc de style du ciel)
+  licence: généré localement
+  generated: '2026-10-18'

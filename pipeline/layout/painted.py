@@ -429,6 +429,30 @@ def build_broadleaf(mesh, plan, lod):
             cylinder(mesh, [0, 0, c[2] - r * 0.9], tip, h * 0.012, h * 0.005, plan["trunk"], sides=4)
 
 
+def build_broadleaf_c(mesh, plan, lod):
+    """Variante C (comparaison du 18/10) : même plan et même nombre de sommets que build_broadleaf, mais chaque
+    touffe est ombrée pour elle-même, comme un arbre peint : normales tirées de son propre centre (abaissé, le dessus
+    prend la lumière), dessous sombre (occlusion par touffe), touffes aplaties et festonnées, cœur du houppier plus
+    sombre. Le houppier se lit en masses superposées au lieu d'une seule boule dégradée."""
+    subs, sides, branches = LOD_SPEC[lod]
+    c, r, h = plan["crown_c"], plan["crown_r"], plan["height"]
+    cylinder(mesh, [0, 0, -0.3], [c[0], c[1], c[2] - r * 0.2], h * 0.035, h * 0.022, plan["trunk"], sides=sides)
+    rng = np.random.default_rng(7)
+    blobs = plan["blobs"] if lod < 2 else plan["blobs"][:4]
+    for center, radii, col, level in blobs:
+        sd = subs[level]
+        if sd is None:
+            continue
+        rr = np.array([radii[0], radii[1], radii[2] * 0.72])
+        lift = 1.0 + 0.10 * (center[2] - c[2]) / r          # touffes hautes plus claires, basses plus sombres
+        shade = col * (0.72 if level == 0 else lift)
+        blob(mesh, center, rr, shade, rng, subdiv=sd, normal_center=center - [0, 0, rr[2] * 0.6], normal_blend=0.85,
+             ao=(center[2] - rr[2], center[2] + rr[2] * 0.5, 0.3 if level == 0 else 0.45), wobble=0.2)
+    if branches:
+        for tip in plan["branches"]:
+            cylinder(mesh, [0, 0, c[2] - r * 0.9], tip, h * 0.012, h * 0.005, plan["trunk"], sides=4)
+
+
 def conifer_plan(rng, leaf, trunk, height=PROTO_HEIGHT):
     return {"height": height, "col": jitter(leaf, rng, 0.06), "trunk": jitter(trunk, rng),
             "jit": rng.uniform(-0.15, 0.15, 64), "drop": rng.uniform(0, 0.12, 64), "rr": rng.uniform(0.85, 1.1, 64)}

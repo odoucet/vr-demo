@@ -862,6 +862,114 @@ for (pname, kind), tmesh in TREE_MESHES.items():
           for x, y, z, yaw, sxy, sz in VEG["instances"][pname]]
     hism.add_instances(xf, False, True)
 
+# --- Variante B (comparaison des pistes d'arbres, 18/10) : arbres peints face à l'œil -----------------------------
+# Atlas de 8 arbres peints (pipeline/comfy/trees.py, ComfyUI local), un plan de 2 triangles par arbre tourné vers
+# la caméra autour de la verticale (calcul par sommet), case de l'atlas par instance (donnée d'instance 0), arbre mis
+# à la hauteur de l'instance. Mêmes positions que la forêt 3D.
+ATLAS_JSON = os.path.join(ROOT, "assets", "textures", "arbres", "arbres_atlas.json")
+BILLBOARD_CODE = """float fill[8] = {%(fill)s};
+int cell = (int)round(C);
+float k = 1.0 / fill[cell];
+float3 lw = LW.xyz;                                  // position du sommet dans le repère de l'instance, en monde
+float3 pivot = WP.xyz - lw;                          // pied de l'arbre
+float sx = length(SX.xyz);                           // échelle horizontale de l'instance
+float2 d = normalize(Cam.xy - pivot.xy + float2(1e-3, 0.0));
+float2 right = float2(-d.y, d.x);
+float3 p = pivot + float3(right * LP.x * sx * k, lw.z * k);
+return p - WP.xyz;"""
+BILLBOARD_UV_CODE = """int cell = (int)round(C);
+return float2((float(cell %% 4) + UV.x) / 4.0, (float(cell / 4) + UV.y) / 2.0);"""
+BILLBOARD_COLOR_CODE = """float3 c = Tex.rgb * (lerp(Ombre.rgb, Lumiere.rgb, 0.75) + Ciel.rgb * 0.35);
+return c;"""
+
+
+def billboard_material(atlas_tex, fill):
+    path = f"{GB}/M_GB_ArbrePeint"
+    code = BILLBOARD_CODE % {"fill": ", ".join(f"{f:.3f}" for f in fill)}
+    digest = spec_digest("arbre-peint-v1", code, BILLBOARD_UV_CODE % {}, BILLBOARD_COLOR_CODE, MPC_DIGEST,
+                         eal.get_metadata_tag(atlas_tex, "source_sha1"))
+    mat = eal.load_asset(path) if eal.does_asset_exist(path) else None
+    if up_to_date(mat, digest):
+        return mat
+    mat = mat or tools.create_asset("M_GB_ArbrePeint", GB, unreal.Material, unreal.MaterialFactoryNew())
+    mel.delete_all_material_expressions(mat)
+    mat.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_UNLIT)
+    mat.set_editor_property("float_precision_mode", unreal.MaterialFloatPrecisionMode.MFPM_FULL)
+    mat.set_editor_property("blend_mode", unreal.BlendMode.BLEND_MASKED)
+    mat.set_editor_property("opacity_mask_clip_value", 0.5)
+    mat.set_editor_property("two_sided", True)
+    mat.set_editor_property("used_with_instanced_static_meshes", True)
+    cdat = mel.create_material_expression(mat, unreal.MaterialExpressionPerInstanceCustomData, -1400, 0)
+    cdat.set_editor_property("data_index", 0)
+    wp = mel.create_material_expression(mat, unreal.MaterialExpressionWorldPosition, -1400, 100)
+    wp.set_editor_property("world_position_shader_offset", unreal.WorldPositionIncludedOffsets.WPT_EXCLUDE_ALL_SHADER_OFFSETS)
+    lp = mel.create_material_expression(mat, unreal.MaterialExpressionLocalPosition, -1400, 200)
+    tl = mel.create_material_expression(mat, unreal.MaterialExpressionTransform, -1200, 200)
+    tl.set_editor_property("transform_source_type", unreal.MaterialVectorCoordTransformSource.TRANSFORMSOURCE_LOCAL)
+    tl.set_editor_property("transform_type", unreal.MaterialVectorCoordTransform.TRANSFORM_WORLD)
+    mel.connect_material_expressions(lp, "", tl, "")
+    one = mel.create_material_expression(mat, unreal.MaterialExpressionConstant3Vector, -1400, 300)
+    one.set_editor_property("constant", unreal.LinearColor(1, 0, 0, 0))
+    tx = mel.create_material_expression(mat, unreal.MaterialExpressionTransform, -1200, 300)
+    tx.set_editor_property("transform_source_type", unreal.MaterialVectorCoordTransformSource.TRANSFORMSOURCE_LOCAL)
+    tx.set_editor_property("transform_type", unreal.MaterialVectorCoordTransform.TRANSFORM_WORLD)
+    mel.connect_material_expressions(one, "", tx, "")
+    cam = mel.create_material_expression(mat, unreal.MaterialExpressionCameraPositionWS, -1400, 400)
+    wpo = custom_node(mat, code, unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["C", "WP", "LP", "LW", "SX", "Cam"], -900, 200)
+    for pin, src in (("C", cdat), ("WP", wp), ("LP", lp), ("LW", tl), ("SX", tx), ("Cam", cam)):
+        mel.connect_material_expressions(src, "", wpo, pin)
+    mel.connect_material_property(wpo, "", unreal.MaterialProperty.MP_WORLD_POSITION_OFFSET)
+    uv0 = mel.create_material_expression(mat, unreal.MaterialExpressionTextureCoordinate, -1400, 600)
+    uvn = custom_node(mat, BILLBOARD_UV_CODE % {}, unreal.CustomMaterialOutputType.CMOT_FLOAT2, ["C", "UV"], -900, 600)
+    mel.connect_material_expressions(cdat, "", uvn, "C")
+    mel.connect_material_expressions(uv0, "", uvn, "UV")
+    uvi = mel.create_material_expression(mat, unreal.MaterialExpressionVertexInterpolator, -800, 700)   # calcul par sommet
+    mel.connect_material_expressions(uvn, "", uvi, "VS")
+    tex = mel.create_material_expression(mat, unreal.MaterialExpressionTextureSample, -700, 800)
+    tex.set_editor_property("texture", atlas_tex)
+    mel.connect_material_expressions(uvi, "", tex, "UVs")
+    col = custom_node(mat, BILLBOARD_COLOR_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["Tex", "Lumiere", "Ombre", "Ciel"], -400, 800)
+    mel.connect_material_expressions(tex, "RGB", col, "Tex")
+    for i, nm in enumerate(("Lumiere", "Ombre", "Ciel")):
+        cp = mel.create_material_expression(mat, unreal.MaterialExpressionCollectionParameter, -700, 1000 + 100 * i)
+        cp.set_editor_property("collection", MPC)
+        cp.set_editor_property("parameter_name", "CielAppoint" if nm == "Ciel" else nm)
+        mel.connect_material_expressions(cp, "", col, nm)
+    mel.connect_material_property(col, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
+    mel.connect_material_property(tex, "A", unreal.MaterialProperty.MP_OPACITY_MASK)
+    mel.recompile_material(mat)
+    if mel.get_statistics(mat).num_pixel_shader_instructions <= 0:
+        raise RuntimeError("M_GB_ArbrePeint ne compile pas")
+    mark_saved(mat, digest)
+    return mat
+
+
+if VEG.get("billboards") and os.path.exists(ATLAS_JSON):
+    with open(ATLAS_JSON, encoding="utf-8") as f:
+        _cells = json.load(f)
+    _fill = [(c["v1"] - c["v0"]) * 2.0 for c in _cells] + [1.0] * (8 - len(_cells))
+    MATS["ArbrePeint"] = billboard_material(look_texture("arbres_atlas"), _fill)
+    # plan de 7 × 14 m (case 512 × 1024 de l'atlas), pied au centre du bord bas ; mis à l'échelle par instance
+    BB_MESH = build_mesh("ArbrePeintPlan", {"vertices": [[-3.5, 0, 0], [3.5, 0, 0], [3.5, 0, 14.0], [-3.5, 0, 14.0]],
+                                            "triangles": [[0, 1, 2], [0, 2, 3]], "normals": [[0, -1, 0]] * 4,
+                                            "uv": [[0, 1], [1, 1], [1, 0], [0, 0]], "color": [1, 1, 1, 1]})
+    holder = tag(actors.spawn_actor_from_class(unreal.Actor, unreal.Vector(0, 0, 0)), "GB_ForetB")
+    root = _sds.k2_gather_subobject_data_for_instance(holder)[0]
+    _sds.add_new_subobject(unreal.AddNewSubobjectParams(parent_handle=root, new_class=unreal.HierarchicalInstancedStaticMeshComponent))
+    hism = holder.get_component_by_class(unreal.HierarchicalInstancedStaticMeshComponent)
+    hism.set_static_mesh(BB_MESH)
+    hism.set_material(0, MATS["ArbrePeint"])
+    hism.set_collision_enabled(unreal.CollisionEnabled.NO_COLLISION)
+    hism.set_editor_property("cast_shadow", False)
+    hism.set_editor_property("instance_end_cull_distance", 18000)
+    hism.set_editor_property("num_custom_data_floats", 1)
+    # bornes élargies : le plan tourne vers la caméra, sa boîte d'origine ne le contient plus
+    hism.set_editor_property("bounds_scale", 2.0)
+    bbs = VEG["billboards"]
+    hism.add_instances([unreal.Transform(ue(x, y, z), unreal.Rotator(0, 0, 0), unreal.Vector(sc, sc, sc)) for x, y, z, sc, _c in bbs], False, True)
+    for i, b in enumerate(bbs):
+        hism.set_custom_data_value(i, 0, float(b[4]), False)
+
 CUBE = eal.load_asset("/Engine/BasicShapes/Cube")      # 100 cm
 SPHERE = eal.load_asset("/Engine/BasicShapes/Sphere")  # 100 cm de diamètre
 CYL = eal.load_asset("/Engine/BasicShapes/Cylinder")
@@ -1073,6 +1181,21 @@ fondu.static_mesh_component.set_editor_property("translucency_sort_priority", 10
 fondu.static_mesh_component.set_editor_property("cast_shadow", False)
 fondu.attach_to_component(vr_cam, "", unreal.AttachmentRule.SNAP_TO_TARGET, unreal.AttachmentRule.SNAP_TO_TARGET,
                           unreal.AttachmentRule.KEEP_RELATIVE, False)
+
+# Étiquette de la variante d'arbres affichée (A, B, C), devant la lanterne, face au spectateur ; la séquence n'en
+# montre qu'une à la fois (animatic.py, VARIANTES).
+for _v, _txt in (("A", "A  arbres actuels"), ("B", "B  arbres peints"), ("C", "C  touffes ombrees")):
+    _lab = tag(actors.spawn_actor_from_class(unreal.TextRenderActor, boat.get_actor_location()), f"GB_Variante{_v}")
+    _tr = _lab.text_render
+    _tr.set_text(_txt)
+    _tr.set_editor_property("world_size", 9.0)
+    _tr.set_editor_property("horizontal_alignment", unreal.HorizTextAligment.EHTA_CENTER)
+    _tr.set_editor_property("text_render_color", unreal.Color(255, 230, 160, 255))
+    _tr.set_mobility(unreal.ComponentMobility.MOVABLE)
+    _lab.attach_to_actor(boat, "", unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, False)
+    _lab.root_component.set_editor_property("relative_location", unreal.Vector(LANTERN_LOCAL[0] - 25.0, 0, LANTERN_LOCAL[2] - 45.0))
+    _lab.root_component.set_editor_property("relative_rotation", unreal.Rotator(0, 0, 180))
+
 cine = cam.get_cine_camera_component()
 cine.set_editor_property("current_focal_length", 12.0)    # ~ 90° horizontal sur capteur 16:9
 focus = cine.get_editor_property("focus_settings")

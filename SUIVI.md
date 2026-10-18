@@ -62,6 +62,18 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 | D16 | Arbres (« le plus moche ») ou autre décor (statues géantes ?) | arbres actuels ; pistes à débattre (voir « Priorités ») | — | |
 | D9 | M'autoriser à installer Blender portable (sans droits admin, sur G:) | j'attends ; nettoyage des maillages via les nœuds ComfyUI en attendant | — | |
 
+## ▶ APK de comparaison des arbres (installé au Quest, 18/10)
+
+La forêt change toutes les 12 s pendant toute la balade, avec une étiquette à la proue :
+**A** arbres actuels → **B** arbres peints → **C** touffes ombrées → A… Mêmes positions d'arbres pour les trois ; les
+trois tiennent ~72 i/s (`review/perf/`). Captures : `review/iter-022/planche-casque.jpg`.
+- **B, arbres peints** : 8 arbres peints générés en local (ComfyUI), un plan tourné vers l'œil par arbre. C'est la piste des
+  décors d'animation. Limites à juger au casque : les plans sont plats en relief (stéréo) et pivotent quand on tourne
+  la tête ; le gros plan est le plus exposé.
+- **C, touffes ombrées** : mêmes arbres 3D, chaque touffe ombrée pour elle-même (dessus clair, dessous sombre), touffes aplaties.
+- L'arbre colossal, la lisière et les buissons ne changent pas.
+Dis-moi laquelle garder (ou un mélange : par exemple B au loin et C près de l'eau) ; je retirerai ensuite le cycle.
+
 ## Priorités (18/10 au soir)
 
 1. **Arbres (D16)** : ce sont des boules texturées, d'où l'aspect « jeu des années 90 ». Pistes, à tester petit avant de choisir :

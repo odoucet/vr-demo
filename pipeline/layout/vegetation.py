@@ -110,12 +110,26 @@ def main():
             instances[name].append([round(px, 2), round(py, 2), round(z - 0.1, 2), round(float(rng.uniform(0, 360)), 1),
                                     round(scale * rng.uniform(0.95, 1.05), 3), round(scale, 3)])
             trees += 1
+    # Comparaison des pistes d'arbres (18/10) : variante C = feuillus à touffes ombrées une à une (mêmes plans, mêmes
+    # positions) ; variante B = arbres peints face à l'œil (positions et case de l'atlas, greybox.py).
+    for i in range(6):
+        protos[f"FeuilluC{i}"] = ("feuillu-c", protos[f"Feuillu{i}"][1])
+        instances[f"FeuilluC{i}"] = instances[f"Feuillu{i}"]
+    builders = {"feuillu": P.build_broadleaf, "feuillu-c": P.build_broadleaf_c, "resineux": P.build_conifer}
+    brng = np.random.default_rng(23)
+    billboards = []      # x, y, z, échelle, case de l'atlas (résineux : cases 3 et 7)
+    for name, inst in instances.items():
+        if name.startswith("FeuilluC"):
+            continue
+        for x, y, z, _yaw, sxy, sz in inst:
+            cell = int(brng.choice([3, 7])) if name.startswith("Resineux") else int(brng.choice([0, 1, 2, 4, 5, 6]))
+            billboards.append([x, y, z, round(sz * float(brng.uniform(0.95, 1.1)), 3), cell])
     prototypes = {}
     for name, (kind, plan) in protos.items():
         prototypes[name] = {}
         for lod in range(3):
             bnd = P.Bundle()
-            (P.build_broadleaf if kind == "feuillu" else P.build_conifer)(bnd, plan, lod)
+            builders[kind](bnd, plan, lod)
             prototypes[name][f"lod{lod}"] = {k: m.to_dict() for k, m in bnd.parts.items() if m.triangles}
         print(f"  {name:10s} LOD " + " / ".join(str(sum(len(m['triangles']) for m in prototypes[name][f'lod{l}'].values()))
                                                 for l in range(3)) + f" triangles, {len(instances[name])} instances")
@@ -309,7 +323,8 @@ def main():
     # herbe, fougères et fleurs des tronçons : 3 niveaux de détail (tous les groupes, DETAIL_KEEP[1], DETAIL_KEEP[2])
     out = {k: ({"lods": [m.to_dict(f) for f in DETAIL_KEEP]} if m.has_detail else m.to_dict()) for k, m in meshes.items()}
     OUT.write_text(json.dumps({"units": "m", "meshes": out,
-                               "lanternes": lanterns, "prototypes": prototypes, "instances": instances}),
+                               "lanternes": lanterns, "prototypes": prototypes, "instances": instances,
+                               "billboards": billboards}),
                    encoding="utf-8")
     print(f"→ {OUT.relative_to(ROOT)} ({OUT.stat().st_size / 1e6:.1f} Mo)")
 
