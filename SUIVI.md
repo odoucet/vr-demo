@@ -56,6 +56,7 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 | D8 | Cadrages des caméras de revue | `pipeline/review/cameras.yaml` actuel | éditer le YAML | |
 | D11 | Lanterne de proue dans le champ de vision : vue depuis la place assise, elle est au centre, juste au-dessus des yeux, pendant toute la balade (`review/iter-002/`) | place assise reculée sur le banc arrière (-1,20 m) et lanterne en papier lumineux ; alternatives : perche déportée sur le côté, lanterne plus haute, ou spectateur assis de biais | régénérer l'asset barque ou déplacer la caméra (`greybox.py`) | |
 | D12 | Placement des stems autour de la barque | stems Suno déposés le 18/10, placés selon `pipeline/audio/stems.yaml` | déposer les stems dans `audio/music/stems/` (créer le dossier), puis `python pipeline/build.py stems` : placement automatique autour de la barque (`pipeline/audio/stems.yaml` : piano devant à droite, cordes larges derrière, basses sous la barque, bois devant à gauche en hauteur, cuivres au loin, celesta au-dessus) | |
+| D13 | Versionner tes nouveaux fichiers audio (`audio/music/Luminous Wonder.wav` + 10 stems, ~460 Mo) | non versionnés (quota LFS GitHub) ; l'ancien MP3 supprimé de ton côté n'est pas non plus retiré du dépôt | je les ajoute au dépôt (LFS) et retire le MP3 | |
 | D9 | M'autoriser à installer Blender portable (sans droits admin, sur G:) | j'attends ; nettoyage des maillages via les nœuds ComfyUI en attendant | — | |
 
 ## 🔴 Bloquants

@@ -723,7 +723,7 @@ for name, data in VEG["meshes"].items():
     MESH_MATS[name] = KIND_MATS.get(name.rsplit("_", 1)[-1], "Peint")
 MESHES = {name: build_mesh(name, data) for name, data in GEO["meshes"].items()}
 _fv = [[0.0, 0.0, 0.05]] + [[1.45 * math.cos(2 * math.pi * k / 32), 0.40 * math.sin(2 * math.pi * k / 32), 0.05] for k in range(32)]
-def build_lod_mesh(name, lods, screen_sizes=(1.0, 0.75, 0.3)):
+def build_lod_mesh(name, lods, screen_sizes=(1.0, 0.85, 0.42)):
     """Maillage statique à plusieurs niveaux de détail (LOD0 le plus fin) ; reconstruit si une source change."""
     import hashlib
     digest = hashlib.sha1(json.dumps([lods, screen_sizes], sort_keys=True).encode()).hexdigest()[:12]
