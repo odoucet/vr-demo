@@ -182,6 +182,55 @@ def custom_node(mat, code, out_type, names, x, y):
 
 # Lanterne de proue dans le repère de la barque (cm) : mesurée dans le maillage (voir BOAT_* plus bas).
 LANTERN_LOCAL = (91.0, 0.0, 108.0)
+# Barque (détails plus bas) : hauteur réduite (2,6 au lieu de 3,5) : franc-bord de ~45 cm au lieu de 68.
+BOAT_SCALE, BOAT_SCALE_Z, BOAT_YAW = 3.5, 2.6, -90.0
+# Lanterne qui tangue (retour d'Olivier : « trop figée ») : même balancement, calculé dans le shader, pour la perche et
+# le corps de la lanterne (zone du maillage de la barque), le papier lumineux et le halo. Pivot au pied de la lanterne
+# (16 cm sous son centre à l'échelle d'import), roulis ~3° autour de l'axe de la barque, tangage ~2°.
+SWAY_CODE = """float ar = 0.055 * sin(T * 1.25) + 0.025 * sin(T * 0.73 + 1.7);   // roulis (rad)
+float ap = 0.035 * sin(T * 0.97 + 0.6);                                   // tangage
+float3 f = normalize(float3(F.xy, 0.0) + float3(1e-4, 0.0, 0.0));         // sens de la barque
+float3 sd = cross(float3(0.0, 0.0, 1.0), f);
+float3 v = WP.xyz - Pv;
+float3 r1 = v * cos(ar) + cross(f, v) * sin(ar) + f * dot(f, v) * (1.0 - cos(ar));
+float3 r2 = r1 * cos(ap) + cross(sd, r1) * sin(ap) + sd * dot(sd, r1) * (1.0 - cos(ap));
+return (r2 - v) * W;"""
+# barque : perche et lanterne seulement (repère d'import : longueur sur +Y, lanterne à y 22-30, pied à z ~1)
+SWAY_BOAT_CODE = """float W = saturate((LP.z - 1.0) / 5.0) * step(abs(LP.x), 7.0) * step(18.0, LP.y) * step(LP.y, 36.0);
+float3 Pv = OP.xyz + TP.xyz;
+float3 F = TF.xyz;
+""" + SWAY_CODE
+# papier et halo (centrés sur la lanterne, axe X = sens de la barque) : pivot 16 cm (× échelle) sous le centre
+SWAY_CANDLE_CODE = f"""float W = 1.0;
+float3 Pv = OP.xyz - float3(0.0, 0.0, {16.0 * BOAT_SCALE_Z:.1f});
+float3 F = TF.xyz;
+""" + SWAY_CODE
+
+
+def wire_sway(mat, code, forward, pivot_local=None):
+    """Balancement de la lanterne en décalage de position (WPO), entrées : position monde et locale, temps, origine de
+    l'objet, sens de la barque (forward local → monde) et pivot (local → monde, barque seulement)."""
+    def to_world(vec, x, y):
+        c = mel.create_material_expression(mat, unreal.MaterialExpressionConstant3Vector, x - 200, y)
+        c.set_editor_property("constant", unreal.LinearColor(*vec, 0))
+        t = mel.create_material_expression(mat, unreal.MaterialExpressionTransform, x, y)
+        t.set_editor_property("transform_source_type", unreal.MaterialVectorCoordTransformSource.TRANSFORMSOURCE_LOCAL)
+        t.set_editor_property("transform_type", unreal.MaterialVectorCoordTransform.TRANSFORM_WORLD)
+        mel.connect_material_expressions(c, "", t, "")
+        return t
+    wp = mel.create_material_expression(mat, unreal.MaterialExpressionWorldPosition, -900, 900)
+    wp.set_editor_property("world_position_shader_offset", unreal.WorldPositionIncludedOffsets.WPT_EXCLUDE_ALL_SHADER_OFFSETS)
+    names = ["WP", "LP", "T", "OP", "TF", "TP"]
+    node = custom_node(mat, code, unreal.CustomMaterialOutputType.CMOT_FLOAT3, names, -500, 900)
+    srcs = {"WP": wp,
+            "LP": mel.create_material_expression(mat, unreal.MaterialExpressionLocalPosition, -900, 1000),
+            "T": mel.create_material_expression(mat, unreal.MaterialExpressionTime, -900, 1100),
+            "OP": mel.create_material_expression(mat, unreal.MaterialExpressionObjectPositionWS, -900, 1200),
+            "TF": to_world(forward, -700, 1300),
+            "TP": to_world(pivot_local or (0, 0, 0), -700, 1400)}
+    for n in names:
+        mel.connect_material_expressions(srcs[n], "", node, n)
+    mel.connect_material_property(node, "", unreal.MaterialProperty.MP_WORLD_POSITION_OFFSET)
 CANDLE_RGB = (1.0, 0.55, 0.22)
 SKY_DRIFT = 0.0004     # tours de panorama par seconde (vent dans les nuages)
 SKY_UV_CODE = f"""float3 d = normalize(-Dir);
@@ -649,7 +698,7 @@ def candle_materials():
                              f"return float3({CANDLE_RGB[0]}, {CANDLE_RGB[1]}, {CANDLE_RGB[2]}) * 0.09 * f * f * {FLICKER};",
              unreal.BlendMode.BLEND_ADDITIVE)):
         path = f"{GB}/M_GB_{name}"
-        digest = spec_digest("bougie-v3", code)
+        digest = spec_digest("bougie-v4", code, SWAY_CANDLE_CODE)
         mat = eal.load_asset(path) if eal.does_asset_exist(path) else None
         if not up_to_date(mat, digest):
             mat = mat or tools.create_asset(f"M_GB_{name}", GB, unreal.Material, unreal.MaterialFactoryNew())
@@ -662,6 +711,7 @@ def candle_materials():
             mel.connect_material_expressions(mel.create_material_expression(mat, unreal.MaterialExpressionVertexNormalWS, -700, 100), "", node, "N")
             mel.connect_material_expressions(mel.create_material_expression(mat, unreal.MaterialExpressionCameraVectorWS, -700, 200), "", node, "V")
             mel.connect_material_property(node, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
+            wire_sway(mat, SWAY_CANDLE_CODE, (1, 0, 0))
             mel.recompile_material(mat)
             if mel.get_statistics(mat).num_pixel_shader_instructions <= 0:
                 raise RuntimeError(f"M_GB_{name} ne compile pas")
@@ -894,13 +944,17 @@ else
 return p - WP.xyz;"""
 SPRITE_UV_CODE = """float c = round(C);
 return float2((fmod(c, Cols) + UV.x) / Cols, (floor(c / Cols) + UV.y) / Rows);"""
-SPRITE_COLOR_CODE = """return Tex.rgb * (lerp(Ombre.rgb, Lumiere.rgb, 0.75) + Ciel.rgb * 0.35) * Bright;"""
+# Éclat > 1,5 : sujet lumineux (famille « nuit ») ; ses parties claires (chapeaux, fleurs, points) s'allument la nuit.
+SPRITE_COLOR_CODE = """float3 c = Tex.rgb * (lerp(Ombre.rgb, Lumiere.rgb, 0.75) + Ciel.rgb * 0.35) * min(Bright, 1.3);
+float glow = max(Bright - 1.5, 0.0) * (1.0 - saturate(Day));
+float lum = dot(Tex.rgb, float3(0.3, 0.6, 0.1));
+return c + Tex.rgb * smoothstep(0.14, 0.45, lum) * glow * 5.0;"""
 MODES = {"face": 0.0, "sphere": 1.0, "fixe": 2.0, "sol": 2.0}
 
 
 def sprite_material():
     path = f"{GB}/M_GB_Sprite"
-    digest = spec_digest("sprite-v1", SPRITE_WPO_CODE, SPRITE_UV_CODE, SPRITE_COLOR_CODE, MPC_DIGEST)
+    digest = spec_digest("sprite-v3", SPRITE_WPO_CODE, SPRITE_UV_CODE, SPRITE_COLOR_CODE, MPC_DIGEST)
     mat = eal.load_asset(path) if eal.does_asset_exist(path) else None
     if up_to_date(mat, digest):
         return mat
@@ -963,9 +1017,13 @@ def sprite_material():
     tex.set_editor_property("parameter_name", "Atlas")
     tex.set_editor_property("texture", look_texture("sprite_arbres"))
     mel.connect_material_expressions(uvi, "", tex, "UVs")
-    col = custom_node(mat, SPRITE_COLOR_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["Tex", "Lumiere", "Ombre", "Ciel", "Bright"], -400, -300)
+    col = custom_node(mat, SPRITE_COLOR_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["Tex", "Lumiere", "Ombre", "Ciel", "Bright", "Day"], -400, -300)
     mel.connect_material_expressions(tex, "RGB", col, "Tex")
     mel.connect_material_expressions(bright, "", col, "Bright")
+    dayp = mel.create_material_expression(mat, unreal.MaterialExpressionCollectionParameter, -700, 300)
+    dayp.set_editor_property("collection", MPC)
+    dayp.set_editor_property("parameter_name", "VieJour")
+    mel.connect_material_expressions(dayp, "", col, "Day")
     for i, nm in enumerate(("Lumiere", "Ombre", "Ciel")):
         cp = mel.create_material_expression(mat, unreal.MaterialExpressionCollectionParameter, -700, -100 + 100 * i)
         cp.set_editor_property("collection", MPC)
@@ -1103,7 +1161,7 @@ return float2((fmod(cell, 4.0) + UV.x) / 4.0, (floor(cell / 4.0) + UV.y) / 2.0);
 def vie_material():
     path = f"{GB}/M_GB_Vie"
     atlas = look_texture("sprite_vie")
-    digest = spec_digest("vie-v3", VIE_WPO_CODE, VIE_UV_CODE, SPRITE_COLOR_CODE, MPC_DIGEST, eal.get_metadata_tag(atlas, "source_sha1"))
+    digest = spec_digest("vie-v5", VIE_WPO_CODE, VIE_UV_CODE, SPRITE_COLOR_CODE, MPC_DIGEST, eal.get_metadata_tag(atlas, "source_sha1"))
     mat = eal.load_asset(path) if eal.does_asset_exist(path) else None
     if up_to_date(mat, digest):
         return mat
@@ -1148,9 +1206,10 @@ def vie_material():
     mel.connect_material_expressions(uvi, "", tex, "UVs")
     one = mel.create_material_expression(mat, unreal.MaterialExpressionConstant, -700, -100)
     one.set_editor_property("r", 1.0)
-    col = custom_node(mat, SPRITE_COLOR_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["Tex", "Lumiere", "Ombre", "Ciel", "Bright"], -400, -300)
+    col = custom_node(mat, SPRITE_COLOR_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["Tex", "Lumiere", "Ombre", "Ciel", "Bright", "Day"], -400, -300)
     mel.connect_material_expressions(tex, "RGB", col, "Tex")
     mel.connect_material_expressions(one, "", col, "Bright")
+    mel.connect_material_expressions(day, "", col, "Day")
     for i, nm in enumerate(("Lumiere", "Ombre", "Ciel")):
         cp = mel.create_material_expression(mat, unreal.MaterialExpressionCollectionParameter, -700, 0 + 100 * i)
         cp.set_editor_property("collection", MPC)
@@ -1184,7 +1243,7 @@ def vie_mesh(items):
                                     "uv": uv, "uv1": uv1, "uv2": uv2, "uv3": uv3, "color": [1, 1, 1, 1]})
 
 
-SPRITE_CULL = {"arbres": 18000, "arbres2": 18000, "buissons": 7000, "fourres": 8000, "lisieres": 0, "feuillages": 0, "eau": 6000, "faune": 6000}
+SPRITE_CULL = {"arbres": 18000, "arbres2": 18000, "buissons": 7000, "fourres": 8000, "lisieres": 0, "feuillages": 0, "eau": 6000, "faune": 6000, "nuit": 6000}
 if os.path.exists(SPRITE_LAYOUT):
     MATS["Sprite"] = sprite_material()
     with open(SPRITE_LAYOUT, encoding="utf-8") as f:
@@ -1221,7 +1280,6 @@ def oriented(t, ahead_m, side_m, z_m=0.0):
 BOAT_GLB = os.path.join(ROOT, "assets", "3d", "barque", "trellis2-s42", "model.glb")
 BOAT_DIR, BOAT_MESH = "/Game/Assets/Barque", "/Game/Assets/Barque/model/StaticMeshes/model"
 # Hauteur réduite (2,6 au lieu de 3,5) : franc-bord de ~45 cm au lieu de 68, pour voir l'eau par-dessus le bord.
-BOAT_SCALE, BOAT_SCALE_Z, BOAT_YAW = 3.5, 2.6, -90.0
 BOAT_Z = 35.1 * BOAT_SCALE_Z - 25.0
 
 
@@ -1575,8 +1633,8 @@ def peint_tex_material(name, texture, anim=None, box=None, glow=None, tint=None)
     box_def = ""
     if box is not None:
         box_def = "".join(f"#define {k} {v:.3f}\n" for k, v in zip(("BXN", "BXX", "BYN", "BYX", "BZN", "BZX"), box))
-    anim_code = box_def + ANIM_CODES[anim] if anim else None
-    digest = spec_digest("peint-tex-v7", PEINT_CODE, MPC_DIGEST, texture.get_path_name(), anim_code, glow, tint)
+    anim_code = box_def + ANIM_CODES[anim] if anim and anim != "lanterne" else None
+    digest = spec_digest("peint-tex-v8", PEINT_CODE, SWAY_BOAT_CODE if anim == "lanterne" else None, MPC_DIGEST, texture.get_path_name(), anim_code, glow, tint)
     existing = eal.load_asset(path) if eal.does_asset_exist(path) else None
     if up_to_date(existing, digest):
         return existing
@@ -1624,6 +1682,8 @@ def peint_tex_material(name, texture, anim=None, box=None, glow=None, tint=None)
         mel.connect_material_expressions(fd, "", gl, "F")
         out = gl
     mel.connect_material_property(out, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
+    if anim == "lanterne":
+        wire_sway(mat, SWAY_BOAT_CODE, (0, 1, 0), (0, 26, 1))
     if anim_code is not None:
         lp = mel.create_material_expression(mat, unreal.MaterialExpressionLocalPosition, -900, 500)
         tt = mel.create_material_expression(mat, unreal.MaterialExpressionTime, -900, 600)
@@ -1696,7 +1756,7 @@ for i in range(5):
     creature(f"GB_Troupeau{i}", "GB_Troupeau", ue(0, -60 - i * 4, 0.6))
 creature("GB_Volante", "GB_Volante", ue(*moon_xy, 150))
 if model is not None:      # la barque prend aussi le look peint
-    for i, pm in enumerate(painted_model(model, "Barque")):
+    for i, pm in enumerate(painted_model(model, "Barque", "lanterne")):
         if pm is not None:
             hull.static_mesh_component.set_material(i, pm)
 

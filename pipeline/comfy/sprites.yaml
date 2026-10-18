@@ -24,6 +24,9 @@ prompts:
   foliage: >-
     single isolated dense mass of leaves, {kind}, round painted clump of foliage with no trunk and no branches visible,
     lit from above, plain flat light grey background, hand-painted, {style}
+  glow: >-
+    single isolated {kind}, softly glowing with its own magical light, centered, plain flat dark grey background, no
+    ground, nothing else in the image, hand-painted, {style}
   top: >-
     {kind}, seen from directly above, isolated on an empty plain flat light grey background, nothing else in the image,
     hand-painted, {style}
@@ -163,3 +166,18 @@ sets:
       - [martin-pecheur, "a kingfisher bird perched, seen from the side, bright blue and orange, whole bird visible"]
       - [chouette, "a small brown owl perched, facing forward, whole bird visible", {drop: green}]
       - [tortue, "a small pond turtle resting, seen from the side, whole body visible"]
+  nuit:
+    type: glow
+    cell: [512, 512]
+    grid: [4, 2]
+    size: [1024, 1024]
+    seed: 1900
+    items:
+      - [champignons-bleus, "cluster of small mushrooms with glowing blue-green caps"]
+      - [fleurs-lune, "clump of white night-blooming flowers glowing softly, long stems and leaves"]
+      - [fleurs-bleues, "clump of small glowing blue bell flowers with green leaves"]
+      - [mousse-lumineuse, "mossy rock covered with tiny glowing green dots"]
+      - [champignons-orange, "cluster of glowing orange mushrooms growing on a piece of old wood"]
+      - [herbes-lumineuses, "clump of tall grass with softly glowing pale seed heads"]
+      - [lys-lumineux, "tall white lily flowers glowing softly with a pale blue light"]
+      - [fougere-lumineuse, "small fern whose frond tips glow with tiny teal lights"]

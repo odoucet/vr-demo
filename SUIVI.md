@@ -91,6 +91,15 @@ alors que la scène est bien plus dense :
 - Retirés : forêt 3D, lisière et collines en boules, buissons, fougères et fleurs 3D des berges (gardés : herbe, roseaux,
   rochers, troncs couchés).
 
+**Étape 2 (19/10)** — **nuit lumineuse et lanterne qui tangue**, toujours 72 i/s :
+- Famille « nuit » : champignons bleus et orange, fleurs de lune, clochettes bleues, mousses et fougères phosphorescentes,
+  lys pâles. ~700 posés sur les berges de l'arche au lac, au pied de l'arbre colossal et autour du lac. Leurs parties
+  claires s'allument à la tombée de la nuit (captures `review/iter-028/planche-casque.jpg`).
+- **Lanterne de proue** (ton retour : « trop figée ») : elle tangue doucement sur sa perche (roulis ~3°, tangage ~2°,
+  rythmes irréguliers). Le même balancement est calculé dans le shader pour la perche et le corps de la lanterne (zone du
+  maillage de la barque), le papier lumineux et le halo : ils restent solidaires (`review/iter-029/casque/`, 4 images à
+  1,2 s d'écart).
+
 ## ▶ APK de comparaison des arbres (installé au Quest, 18/10)
 
 La forêt change toutes les 12 s pendant toute la balade, avec une étiquette à la proue :

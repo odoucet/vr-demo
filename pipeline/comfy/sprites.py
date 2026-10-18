@@ -105,7 +105,7 @@ def clean(im, kind="tree", drop=None, crown=False):
     from scipy import ndimage
     arr = np.asarray(im.convert("RGBA")).astype(np.float32)
     rgb, a = arr[..., :3], arr[..., 3] / 255.0
-    if kind not in CENTERED:
+    if kind not in CENTERED and kind != "glow":            # (fond sombre pour les sujets lumineux : rien de gris à retirer)
         mx, mn = rgb.max(axis=2), rgb.min(axis=2)
         sat = (mx - mn) / np.maximum(mx, 1.0)
         greyish = (sat < 0.14) & (mx > 150)
@@ -116,7 +116,7 @@ def clean(im, kind="tree", drop=None, crown=False):
     if kind == "strip":                                     # nuages crème soudés aux cimes
         mx, mn = rgb.max(axis=2), rgb.min(axis=2)
         a[(mx > 195) & ((mx - mn) / np.maximum(mx, 1.0) < 0.32)] = 0.0
-    elif kind != "small":                                   # nuage crème accroché à une plante : grandes plages
+    elif kind not in ("small", "glow"):                     # nuage crème accroché à une plante : grandes plages
         mx, mn = rgb.max(axis=2), rgb.min(axis=2)          # seulement (les petites fleurs blanches restent)
         cream = (mx > 185) & ((mx - mn) / np.maximum(mx, 1.0) < 0.32) & (a > 0.3)
         lab, n = ndimage.label(cream)

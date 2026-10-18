@@ -262,6 +262,30 @@ def main():
         x, y, z = bank_spot(t, rng.choice([-1, 1]), rng.uniform(-0.2, 0.3))
         add("faune", "face", [x, y, max(z, -0.05), 0.22, 7, 0, 0.95])
 
+    # --- Nuit (S6-S7) : champignons, fleurs et mousses lumineux sur les berges, au pied des grands arbres, autour
+    # du lac ; éclat > 1,5 = lueur propre, allumée à la tombée de la nuit (VieJour) -----------------------------
+    NIGHT = [(0, 0.5, 0.9, 3), (1, 0.7, 1.2, 2), (2, 0.6, 1.0, 2), (3, 0.9, 1.6, 1), (4, 0.5, 0.9, 2), (5, 0.9, 1.5, 2),
+             (6, 1.0, 1.6, 1), (7, 0.8, 1.3, 2)]
+    nw = np.array([n[3] for n in NIGHT], float)
+    for _ in range(700):
+        if rng.uniform() < 0.25:                         # rives du lac
+            a = rng.uniform(0, 2 * math.pi)
+            r = lake["radius_m"] + rng.uniform(0.5, 7.0)
+            x, y = lake["x"] + math.cos(a) * r, lake["y"] + math.sin(a) * r
+        elif rng.uniform() < 0.15:                       # pied de l'arbre colossal
+            a, r = rng.uniform(0, 2 * math.pi), rng.uniform(7, 16)
+            x, y = colossal_xy[0] + math.cos(a) * r, colossal_xy[1] + math.sin(a) * r
+        else:                                            # berges, de l'arche au lac
+            p = min(s, key=lambda q: abs(q["t"] - rng.uniform(132, 236)))
+            h0 = math.radians(p["heading_deg"])
+            off = rng.choice([-1, 1]) * (p["width_m"] / 2 + 0.3 + 4.0 * rng.uniform() ** 2.0)   # surtout au bord de l'eau
+            x, y = p["x"] - math.sin(h0) * off, p["y"] + math.cos(h0) * off
+        z, d = F.at(x, y)
+        if z is None or d < 0.2 or (excluded(x, y) and math.hypot(x - colossal_xy[0], y - colossal_xy[1]) > 18):
+            continue
+        cell, h1, h2, _w = NIGHT[rng.choice(len(NIGHT), p=nw / nw.sum())]
+        add("nuit", "face", [x, y, z - 0.03, rng.uniform(h1, h2), cell, 0, rng.uniform(2.1, 2.6)])
+
     # --- Vie animée dans le shader (greybox.py, VIE_WPO_CODE) : [x, y, z, type, vitesse, rayon, phase] ----------
     # types : 0 héron (grand cercle lent, haut), 1 hirondelle (rase l'eau), 2 papillon, 3 libellule, 4-6 feuille, pétale,
     # feuille morte (tombent en boucle). Centres le long du parcours, là où chaque animal a du sens.
