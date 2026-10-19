@@ -65,6 +65,37 @@ sets:
       - [cerisier, "wild cherry tree with a rounded crown covered in pale pink blossoms among green leaves"]
       - [hetre, "tall beech tree with a smooth grey trunk and a large dome-shaped crown of bright leaves"]
       - [sapin-sombre, "tall dark spruce tree with a narrow pointed silhouette and dense drooping branches"]
+  # Retour d'Olivier (19/10) : les mêmes arbres se répétaient trop sur les berges ; deux familles de feuillus en plus.
+  arbres3:
+    type: tree
+    cell: [512, 1024]
+    grid: [4, 2]
+    size: [832, 1216]
+    seed: 2100
+    items:
+      - [frene, "ash tree with a tall airy crown of feathery compound leaves, light grey trunk"]
+      - [tilleul, "linden tree with a dense heart-shaped crown of soft green leaves, straight trunk"]
+      - [peuplier, "tall narrow columnar poplar tree with shimmering leaves from bottom to top"]
+      - [aulne-double, "tree with two trunks leaning apart from the same base, two irregular leafy crowns, the trunks end cleanly at the bottom of the image, no ground, no grass, no bank", {seed: 2195}]
+      - [noisetier, "small multi-stemmed hazel tree with many thin trunks and a bushy rounded crown, no ground patch under it", {seed: 2194}]
+      - [charme, "hornbeam tree with a dense oval crown of small bright leaves and a fluted grey trunk"]
+      - [sorbier, "rowan tree with a light open crown of feathery leaves and clusters of red berries"]
+      - [saule-tetard, "pollard willow with a short thick knobbly trunk crowned by a burst of thin leafy shoots"]
+  arbres4:
+    type: tree
+    cell: [512, 1024]
+    grid: [4, 2]
+    size: [832, 1216]
+    seed: 2200
+    items:
+      - [marronnier, "horse chestnut tree with a big rounded crown of large leaves and upright white flower spikes"]
+      - [orme, "elm tree with a vase-shaped silhouette, branches fanning upward into a wide leafy crown"]
+      - [saule-blanc, "white willow with a slightly leaning trunk, long silvery green leaves, loose drooping crown, the trunk ends cleanly at the bottom of the image, no ground, no grass, no bank", {seed: 2296}]
+      - [lierre, "tall deciduous tree whose trunk is wrapped in dark ivy, round crown of mixed green tones"]
+      - [chene-jeune, "young oak tree with a lobed irregular crown of separate leaf clumps and a slim trunk"]
+      - [entrelaces, "two trees with intertwined trunks growing together, merged crown of two shades of green"]
+      - [tortueux, "gnarled twisted old tree with hanging moss on its branches and a sparse windswept crown"]
+      - [feuillu-sombre, "large deciduous tree with a deep dark green dome crown and a few lighter sunlit clumps on top"]
   buissons:
     type: plant
     cell: [512, 512]
@@ -134,7 +165,7 @@ sets:
       - [libellule, "dragonfly with transparent wings seen from above"]
       - [feuille, "single green leaf, slightly curled"]
       - [petale, "single pale pink cherry blossom petal, macro view, alone on an empty plain grey background, no landscape, no clouds", {seed: 1661}]
-      - [lotus, "pink water lily flower open on the water, seen from slightly above"]
+      - [canard, "a mallard duck swimming, seen from the side, whole body visible", {seed: 1803}]   # comme faune/canard ; nage (vie animée)
       - [feuille-morte, "close-up of one single orange maple leaf filling the frame, isolated on an empty plain grey background", {seed: 1677}]
   eau:
     type: top

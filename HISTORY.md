@@ -282,3 +282,26 @@ autonome. `SUIVI.md` dit où en est le projet ; ce fichier raconte comment on y 
   Consigne : tout noter sans corriger, et ouvrir ce journal pour un article sur le processus.
 - **Commit « Journal de création »** : retours consignés dans `SUIVI.md` (section « Retours du 19/10 matin », avec une première piste
   par point), D16 tranchée (sprites peints), création de `HISTORY.md` à partir de la relecture des 53 commits.
+
+### 19/10 fin de matinée — Les corrections des sprites
+
+- **Push et reprise** : Olivier demande de pousser le journal (sans ses fichiers audio WAV) et de passer aux corrections.
+  Pendant le travail, un retour de plus : « la texture des arbres sur la gauche se répétait beaucoup trop souvent ».
+- **Sprites immobiles** : chaque plan est orienté une fois pour toutes, au placement, vers le point du parcours d'où on le
+  voit à ~45° devant. Idée clé : deux voisins regardent presque le même point, donc leurs plans restent presque
+  parallèles et ne se croisent pas, sans dépendre de la tête. Premier essai dans l'éditeur : une touffe vue par la
+  tranche devenait un grand aplat (mipmap grossière) ; un fondu selon l'angle de vue l'efface. Ce fondu effaçait aussi
+  les nénuphars, toujours vus en rasant depuis la barque : ils en sont exclus. Un « aplat » restant s'est révélé être une
+  feuille animée qui tombait devant la caméra (identifiée en masquant les familles une à une).
+- **Nénuphars** : sans recouvrement ; **plantes blanches** : la lueur de nuit allumait les feuilles vertes (seuil sur la
+  luminance trop bas) ; **canards** : animés comme les oiseaux, hors du couloir du troupeau.
+- **Répétition des arbres** : 16 nouveaux feuillus générés (deux ont dû être régénérés : le décor « au bord de l'eau » du
+  prompt faisait peindre une plaque de sol). Tirage sans répétition entre voisins, image retournée et teinte propre à
+  chaque arbre. En relisant le placement, une cause directe : la densification de la forêt ne tirait que parmi les 4
+  premiers feuillus de la liste.
+- **Eau terne** : le reflet des berges était presque noir, hérité de l'époque où les berges étaient des boules sombres ;
+  il devient un vert peint dégradé vers les cimes, avec des scintillements sur les rides.
+- **Casque** : depuis sa mise à jour, posé sur le bureau, il perd le suivi de position et affiche une boîte de dialogue
+  système qui bloque l'appli. La mesure obtenue (90 i/s, GPU 48 %) était celle du menu : jetée, et le point remonté à
+  Olivier plutôt que de cliquer dans l'interface système par adb.
+

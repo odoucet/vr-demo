@@ -311,13 +311,20 @@ float bq = dot(pc, hd);
 dist = max(lerp(dist, -bq + sqrt(max(%(lkr2).1f - dot(pc, pc) + bq * bq, 0.0)), lake), 50.0);
 float2 hp = WP.xy + hd * dist;
 float crown = 1500.0 * (0.78 + 0.14 * sin(hp.x * 0.0031 + sin(hp.y * 0.0023) * 2.0) + 0.08 * sin(hp.y * 0.0071 - hp.x * 0.0043));
-float trees = max(1.0 - smoothstep(0.02, 0.15, shore), saturate((crown / dist - tanE) * 3.0));
-float3 forest = Lumiere.rgb * float3(0.035, 0.065, 0.055) + Teinte.rgb * float3(0.01, 0.02, 0.03);
-float3 refl = lerp(sky, forest, trees * 0.85);
-float3 deep = (Lumiere.rgb * 0.5 + 0.2) * lerp(float3(0.02, 0.06, 0.07), float3(0.008, 0.03, 0.045), shore);
+float above = crown / dist - tanE;                          // > 0 : le reflet tombe dans les arbres
+float trees = max(1.0 - smoothstep(0.02, 0.15, shore), saturate(above * 3.0));
+// reflet des berges peintes (retour du 19/10 : l'eau paraissait terne à côté du décor) : vert peint, plus clair vers
+// la ligne des cimes éclairées, plus sombre au pied, strié par les rides ; il était presque noir
+float tops = 1.0 - saturate(above * 5.0);
+float3 forest = Lumiere.rgb * lerp(float3(0.07, 0.13, 0.10), float3(0.2, 0.3, 0.17), tops) * (0.8 + 0.4 * r2)
+              + sky * 0.12 * tops;
+float3 refl = lerp(sky, forest, trees * 0.9);
+float3 deep = (Lumiere.rgb * 0.5 + 0.2) * lerp(float3(0.03, 0.095, 0.095), float3(0.012, 0.045, 0.055), shore);
 float3 col = lerp(deep, refl, fr);
 // crêtes des rides : traits de lumière du ciel, comme posés au pinceau
-col += rip * rip * (0.3 + 0.7 * fr) * (sky * 1.1 + Lumiere.rgb * 0.05) * (1.0 - trees * 0.75);
+col += rip * rip * (0.3 + 0.7 * fr) * (sky * 1.1 + Lumiere.rgb * 0.05) * (1.0 - trees * 0.6);
+// scintillements : la pointe des crêtes renvoie le ciel en éclats qui bougent avec le courant
+col += pow(saturate(rip * 1.25 - 0.2), 6.0) * fr * (sky * 1.4 + Lumiere.rgb * 0.15) * (1.0 - trees * 0.5);
 // écume le long des berges
 float foam = (1.0 - smoothstep(0.0, 0.05, shore)) * (0.55 + 0.45 * r2);
 col = lerp(col, Lumiere.rgb * 0.5 + sky * 0.35, foam * 0.75);
@@ -927,40 +934,30 @@ for (pname, kind), tmesh in TREE_MESHES.items():
 # --- Sprites peints (retour d'Olivier du 18/10 : les arbres peints tournés vers l'œil « rendent vachement bien ») ----
 # Images peintes générées en local (pipeline/comfy/sprites.py), posées par pipeline/layout/sprites_layout.py. Un plan de
 # 2 triangles par sujet, une famille = un atlas = un maillage instancié (HISM). Données d'instance : 0 = case de l'atlas,
-# 1 = échelle du plan (le sujet prend la hauteur voulue), 2 = éclat. Modes : 0 face (tourné vers l'œil autour de la
-# verticale, plans tous parallèles au plan de la vue : ils ne se croisent pas), 1 sphère (face à l'œil dans toutes les
-# directions : touffes vues d'en dessous), 2 immobile (lisières, objets posés sur l'eau).
+# 1 = teinte (-1 plus froid, +1 plus chaud), 2 = éclat. Retour d'Olivier du 19/10 : les plans tournés vers l'œil à chaque image « c'est trop
+# bizarre » (des arbres se rentrent dedans selon l'orientation de la tête). Tous les plans sont immobiles : orientation
+# et échelle sont dans la transformée de l'instance, calculées par sprites_layout.py (vers le passage de la barque).
 SPRITE_LAYOUT = os.path.join(ROOT, "pipeline", "layout", "sprites.json")
 SPRITE_DIR = os.path.join(ROOT, "assets", "textures", "sprites")
-SPRITE_WPO_CODE = """if (Mode > 1.5) return float3(0, 0, 0);
-float k = K;
-float3 lw = LW.xyz;                                  // position du sommet dans le repère de l'instance, en monde
-float3 pivot = WP.xyz - lw;                          // pied (ou centre) du sujet
-float sx = length(SX.xyz);                           // échelle de l'instance
-float3 p;
-if (Mode > 0.5)
-    p = pivot + (VR.xyz * LP.x + VU.xyz * LP.z) * sx * k;
-else
-{
-    // tête baissée, repli doux sur la direction de l'œil
-    float2 dp = normalize(Cam.xy - pivot.xy + float2(1e-3, 0.0));
-    float2 d = normalize(-F.xy + dp * 0.15);
-    p = pivot + float3(float2(-d.y, d.x) * LP.x * sx * k, lw.z * k);
-}
-return p - WP.xyz;"""
 SPRITE_UV_CODE = """float c = round(C);
 return float2((fmod(c, Cols) + UV.x) / Cols, (floor(c / Cols) + UV.y) / Rows);"""
-# Éclat > 1,5 : sujet lumineux (famille « nuit ») ; ses parties claires (chapeaux, fleurs, points) s'allument la nuit.
+# Éclat > 1,5 : sujet lumineux (famille « nuit ») ; ses parties claires et vives (chapeaux, fleurs, points) s'allument la
+# nuit. Les feuilles restent éteintes : allumées aussi, les plantes entières viraient au blanc (retour du 19/10).
 SPRITE_COLOR_CODE = """float3 c = Tex.rgb * (lerp(Ombre.rgb, Lumiere.rgb, 0.75) + Ciel.rgb * 0.35) * min(Bright, 1.3);
 float glow = max(Bright - 1.5, 0.0) * (1.0 - saturate(Day));
 float lum = dot(Tex.rgb, float3(0.3, 0.6, 0.1));
-return c + Tex.rgb * smoothstep(0.14, 0.45, lum) * glow * 5.0;"""
-MODES = {"face": 0.0, "sphere": 1.0, "fixe": 2.0, "sol": 2.0}
+float mx = max(Tex.r, max(Tex.g, Tex.b));
+float m = smoothstep(0.6, 0.88, mx) * smoothstep(0.4, 0.65, lum);
+return c + lerp(Tex.rgb, float3(0.6, 0.9, 1.0) * mx, 0.3) * m * glow * 2.2;"""
+# Plan immobile vu presque par la tranche : il s'efface au lieu de devenir un aplat (mipmap grossière, bords droits).
+# Pas pour les plans posés sur l'eau (Tranche = 0) : vus depuis la barque, ils sont toujours rasants.
+SPRITE_TINT_CODE = """return Tex * (1.0 + Tint * float3(0.08, 0.015, -0.1));"""
+SPRITE_EDGE_CODE = """return A * lerp(1.0, smoothstep(0.12, 0.3, abs(dot(normalize(N), normalize(V)))), E);"""
 
 
 def sprite_material():
     path = f"{GB}/M_GB_Sprite"
-    digest = spec_digest("sprite-v3", SPRITE_WPO_CODE, SPRITE_UV_CODE, SPRITE_COLOR_CODE, MPC_DIGEST)
+    digest = spec_digest("sprite-v6", SPRITE_UV_CODE, SPRITE_COLOR_CODE, SPRITE_EDGE_CODE, SPRITE_TINT_CODE, MPC_DIGEST)
     mat = eal.load_asset(path) if eal.does_asset_exist(path) else None
     if up_to_date(mat, digest):
         return mat
@@ -984,35 +981,8 @@ def sprite_material():
         cd.set_editor_property("data_index", i)
         return cd
 
-    def to_world(vec, src, x, y):
-        c = mel.create_material_expression(mat, unreal.MaterialExpressionConstant3Vector, x - 200, y)
-        c.set_editor_property("constant", unreal.LinearColor(*vec, 0))
-        t = mel.create_material_expression(mat, unreal.MaterialExpressionTransform, x, y)
-        t.set_editor_property("transform_source_type", src)
-        t.set_editor_property("transform_type", unreal.MaterialVectorCoordTransform.TRANSFORM_WORLD)
-        mel.connect_material_expressions(c, "", t, "")
-        return t
-
-    VIEW = unreal.MaterialVectorCoordTransformSource.TRANSFORMSOURCE_VIEW
-    LOCAL = unreal.MaterialVectorCoordTransformSource.TRANSFORMSOURCE_LOCAL
-    cell, kk, bright = custom_data(0, 0), custom_data(1, 100), custom_data(2, 200)
-    mode, cols, rows = scalar("Mode", 0.0, -1600, 300), scalar("Cols", 4.0, -1600, 400), scalar("Rows", 2.0, -1600, 500)
-    wp = mel.create_material_expression(mat, unreal.MaterialExpressionWorldPosition, -1600, 600)
-    wp.set_editor_property("world_position_shader_offset", unreal.WorldPositionIncludedOffsets.WPT_EXCLUDE_ALL_SHADER_OFFSETS)
-    lp = mel.create_material_expression(mat, unreal.MaterialExpressionLocalPosition, -1600, 700)
-    lw = mel.create_material_expression(mat, unreal.MaterialExpressionTransform, -1400, 700)
-    lw.set_editor_property("transform_source_type", LOCAL)
-    lw.set_editor_property("transform_type", unreal.MaterialVectorCoordTransform.TRANSFORM_WORLD)
-    mel.connect_material_expressions(lp, "", lw, "")
-    sxv = to_world((1, 0, 0), LOCAL, -1400, 800)
-    fwd, vr, vu = to_world((0, 0, 1), VIEW, -1400, 900), to_world((1, 0, 0), VIEW, -1400, 1000), to_world((0, 1, 0), VIEW, -1400, 1100)
-    cam = mel.create_material_expression(mat, unreal.MaterialExpressionCameraPositionWS, -1600, 1200)
-    wpo = custom_node(mat, SPRITE_WPO_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT3,
-                      ["Mode", "K", "WP", "LP", "LW", "SX", "Cam", "F", "VR", "VU"], -900, 600)
-    for pin, src in (("Mode", mode), ("K", kk), ("WP", wp), ("LP", lp), ("LW", lw), ("SX", sxv), ("Cam", cam), ("F", fwd),
-                     ("VR", vr), ("VU", vu)):
-        mel.connect_material_expressions(src, "", wpo, pin)
-    mel.connect_material_property(wpo, "", unreal.MaterialProperty.MP_WORLD_POSITION_OFFSET)
+    cell, tint, bright = custom_data(0, 0), custom_data(1, 100), custom_data(2, 200)
+    cols, rows = scalar("Cols", 4.0, -1600, 400), scalar("Rows", 2.0, -1600, 500)
     uv0 = mel.create_material_expression(mat, unreal.MaterialExpressionTextureCoordinate, -1600, -300)
     uvn = custom_node(mat, SPRITE_UV_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT2, ["C", "UV", "Cols", "Rows"], -1100, -300)
     for pin, src in (("C", cell), ("UV", uv0), ("Cols", cols), ("Rows", rows)):
@@ -1024,7 +994,10 @@ def sprite_material():
     tex.set_editor_property("texture", look_texture("sprite_arbres"))
     mel.connect_material_expressions(uvi, "", tex, "UVs")
     col = custom_node(mat, SPRITE_COLOR_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["Tex", "Lumiere", "Ombre", "Ciel", "Bright", "Day"], -400, -300)
-    mel.connect_material_expressions(tex, "RGB", col, "Tex")
+    tinted = custom_node(mat, SPRITE_TINT_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["Tex", "Tint"], -550, -450)
+    mel.connect_material_expressions(tex, "RGB", tinted, "Tex")
+    mel.connect_material_expressions(tint, "", tinted, "Tint")
+    mel.connect_material_expressions(tinted, "", col, "Tex")
     mel.connect_material_expressions(bright, "", col, "Bright")
     dayp = mel.create_material_expression(mat, unreal.MaterialExpressionCollectionParameter, -700, 300)
     dayp.set_editor_property("collection", MPC)
@@ -1036,7 +1009,12 @@ def sprite_material():
         cp.set_editor_property("parameter_name", "CielAppoint" if nm == "Ciel" else nm)
         mel.connect_material_expressions(cp, "", col, nm)
     mel.connect_material_property(col, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
-    mel.connect_material_property(tex, "A", unreal.MaterialProperty.MP_OPACITY_MASK)
+    edge = custom_node(mat, SPRITE_EDGE_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT1, ["A", "N", "V", "E"], -400, 0)
+    mel.connect_material_expressions(scalar("Tranche", 1.0, -700, 300), "", edge, "E")
+    mel.connect_material_expressions(tex, "A", edge, "A")
+    mel.connect_material_expressions(mel.create_material_expression(mat, unreal.MaterialExpressionVertexNormalWS, -700, 100), "", edge, "N")
+    mel.connect_material_expressions(mel.create_material_expression(mat, unreal.MaterialExpressionCameraVectorWS, -700, 200), "", edge, "V")
+    mel.connect_material_property(edge, "", unreal.MaterialProperty.MP_OPACITY_MASK)
     mel.recompile_material(mat)
     if mel.get_statistics(mat).num_pixel_shader_instructions <= 0:
         raise RuntimeError("M_GB_Sprite ne compile pas")
@@ -1046,7 +1024,7 @@ def sprite_material():
 
 def sprite_set(key, mode, instances, cull_cm):
     """Une famille de sprites : atlas, instance de matériau, plan à la proportion d'une case, maillage instancié.
-    « famille@mode » : même atlas posé dans un autre mode (ex. lianes face à l'œil, touffes en sphère)."""
+    « famille@mode » : même atlas posé dans un autre mode (ex. lianes debout, touffes de feuillage)."""
     name = key.split("@")[0]
     tag_ = key.replace("@", "_")
     with open(os.path.join(SPRITE_DIR, f"{name}.json"), encoding="utf-8") as f:
@@ -1064,7 +1042,7 @@ def sprite_set(key, mode, instances, cull_cm):
         f"MI_GB_Sprite_{tag_}", GB, unreal.MaterialInstanceConstant, unreal.MaterialInstanceConstantFactoryNew())
     mi.set_editor_property("parent", MATS["Sprite"])
     mel.set_material_instance_texture_parameter_value(mi, "Atlas", atlas)
-    for k, v in (("Mode", MODES[mode]), ("Cols", float(cols)), ("Rows", float(rows))):
+    for k, v in (("Cols", float(cols)), ("Rows", float(rows)), ("Tranche", 0.0 if mode == "sol" else 1.0)):
         mel.set_material_instance_scalar_parameter_value(mi, k, v)
     mel.update_material_instance(mi)
     eal.save_loaded_asset(mi)
@@ -1072,7 +1050,7 @@ def sprite_set(key, mode, instances, cull_cm):
     if mode == "sol":          # à plat, centré
         verts = [[-hw, -0.5, 0], [hw, -0.5, 0], [hw, 0.5, 0], [-hw, 0.5, 0]]
         nrm = [[0, 0, 1]] * 4
-    elif mode == "sphere":     # vertical, centré
+    elif mode == "touffe":     # vertical, centré
         verts = [[-hw, 0, -0.5], [hw, 0, -0.5], [hw, 0, 0.5], [-hw, 0, 0.5]]
         nrm = [[0, -1, 0]] * 4
     else:                      # vertical, pied au sol
@@ -1090,19 +1068,23 @@ def sprite_set(key, mode, instances, cull_cm):
     hism.set_editor_property("cast_shadow", False)
     hism.set_editor_property("instance_end_cull_distance", cull_cm)
     hism.set_editor_property("num_custom_data_floats", 3)
-    hism.set_editor_property("bounds_scale", 2.0)     # le plan tourne vers la caméra, sa boîte d'origine ne suffit plus
     xf, data = [], []
-    for x, y, z, h, cell, yaw, bright in instances:
+    up = unreal.Vector(0, 0, 1)
+    for x, y, z, h, cell, yaw, bright, pitch in instances:
         it = items[int(cell)]
         fh, fw = it["v1"] - it["v0"], (it["u1"] - it["u0"]) * aspect
-        k = 1.0 / max(fh, 1e-3) if mode in ("face", "fixe") else 1.0 / max(fh, fw, 1e-3)
-        if mode in ("fixe", "sol"):    # immobiles : échelle et orientation dans la transformée
-            rot = unreal.Rotator(0, 0, 90.0 - yaw) if mode == "fixe" else unreal.Rotator(0, 0, -yaw)
-            xf.append(unreal.Transform(ue(x, y, z), rot, unreal.Vector(h * k, h * k, h * k)))
-            data.append((cell, 1.0, bright))
-        else:
-            xf.append(unreal.Transform(ue(x, y, z), unreal.Rotator(0, 0, 0), unreal.Vector(h, h, h)))
-            data.append((cell, k, bright))
+        k = 1.0 / max(fh, 1e-3) if mode in ("debout", "fixe") else 1.0 / max(fh, fw, 1e-3)   # le sujet prend la hauteur h
+        if mode == "sol":
+            rot = unreal.Rotator(0, 0, -yaw)
+        else:                      # la face du plan (-Y local) regarde dans la direction (cap, inclinaison) du tracé
+            cy, sy_, cp, sp = math.cos(math.radians(yaw)), math.sin(math.radians(yaw)), math.cos(math.radians(pitch)), math.sin(math.radians(pitch))
+            rot = unreal.MathLibrary.make_rot_from_yz(unreal.Vector(-cy * cp, sy_ * cp, -sp), up)
+        # sujets debout : image retournée une fois sur deux et teinte propre (moins de répétition), tirées de la position
+        hsh = (math.sin(x * 12.9898 + y * 78.233) * 43758.5453) % 1.0
+        flip = -1.0 if mode == "debout" and hsh < 0.5 else 1.0
+        tint = ((hsh * 7.0) % 1.0) * 1.6 - 0.8 if mode == "debout" else 0.0
+        xf.append(unreal.Transform(ue(x, y, z), rot, unreal.Vector(h * k * flip, h * k, h * k)))
+        data.append((cell, tint, bright))
     hism.add_instances(xf, False, True)
     for i, d in enumerate(data):
         for j, v in enumerate(d):
@@ -1148,6 +1130,14 @@ else if (type < 3.5)                                 // libellule : file et s'ar
     o = float3(cos(tt) * rad, sin(tt) * rad, 15.0 * sin(t * 7.0));
     size = 14.0 * day;
 }
+else if (type > 6.5)                                 // canard : nage en petit cercle, dodeline (reste la nuit)
+{
+    o = float3(cos(t) * rad, sin(t) * rad, 1.5 * sin(T * 1.9 + ph * 5.0));
+    v = float3(-sin(t), cos(t), 0) * sign(spd);
+    size = 52.0;
+    o.z += size * 0.32;                              // ligne de flottaison sous le milieu de l'image
+    c.y += 0.04 * sin(T * 1.3 + ph * 3.0) * c.x;
+}
 else                                                 // feuilles, pétales : tombent en se balançant, en boucle
 {
     float f = frac(T * spd * 0.08 + P2.y * 7.0);
@@ -1159,15 +1149,15 @@ else                                                 // feuilles, pétales : tom
 float flip = dot(v, VR.xyz) < 0.0 ? -1.0 : 1.0;      // les images regardent vers la droite
 return o + (VR.xyz * c.x * flip + VU.xyz * c.y) * size * 0.5;"""
 VIE_UV_CODE = """float type = round(P1.x);
-float cells[7] = {0, 1, 2, 3, 4, 5, 7};
-float cell = cells[(int)min(type, 6.0)];
+float cells[8] = {0, 1, 2, 3, 4, 5, 7, 6};
+float cell = cells[(int)min(type, 7.0)];
 return float2((fmod(cell, 4.0) + UV.x) / 4.0, (floor(cell / 4.0) + UV.y) / 2.0);"""
 
 
 def vie_material():
     path = f"{GB}/M_GB_Vie"
     atlas = look_texture("sprite_vie")
-    digest = spec_digest("vie-v5", VIE_WPO_CODE, VIE_UV_CODE, SPRITE_COLOR_CODE, MPC_DIGEST, eal.get_metadata_tag(atlas, "source_sha1"))
+    digest = spec_digest("vie-v6", VIE_WPO_CODE, VIE_UV_CODE, SPRITE_COLOR_CODE, MPC_DIGEST, eal.get_metadata_tag(atlas, "source_sha1"))
     mat = eal.load_asset(path) if eal.does_asset_exist(path) else None
     if up_to_date(mat, digest):
         return mat
@@ -1249,7 +1239,7 @@ def vie_mesh(items):
                                     "uv": uv, "uv1": uv1, "uv2": uv2, "uv3": uv3, "color": [1, 1, 1, 1]})
 
 
-SPRITE_CULL = {"arbres": 18000, "arbres2": 18000, "buissons": 7000, "fourres": 8000, "lisieres": 0, "feuillages": 0, "eau": 6000, "faune": 6000, "nuit": 6000, "heros": 0}
+SPRITE_CULL = {"arbres": 18000, "arbres2": 18000, "arbres3": 18000, "arbres4": 18000, "buissons": 7000, "fourres": 8000, "lisieres": 0, "feuillages": 0, "eau": 6000, "faune": 6000, "nuit": 6000, "heros": 0}
 if os.path.exists(SPRITE_LAYOUT):
     MATS["Sprite"] = sprite_material()
     with open(SPRITE_LAYOUT, encoding="utf-8") as f:
@@ -1504,7 +1494,7 @@ if os.path.exists(SKY_PNG):
         sky_tex = eal.load_asset(f"{GB}/ciel")
         eal.set_metadata_tag(sky_tex, "source_sha1", sky_digest)
         eal.save_loaded_asset(sky_tex)
-    SKY_WATER_VERSION = "ciel-eau-v13"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
+    SKY_WATER_VERSION = "ciel-eau-v14"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
     sky_mat_path = f"{GB}/M_GB_CielPeint"
     sky_mat = eal.load_asset(sky_mat_path) if eal.does_asset_exist(sky_mat_path) else None
     rebuild_sky_water = not up_to_date(sky_mat, spec_digest(SKY_WATER_VERSION, sky_digest, MPC_DIGEST, WATER_CODE,

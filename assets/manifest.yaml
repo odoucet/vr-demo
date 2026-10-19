@@ -415,6 +415,28 @@ assets:
   prompt: pipeline/comfy/sprites.yaml (famille arbres2, gabarit tree)
   licence: généré localement
   generated: '2026-10-19'
+- id: sprite/arbres3
+  type: texture
+  placeholder: true
+  file: assets/textures/sprite_arbres3.png
+  source: 8 images peintes générées en local (Z-Image Turbo), détourées (BiRefNet, nœud RemoveBackground), atlas 4 × 2 ; images sources dans assets/textures/sprites/arbres3/ ; ajoutées le 19/10 (arbres qui se répétaient)
+  workflow: pipeline/comfy/workflows/z_image_turbo_t2i.json + LoadBackgroundRemovalModel / RemoveBackground
+  script: pipeline/comfy/sprites.py arbres3
+  seed: 2100-2107 (sauf graines propres indiquées dans sprites.yaml)
+  prompt: pipeline/comfy/sprites.yaml (famille arbres3, gabarit tree)
+  licence: généré localement
+  generated: '2026-10-19'
+- id: sprite/arbres4
+  type: texture
+  placeholder: true
+  file: assets/textures/sprite_arbres4.png
+  source: 8 images peintes générées en local (Z-Image Turbo), détourées (BiRefNet, nœud RemoveBackground), atlas 4 × 2 ; images sources dans assets/textures/sprites/arbres4/ ; ajoutées le 19/10 (arbres qui se répétaient)
+  workflow: pipeline/comfy/workflows/z_image_turbo_t2i.json + LoadBackgroundRemovalModel / RemoveBackground
+  script: pipeline/comfy/sprites.py arbres4
+  seed: 2200-2207 (sauf graines propres indiquées dans sprites.yaml)
+  prompt: pipeline/comfy/sprites.yaml (famille arbres4, gabarit tree)
+  licence: généré localement
+  generated: '2026-10-19'
 - id: sprite/buissons
   type: texture
   placeholder: true

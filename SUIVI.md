@@ -7,24 +7,31 @@ Légende : 🔴 bloque un jalon, aucun contournement · 🟠 j'avance avec un co
 
 ---
 
-## ▶ Retours du 19/10 matin (consignés, corrections pas encore commencées)
+## ▶ Retours du 19/10 matin : corrigés, vérifiés dans l'éditeur, pas encore au casque
 
 Retours d'Olivier au casque sur la version « tout en images peintes » (APK installé le 19/10 à 9 h 04) :
 
 - ✅ **Direction confirmée** : « très fourni », les sprites sont la bonne idée à creuser (D16 tranchée).
 - ✅ **Oiseaux et feuilles qui tombent** : « trop bien ».
-- **[confort] Sprites qui pivotent avec la tête** : « trop bizarre », des arbres se rentrent dedans ou non selon
-  l'orientation de la tête. **Il faut des sprites fixes.** Cause : les modes « face » et « sphère » alignent chaque plan sur
-  la vue à chaque image. Pistes : orientation figée par instance (tournée vers la trajectoire de la barque au point le plus
-  proche, calculée au placement), plans en croix pour les sujets proches, et espacement suffisant pour que deux plans
-  voisins ne se croisent pas.
-- **Nénuphars qui scintillent** : plans posés à plat presque à la même hauteur, ils se disputent la profondeur. Pistes :
-  hauteur propre à chaque nénuphar, moins de recouvrements, ou ordre de tracé.
-- **Plantes toutes blanches au bout de la rivière, à droite** : à localiser (famille, instant). Suspects : texture importée
-  ratée (asset de 32 px) ou famille lumineuse « nuit » mal réglée.
-- **Canards immobiles, et certains dans le passage du troupeau** : les bêtes les traversent. Pistes : canards animés
-  (dérive lente, petits mouvements de tête) et zone du gué exclue du placement de la faune.
-- **Eau terne** : à côté d'un décor maintenant riche, c'est l'eau qui paraît pauvre. À reprendre.
+- 🔧 **[confort] Sprites qui pivotaient avec la tête** : **tous les plans sont maintenant immobiles.** Chaque plan regarde
+  le point du parcours d'où on le voit à ~45° devant (de face en approchant, jamais par la tranche au passage) ; deux
+  voisins regardent presque le même point, leurs plans restent presque parallèles. Le shader ne calcule plus
+  d'orientation (moins de travail par sommet). Un plan vu presque par la tranche s'efface au lieu de devenir un aplat.
+- 🔧 **Nénuphars qui scintillaient** : plus aucun recouvrement entre deux nénuphars (677 au lieu de 900), hauteurs
+  distinctes.
+- 🔧 **Plantes toutes blanches au bout de la rivière** : la lueur de nuit allumait aussi les feuilles (seuil trop bas,
+  gain ×5) et les plantes entières viraient au blanc. Seules les parties claires et vives s'allument désormais (fleurs,
+  chapeaux, points), avec un gain réduit et une teinte froide.
+- 🔧 **Canards immobiles dans le passage du troupeau** : les canards nagent (petits cercles dans les deux sens,
+  dodelinement), le groupe du gué est déplacé et toute la faune est exclue du couloir du troupeau.
+- 🔧 **Arbres qui se répétaient (à gauche)** : 16 feuillus de plus générés en local (frêne, tilleul, peuplier, aulne à
+  deux troncs, noisetier, charme, sorbier, saule têtard, marronnier en fleurs, orme, saule blanc, arbre au lierre, jeune
+  chêne, troncs entrelacés, arbre tortueux, feuillu sombre) ; deux voisins ne tirent plus le même arbre ; chaque image
+  est retournée une fois sur deux et légèrement teintée (plus chaude ou plus froide). Cause trouvée en route : la
+  densification de la forêt ne tirait que parmi 4 arbres.
+- 🔧 **Eau terne** : le reflet des berges était presque noir (85 %), alors que les berges sont maintenant des arbres
+  peints. Il devient un vert peint, plus clair vers la ligne des cimes, strié par les rides ; scintillements sur les
+  crêtes des rides ; eau profonde plus turquoise. **À juger au casque** : l'éditeur n'applique pas la lumière par beat.
 
 ## ▶ Pour ton test au casque
 
@@ -160,6 +167,12 @@ Dis-moi laquelle garder (ou un mélange : par exemple B au loin et C près de l'
 |---|---|---|---|---|
 
 ## 🟠 Importants (contournés)
+
+- **Casque : suivi de position perdu (19/10, 10 h)**. Depuis sa mise à jour, le Quest posé affiche « Trouver la position
+  dans la pièce » (boutons « Continuer sans le suivi » / « Activer le mode Voyage ») et l'appli ne démarre pas derrière :
+  captures et mesure impossibles (la mesure lue, 90 i/s à GPU 48 %, était celle du menu ; supprimée). Il faut mettre le
+  casque dans une pièce éclairée, face à un espace dégagé, ou choisir « Continuer sans le suivi ». L'APK avec toutes les
+  corrections est prêt (`builds/android_greybox/Barque-arm64.apk`).
 
 | # | Manque | Contournement | Ce qui le lèverait |
 |---|---|---|---|
