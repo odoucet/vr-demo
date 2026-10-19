@@ -364,4 +364,9 @@ autonome. `SUIVI.md` dit où en est le projet ; ce fichier raconte comment on y 
 - **Arche des racines** : nue vu de dessous ; habillée de lianes et de mousse peintes. Premier essai : quatorze rideaux
   alignés en travers de la rivière, une haie suspendue ; dispersés sur l'épaisseur de l'arche, longueurs variées,
   trouée au-dessus du chenal.
+- **Le vent** : depuis qu'ils sont immobiles, les arbres peints étaient figés. Un balancement lent dans le shader de
+  sommets (pied fixe, amplitude croissante vers la cime, phase selon le lieu) leur rend du mouvement sans les faire
+  tourner avec la tête. Les touffes de mousse ajoutées sur l'arche faisaient un chapelet de boules vu de loin : retirées.
+- **Prévisualisation mobile dans l'éditeur** : la plateforme de prévisualisation n'est pas exposée à Python ; l'animatic
+  rendu reste la référence hors casque.
 

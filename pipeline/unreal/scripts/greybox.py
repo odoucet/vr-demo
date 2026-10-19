@@ -970,6 +970,12 @@ return c + lerp(Tex.rgb, float3(0.6, 0.9, 1.0) * mx, 0.3) * m * glow * 2.2;"""
 # Relief des sujets proches : la grille avance vers l'œil (D = -Y local, à l'échelle de l'instance) selon la carte de
 # relief de la case (pipeline/comfy/relief.py), lue dans le shader de sommets.
 SPRITE_RELIEF_CODE = """return D * (Texture2DSampleLevel(R, RSampler, UV, 0).r * A);"""
+# Vent : balancement lent, pied fixe, amplitude croissante vers la cime (~1,2 % de la hauteur), phase selon le lieu.
+# Le plan ne tourne pas avec la tête (retour d'Olivier du 19/10) : il oscille autour de sa position fixe.
+SPRITE_WIND_CODE = """float hs = length(U);                                  // hauteur du sujet (cm) : échelle de l'instance
+float z = saturate(LP.z / 100.0 + 0.5 * C);                 // pied (0) à cime (1) (plan de 100 unités ; touffes centrées)
+float s = sin(T * 0.8 + dot(WP.xy, float2(0.0011, 0.0017))) + 0.35 * sin(T * 2.1 + dot(WP.xy, float2(0.003, -0.002)));
+return float3(0.8, 0.6, 0.0) * s * 0.012 * hs * z * z * E;"""
 SPRITE_TINT_CODE = """return Tex * (1.0 + Tint * float3(0.08, 0.015, -0.1));"""
 SPRITE_EDGE_CODE = """return A * lerp(1.0, smoothstep(0.12, 0.3, abs(dot(normalize(N), normalize(V)))), E);"""
 
@@ -978,8 +984,8 @@ def sprite_material(relief=False):
     """Matériau des sprites ; relief=True : variante dont la grille se creuse selon la carte de relief (sujets proches)."""
     name = "M_GB_SpriteRelief" if relief else "M_GB_Sprite"
     path = f"{GB}/{name}"
-    digest = spec_digest("sprite-v6", SPRITE_UV_CODE, SPRITE_COLOR_CODE, SPRITE_EDGE_CODE, SPRITE_TINT_CODE, MPC_DIGEST,
-                         SPRITE_RELIEF_CODE if relief else "")
+    digest = spec_digest("sprite-v7", SPRITE_UV_CODE, SPRITE_COLOR_CODE, SPRITE_EDGE_CODE, SPRITE_TINT_CODE, MPC_DIGEST,
+                         SPRITE_RELIEF_CODE if relief else "", SPRITE_WIND_CODE)
     mat = eal.load_asset(path) if eal.does_asset_exist(path) else None
     if up_to_date(mat, digest):
         return mat
@@ -1011,6 +1017,21 @@ def sprite_material(relief=False):
         mel.connect_material_expressions(src, "", uvn, pin)
     uvi = mel.create_material_expression(mat, unreal.MaterialExpressionVertexInterpolator, -900, -300)   # calcul par sommet
     mel.connect_material_expressions(uvn, "", uvi, "VS")
+    # vent (tous les sprites ; Vent = 0 pour les plans fixes : lisières, eau)
+    ucon = mel.create_material_expression(mat, unreal.MaterialExpressionConstant3Vector, -1500, 1300)
+    ucon.set_editor_property("constant", unreal.LinearColor(0, 0, 1, 0))
+    utr = mel.create_material_expression(mat, unreal.MaterialExpressionTransform, -1300, 1300)
+    utr.set_editor_property("transform_source_type", unreal.MaterialVectorCoordTransformSource.TRANSFORMSOURCE_LOCAL)
+    utr.set_editor_property("transform_type", unreal.MaterialVectorCoordTransform.TRANSFORM_WORLD)
+    mel.connect_material_expressions(ucon, "", utr, "")
+    wwp = mel.create_material_expression(mat, unreal.MaterialExpressionWorldPosition, -1300, 1400)
+    wwp.set_editor_property("world_position_shader_offset", unreal.WorldPositionIncludedOffsets.WPT_EXCLUDE_ALL_SHADER_OFFSETS)
+    wind = custom_node(mat, SPRITE_WIND_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["U", "LP", "T", "WP", "E", "C"], -1000, 1300)
+    for pin, src in (("U", utr), ("LP", mel.create_material_expression(mat, unreal.MaterialExpressionLocalPosition, -1300, 1500)),
+                     ("T", mel.create_material_expression(mat, unreal.MaterialExpressionTime, -1300, 1600)), ("WP", wwp),
+                     ("E", scalar("Vent", 1.0, -1300, 1700)), ("C", scalar("Centre", 0.0, -1300, 1800))):
+        mel.connect_material_expressions(src, "", wind, pin)
+    wpo_out = wind
     if relief:
         rtex = mel.create_material_expression(mat, unreal.MaterialExpressionTextureObjectParameter, -1100, 700)
         rtex.set_editor_property("parameter_name", "Relief")
@@ -1025,7 +1046,11 @@ def sprite_material(relief=False):
         wpo = custom_node(mat, SPRITE_RELIEF_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["R", "UV", "D", "A"], -800, 700)
         for pin, src in (("R", rtex), ("UV", uvn), ("D", dtr), ("A", scalar("Creux", 0.16, -1100, 900))):
             mel.connect_material_expressions(src, "", wpo, pin)
-        mel.connect_material_property(wpo, "", unreal.MaterialProperty.MP_WORLD_POSITION_OFFSET)
+        add_ = mel.create_material_expression(mat, unreal.MaterialExpressionAdd, -600, 900)
+        mel.connect_material_expressions(wpo, "", add_, "A")
+        mel.connect_material_expressions(wind, "", add_, "B")
+        wpo_out = add_
+    mel.connect_material_property(wpo_out, "", unreal.MaterialProperty.MP_WORLD_POSITION_OFFSET)
     tex = mel.create_material_expression(mat, unreal.MaterialExpressionTextureSampleParameter2D, -700, -300)
     tex.set_editor_property("parameter_name", "Atlas")
     tex.set_editor_property("texture", look_texture("sprite_arbres"))
@@ -1089,7 +1114,8 @@ def sprite_set(key, mode, instances, cull_cm):
     if mode == "relief":
         mel.set_material_instance_texture_parameter_value(mi, "Relief", relief_texture(name))
         mel.set_material_instance_scalar_parameter_value(mi, "Creux", RELIEF_CREUX.get(name, 0.12))
-    for k, v in (("Cols", float(cols)), ("Rows", float(rows)), ("Tranche", 0.0 if mode == "sol" else 1.0)):
+    for k, v in (("Cols", float(cols)), ("Rows", float(rows)), ("Tranche", 0.0 if mode == "sol" else 1.0),
+                 ("Vent", 0.0 if mode in ("sol", "fixe") else 1.0), ("Centre", 1.0 if mode == "touffe" else 0.0)):
         mel.set_material_instance_scalar_parameter_value(mi, k, v)
     mel.update_material_instance(mi)
     eal.save_loaded_asset(mi)
@@ -1129,8 +1155,7 @@ def sprite_set(key, mode, instances, cull_cm):
     hism.set_editor_property("cast_shadow", False)
     hism.set_editor_property("instance_end_cull_distance", cull_cm)
     hism.set_editor_property("num_custom_data_floats", 3)
-    if mode == "relief":
-        hism.set_editor_property("bounds_scale", 1.4)    # la grille avance vers l'œil
+    hism.set_editor_property("bounds_scale", 1.4 if mode == "relief" else 1.1)   # relief : la grille avance ; vent
     xf, data = [], []
     up = unreal.Vector(0, 0, 1)
     for x, y, z, h, cell, yaw, bright, pitch, mirror in instances:
@@ -1842,7 +1867,7 @@ for i in range(5):
     creature(f"GB_Troupeau{i}", "GB_Troupeau", ue(0, -60 - i * 4, 0.6))
 creature("GB_Volante", "GB_Volante", ue(*moon_xy, 150))
 if model is not None:      # la barque et la lanterne prennent aussi le look peint
-    for i, pm in enumerate(painted_model(model, "Barque")):
+    for i, pm in enumerate(painted_model(model, "Barque", tint=(0.78, 0.66, 0.54))):   # bois brun patiné (image d'Olivier)
         if pm is not None:
             hull.static_mesh_component.set_material(i, pm)
     if lantern_model is not None:

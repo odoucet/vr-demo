@@ -259,8 +259,9 @@ def main():
         fam, cell, h1, h2 = [("fourres", 5, 1.4, 2.4), ("buissons", 3, 1.2, 1.8), ("fourres", 4, 3.0, 4.5), ("fourres", 6, 1.0, 1.4)][rng.integers(4)]
         add(fam, "debout", [x, y, z - 0.05, rng.uniform(h1, h2), cell, 0, rng.uniform(0.8, 0.95)])
 
-    # --- Arche des racines (S5) : rideaux de lianes sous la voûte, touffes de mousse dessus (le modèle 3D, lisse, paraissait
-    # nu vu de dessous) ; anneau de greybox.py : portée largeur + 18 m, sommet ~12 m, passage libre ~9-11 m au centre
+    # --- Arche des racines (S5) : rideaux de lianes sous la voûte (le modèle 3D, lisse, paraissait nu vu de dessous ;
+    # des touffes de mousse sur le dessus faisaient un chapelet de boules vu de loin, retirées). Anneau de greybox.py :
+    # portée largeur + 18 m, sommet ~12 m, passage libre ~9-11 m au centre
     an = (-math.sin(ah), math.cos(ah))
     half = arch_pose["width_m"] / 2
     for k in range(8):                                           # dispersés : alignés, ils faisaient une haie suspendue
@@ -273,12 +274,6 @@ def main():
         x, y = arch["x"] + an[0] * off + math.cos(ah) * fwd, arch["y"] + an[1] * off + math.sin(ah) * fwd
         if h > 1.5:
             add("feuillages@debout", "debout", [x, y, under - h + 0.3, h, 7, 0, rng.uniform(0.7, 0.9)])
-    for k in range(12):
-        off = -(half + 6.0) + (2 * half + 12.0) * (k + rng.uniform(0.2, 0.8)) / 12
-        top = 12.0 - 3.0 * (off / (half + 8.0)) ** 2
-        fwd = rng.uniform(-1.0, 1.0)
-        x, y = arch["x"] + an[0] * off + math.cos(ah) * fwd, arch["y"] + an[1] * off + math.sin(ah) * fwd
-        add("feuillages", "touffe", [x, y, top + 0.4, rng.uniform(1.8, 3.0), int(rng.choice([0, 2, 4, 6])), 0, rng.uniform(0.75, 0.95)])
 
     # --- Voûte : branches feuillues qui s'avancent au-dessus de l'eau (tronçons boisés), lianes qui pendent ------
     for p in s:

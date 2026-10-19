@@ -37,8 +37,10 @@ session. Revue par l'animatic rendu par Unreal (lumière de chaque beat, musique
 - 🔧 **Voûte au-dessus de l'eau** plus nette de près : cases de l'atlas des touffes passées de 512 à 1 024 px.
 - 🔧 **Rochers géants retirés du gué** : moussus, ils se confondaient avec les bêtes du troupeau (créatures couvertes de
   mousse, dans l'eau jusqu'au poitrail).
-- 🔧 **Arche des racines habillée** : lianes dispersées sous la voûte (trouée au-dessus du chenal), touffes de mousse
-  dessus ; le modèle 3D, lisse, paraissait nu vu de dessous.
+- 🔧 **Arche des racines habillée** : lianes dispersées sous la voûte (trouée au-dessus du chenal) ; le modèle 3D,
+  lisse, paraissait nu vu de dessous.
+- 🔧 **Vent** : arbres, buissons, touffes et lianes se balancent doucement (pied fixe, ~1 % de la hauteur à la cime) ;
+  les plans restent orientés, ils ne tournent pas avec la tête.
 - 🔧 **Lac final moins vide** : nénuphars en fleurs le long du passage de la barque ; leurs fleurs s'allument la nuit.
 - 🔧 **Chemin de lune** sur l'eau la nuit : reflet de la lune peinte, étiré à la verticale par les rides, en éclats.
 - 🔧 **Sons de la faune** (choisis sans écoute, sans parole détectée par Whisper ; **à valider à l'écoute**, D7) :
