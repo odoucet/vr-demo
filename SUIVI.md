@@ -240,6 +240,15 @@ binning : un triangle qui couvre plusieurs tuiles est traité plusieurs fois, [M
 5. **Ombrage peint** (deux tons) qui aplatit le relief : la **carte de normales** cuite par TRELLIS depuis la forme haute
    définition est maintenant utilisée sur les statues (relief fin sans triangles, la technique classique : [principe](https://virtuall.pro/blog/how-to-make-normal-map)).
 
+**Deux défauts d'import trouvés en comparant la vue tournante et la capture en jeu** (`review/explorations/pont/`) :
+- **Nanite** était activé par l'import glTF : le Quest ne le gère pas et affichait un maillage de repli (pont 67 k triangles
+  sur 594 k, barque 16 k sur 198 k), sans respect de la texture. Coupé à l'import.
+- **Textures jamais remplacées aux réimports** : ton pont, ta tête et la nouvelle barque portaient la texture du modèle
+  précédent (substitut gris, ancienne barque) plaquée sur leurs nouvelles coordonnées → bruit de couleur, aspect pâle.
+  Le dossier de l'asset est maintenant vidé avant chaque réimport.
+- Le pont, en forme complète (42 m, même échelle sur les trois axes, eau à 25 % de sa hauteur : 5,5 m de passage), avec un
+  ombrage « sculpté » proche de la vue tournante, se lit enfin : figures, visages, blocs (v07, v08 à 150 k triangles).
+
 **Pistes suivantes** (non faites) :
 - **Découper l'image en deux figures** et reconstruire chacune séparément : chaque figure profite de toute la grille 1536³
   (deux fois plus de détail). Dupliquer une moitié en miroir ne marche pas ici : les deux figures sont différentes.

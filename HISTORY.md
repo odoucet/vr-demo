@@ -404,4 +404,9 @@ autonome. `SUIVI.md` dit où en est le projet ; ce fichier raconte comment on y 
   d'exemple de ComfyUI remaillait la forme TRELLIS à 768 avec 20 passes de lissage. Rendu réglable ; à 1536 et 5 passes,
   la vue tournante du pont gagne nettement. La carte de normales déjà cuite par TRELLIS, jusque-là ignorée par le
   matériau peint, est branchée. Le fondu d'ouverture commence 3 s plus tôt (13 s, de 4,5 à 17,5 s).
+- **« Ta vue 3D sur fond gris est très belle, c'est pas du tout ce que je vois dans le jeu »** : une planche de comparaison
+  par itération (vue tournante + trois vues depuis la barque) a mené à deux défauts d'import, présents depuis le début.
+  Nanite, activé par défaut, faisait afficher au Quest un maillage de repli au dixième ; et les réimports gardaient
+  l'ancienne texture : le pont d'Olivier portait celle du substitut gris, la nouvelle barque celle de l'ancienne. Corrigé,
+  le pont se lit comme sa vue tournante. La projection, astucieuse, compensait un bug qu'on n'avait pas vu.
 

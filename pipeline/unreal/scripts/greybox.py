@@ -1397,14 +1397,28 @@ def import_glb(rel_glb, dest_dir, max_tris=None, smooth=False):
         return None
     mesh_path = f"{dest_dir}/model/StaticMeshes/model"
     with open(glb, "rb") as f:
-        digest = hashlib.sha1(f.read()).hexdigest()[:12] + (f"-{max_tris}" if max_tris else "") + ("-lisse" if smooth else "")
+        digest = hashlib.sha1(f.read()).hexdigest()[:12] + (f"-{max_tris}" if max_tris else "") + ("-lisse" if smooth else "") + "-sans-nanite-v2"
     if eal.does_asset_exist(mesh_path) and eal.get_metadata_tag(eal.load_asset(mesh_path), "source_sha1") == digest:
         return eal.load_asset(mesh_path)
+    # dossier vidé avant réimport (19/10) : sinon l'import remplace le maillage mais garde les textures du modèle précédent
+    # (pont, tête, barque : nouveau maillage, ancienne texture plaquée sur de nouvelles coordonnées → bruit de couleur)
+    if eal.does_directory_exist(dest_dir):
+        eal.delete_directory(dest_dir)
     task = unreal.AssetImportTask()
     task.filename, task.destination_path = glb, dest_dir
     task.automated, task.replace_existing, task.save = True, True, True
     tools.import_asset_tasks([task])
     mesh = eal.load_asset(mesh_path)
+    # Nanite coupé (19/10) : l'import glTF l'active ; le Quest ne le gère pas et affichait un maillage de repli généré par
+    # Nanite (pont : 67 k triangles sur 594 k, barque : 16 k sur 198 k), coordonnées de texture et détail perdus — d'où
+    # des modèles pâles et à facettes, loin de leur vue tournante.
+    ns = mesh.get_editor_property("nanite_settings")
+    if ns.get_editor_property("enabled"):
+        ns.set_editor_property("enabled", False)
+        mesh.set_editor_property("nanite_settings", ns)
+        eal.save_loaded_asset(mesh)
+        mesh = eal.load_asset(mesh_path)
+    unreal.log(f"{rel_glb} : {mesh.get_num_triangles(0)} triangles importés (sans Nanite)")
     if max_tris and mesh.get_num_triangles(0) > max_tris:
         dm = unreal.DynamicMesh()
         unreal.GeometryScript_AssetUtils.copy_mesh_from_static_mesh_v2(mesh, dm, unreal.GeometryScriptCopyMeshFromAssetOptions(), unreal.GeometryScriptMeshReadLOD())
@@ -1748,6 +1762,15 @@ return float3(wave * W * 0.04 * (1.0 - a), 0, wave * W * 0.09 * lat + sin(T * 0.
 
 # Mousse sur les statues de pierre (D18, modèles 3D sans végétation) : les faces tournées vers le haut verdissent,
 # en taches irrégulières ; la teinte suit l'ombrage déjà calculé (C).
+# Ombrage « sculpté » des statues (retour d'Olivier du 19/10 : la vue tournante sur fond gris est belle, pas le rendu
+# en jeu) : éclairage continu comme la vue tournante (appoint + diffus enveloppant + carte de normales), sans la frontière
+# deux tons ni les touches du look peint, qui aplatissaient le modelé.
+SCULPT_CODE = """float3 n = normalize(N);
+float3 l = normalize(L);
+float3 albedo = pow(max(Albedo, 0.0), 2.2);
+float d = saturate(dot(n, l) * 0.6 + 0.4);
+float sky = saturate(n.z * 0.5 + 0.5);
+return albedo * (lerp(Ombre.rgb, Lumiere.rgb, d) + Ciel.rgb * sky * 0.3);   // même exposition que le look peint"""
 # Roche d'Olivier (refs/tex-roche.png) en détail fin sur les statues (côtés et dos, là où la projection ne porte pas) :
 # projection selon l'axe dominant de la normale, 3 m, module la couleur autour de sa moyenne.
 ROCK_DETAIL_CODE = """float3 an = abs(normalize(N));
@@ -1777,7 +1800,7 @@ LAMP_CODE = (f"float lum = dot(Tex, float3(0.3, 0.6, 0.1));\n"
              f"return C * 0.4 + Tex * float3({CANDLE_RGB[0]}, {CANDLE_RGB[1]}, {CANDLE_RGB[2]}) * smoothstep(0.25, 0.6, lum) * 2.6 * {FLICKER};")
 
 
-def peint_tex_material(name, texture, anim=None, box=None, glow=None, tint=None, moss=False, proj=None, normal=None):
+def peint_tex_material(name, texture, anim=None, box=None, glow=None, tint=None, moss=False, proj=None, normal=None, sculpt=False, model_tag=None):
     """Look peint pour un modèle texturé (créatures, barque) : couleur de la texture, même ombrage deux tons
     que M_Peint. anim : animation procédurale (ANIM_CODES) ; glow : teinte de bioluminescence (abysses)."""
     path = f"/Game/Look/{name}"
@@ -1789,7 +1812,7 @@ def peint_tex_material(name, texture, anim=None, box=None, glow=None, tint=None,
                          MPC_DIGEST, texture.get_path_name(), anim_code, glow, tint,
                          (MOSS_CODE, ROCK_DETAIL_CODE, eal.get_metadata_tag(look_texture("tex-roche"), "source_sha1")) if moss else None,
                          (PROJ_CODE, proj[0].get_path_name(), eal.get_metadata_tag(proj[0], "source_sha1"), sorted(proj[1].items())) if proj else None,
-                         ("normale-v1", normal.get_path_name()) if normal else None)
+                         ("normale-v1", normal.get_path_name()) if normal else None, SCULPT_CODE if sculpt else None, model_tag)
     existing = eal.load_asset(path) if eal.does_asset_exist(path) else None
     if up_to_date(existing, digest):
         return existing
@@ -1834,6 +1857,16 @@ def peint_tex_material(name, texture, anim=None, box=None, glow=None, tint=None,
         cp.set_editor_property("parameter_name", name_)
         mel.connect_material_expressions(cp, "", node, pin)
     out = node
+    if sculpt:
+        sc = custom_node(mat, SCULPT_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["Albedo", "N", "L", "Lumiere", "Ombre", "Ciel"], -350, 100)
+        mel.connect_material_expressions(enc, "", sc, "Albedo")
+        mel.connect_material_expressions(nrm, "", sc, "N")
+        for i, (pin, name_) in enumerate((("L", "SoleilDir"), ("Lumiere", "Lumiere"), ("Ombre", "Ombre"), ("Ciel", "CielAppoint"))):
+            cp = mel.create_material_expression(mat, unreal.MaterialExpressionCollectionParameter, -600, 500 + 60 * i)
+            cp.set_editor_property("collection", MPC)
+            cp.set_editor_property("parameter_name", name_)
+            mel.connect_material_expressions(cp, "", sc, pin)
+        out = sc
     if glow is not None:          # bioluminescence : la texture éclaire aussi par elle-même
         # s'éteint en s'éloignant (AbyssFade, animé par la séquence)
         gl = custom_node(mat, f"return (C + Tex * float3({glow[0]}, {glow[1]}, {glow[2]})) * saturate(F);",
@@ -1916,10 +1949,11 @@ def peint_tex_material(name, texture, anim=None, box=None, glow=None, tint=None,
     return mat
 
 
-def painted_model(model, name, anim=None, glow=None, tint=None, moss=False, proj=None, normal_map=False):
+def painted_model(model, name, anim=None, glow=None, tint=None, moss=False, proj=None, normal_map=False, sculpt=False):
     """Remplace les matériaux glTF du modèle par le look peint (texture de couleur conservée)."""
     b = model.get_bounding_box()
     box = (b.min.x, b.max.x, b.min.y, b.max.y, b.min.z, b.max.z)
+    model_tag = eal.get_metadata_tag(model, "source_sha1")    # matériaux reconstruits quand le modèle importé change
     mats = []
     for i in range(model.get_num_sections(0) if hasattr(model, "get_num_sections") else 1):
         mi = model.get_material(i)
@@ -1930,7 +1964,7 @@ def painted_model(model, name, anim=None, glow=None, tint=None, moss=False, proj
             mats.append(None)
             continue
         ntex = mel.get_material_instance_texture_parameter_value(mi, "NormalTexture") if normal_map and isinstance(mi, unreal.MaterialInstance) else None
-        mats.append(peint_tex_material(f"M_Peint_{name}{i}", tex, anim, box, glow, tint, moss, proj, ntex))
+        mats.append(peint_tex_material(f"M_Peint_{name}{i}", tex, anim, box, glow, tint, moss, proj, ntex, sculpt, model_tag))
     return mats
 
 
@@ -1976,7 +2010,7 @@ if model is not None:      # la barque et la lanterne prennent aussi le look pei
                 paper.static_mesh_component.set_material(i, pm)
 
 # --- Ponton et arche des racines (modèles 3D, look peint) -------------------------------------------------------
-def place_model(model, label, loc, yaw, size_cm, z_base_cm, painted_name, tint=None, moss=False, proj=None):
+def place_model(model, label, loc, yaw, size_cm, z_base_cm, painted_name, tint=None, moss=False, proj=None, sculpt=False):
     """Pose un modèle importé : mis à l'échelle sur sa boîte (size_cm = (x, y, z), None = proportionnel),
     base posée à z_base_cm, tourné de yaw ; look peint (texture conservée)."""
     b = model.get_bounding_box()
@@ -1988,7 +2022,7 @@ def place_model(model, label, loc, yaw, size_cm, z_base_cm, painted_name, tint=N
     tag(a, label)
     a.set_actor_scale3d(unreal.Vector(*sc))
     a.static_mesh_component.set_collision_enabled(unreal.CollisionEnabled.NO_COLLISION)
-    for i, pm_ in enumerate(painted_model(model, painted_name, tint=tint, moss=moss, proj=proj, normal_map=moss)):
+    for i, pm_ in enumerate(painted_model(model, painted_name, tint=tint, moss=moss, proj=proj, normal_map=moss or sculpt, sculpt=sculpt)):
         if pm_ is not None:
             a.static_mesh_component.set_material(i, pm_)
     return a
@@ -2013,10 +2047,12 @@ else:                                                   # repli : pilotis et tab
 
 am = MARKS["arche-racines"]
 pose_a = pose_at(am["t"])
-# Arche de statues (une seule vue : la 3D a deviné des socles très épais, 16 m dans le sens du courant, qui se rejoignent
-# au ras de l'eau) : largeur de la rivière + 28 m, hauteur proportionnelle, épaisseur ramenée à 7 m, enfoncée de 5,5 m
-# pour que la rivière passe dans la partie large de l'ouverture.
-ARCH_EXTRA_M, ARCH_DEPTH_CM, ARCH_SINK_CM = 28.0, 700.0, -550.0
+# Arche de statues, forme complète (retour d'Olivier du 19/10 : garder le modèle entier, ne régler que la hauteur) :
+# même échelle sur les trois axes, 42 m de large ; le trou du modèle va de 20 à 80 % de sa hauteur et fait au moins 13 %
+# de sa largeur au-dessus de 25 % (mesuré sur le maillage) : ligne d'eau à 25 % → 5,5 m de passage au ras de l'eau,
+# ~9 m à 1 m au-dessus ; fondations en briques en partie hors de l'eau. Centre du trou décalé de -1 % (modèle).
+ARCH_WIDTH_CM, ARCH_WATERLINE, ARCH_HOLE_SHIFT = 4200.0, 0.25, -0.010
+ARCH_PROJECTION, ARCH_SCULPT, ARCH_MOSS = False, True, False     # essais du 19/10 (review/explorations/pont/)
 def projection(pid, flip=0.0):
     """Image projetée (PROJ_CODE) : texture et cadre écrits par pipeline/style/projection.py ; None s'ils manquent."""
     png = os.path.join(ROOT, "assets", "textures", f"proj-{pid}.png")
@@ -2031,13 +2067,16 @@ def projection(pid, flip=0.0):
 # D18 (19/10) : l'arche de pierre aux deux figures agenouillées remplace l'arche des racines (redondante avec l'arbre
 # colossal, selon Olivier). Modèle sans végétation (assets/3d/arche-statues : image d'Olivier refs/inbox/arche-statues.png,
 # substitut local en attendant), habillé de mousse (matériau) et de lianes peintes (sprites_layout.py).
-statues = import_glb("arche-statues/trellis2-s42", "/Game/Assets/ArcheStatues", 150000, smooth=True)   # forme remaillée à 1536 (image_to_3d --remesh 1536 --smooth 5)   # vu de près : détail (retour du 19/10)
+statues = import_glb("arche-statues/trellis2-s42", "/Game/Assets/ArcheStatues", 150000, smooth=True)   # forme remaillée à 1536 (image_to_3d --remesh 1536 --smooth 5)   # forme remaillée à 1536 (image_to_3d --remesh 1536 --smooth 5)   # vu de près : détail (retour du 19/10)
 racine = None if statues is not None else import_glb("racine/trellis2-s42", "/Game/Assets/Racine", 30000)
 if statues is not None:
     loc, _ = oriented(am["t"], 0.0, 0.0, 0.0)
-    place_model(statues, "GB_ArcheStatues", loc, -pose_a["heading_deg"] - 90.0,
-                ((pose_a["width_m"] + ARCH_EXTRA_M) * 100.0, ARCH_DEPTH_CM, None), ARCH_SINK_CM, "ArcheStatues", moss=True,
-                proj=projection("arche-statues"))
+    sb = statues.get_bounding_box()
+    arch_h = ARCH_WIDTH_CM * (sb.max.z - sb.min.z) / (sb.max.x - sb.min.x)
+    arch = place_model(statues, "GB_ArcheStatues", loc, -pose_a["heading_deg"] - 90.0, (ARCH_WIDTH_CM, None, None),
+                       -ARCH_WATERLINE * arch_h, "ArcheStatues", moss=ARCH_MOSS,
+                       proj=projection("arche-statues") if ARCH_PROJECTION else None, sculpt=ARCH_SCULPT)
+    arch.add_actor_world_offset(arch.get_actor_forward_vector() * (-ARCH_HOLE_SHIFT * ARCH_WIDTH_CM), False, False)
     for a_ in actors.get_all_level_actors():
         if a_.get_actor_label() == "GB_ArcheRacines":      # l'ancien tube du greybox
             actors.destroy_actor(a_)
