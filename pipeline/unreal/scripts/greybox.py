@@ -1777,7 +1777,7 @@ LAMP_CODE = (f"float lum = dot(Tex, float3(0.3, 0.6, 0.1));\n"
              f"return C * 0.4 + Tex * float3({CANDLE_RGB[0]}, {CANDLE_RGB[1]}, {CANDLE_RGB[2]}) * smoothstep(0.25, 0.6, lum) * 2.6 * {FLICKER};")
 
 
-def peint_tex_material(name, texture, anim=None, box=None, glow=None, tint=None, moss=False, proj=None):
+def peint_tex_material(name, texture, anim=None, box=None, glow=None, tint=None, moss=False, proj=None, normal=None):
     """Look peint pour un modèle texturé (créatures, barque) : couleur de la texture, même ombrage deux tons
     que M_Peint. anim : animation procédurale (ANIM_CODES) ; glow : teinte de bioluminescence (abysses)."""
     path = f"/Game/Look/{name}"
@@ -1788,7 +1788,8 @@ def peint_tex_material(name, texture, anim=None, box=None, glow=None, tint=None,
     digest = spec_digest("peint-tex-v9", PEINT_CODE, SWAY_CANDLE_CODE if anim == "bougie" else None, LAMP_CODE if anim == "bougie" else None,
                          MPC_DIGEST, texture.get_path_name(), anim_code, glow, tint,
                          (MOSS_CODE, ROCK_DETAIL_CODE, eal.get_metadata_tag(look_texture("tex-roche"), "source_sha1")) if moss else None,
-                         (PROJ_CODE, proj[0].get_path_name(), eal.get_metadata_tag(proj[0], "source_sha1"), sorted(proj[1].items())) if proj else None)
+                         (PROJ_CODE, proj[0].get_path_name(), eal.get_metadata_tag(proj[0], "source_sha1"), sorted(proj[1].items())) if proj else None,
+                         ("normale-v1", normal.get_path_name()) if normal else None)
     existing = eal.load_asset(path) if eal.does_asset_exist(path) else None
     if up_to_date(existing, digest):
         return existing
@@ -1807,6 +1808,15 @@ def peint_tex_material(name, texture, anim=None, box=None, glow=None, tint=None,
     one = mel.create_material_expression(mat, unreal.MaterialExpressionConstant, -1100, -100)
     one.set_editor_property("r", 1.0)
     nrm = mel.create_material_expression(mat, unreal.MaterialExpressionVertexNormalWS, -1100, 0)
+    if normal is not None:   # carte de normales cuite par TRELLIS depuis la forme haute définition : le relief fin revient
+        ntex = mel.create_material_expression(mat, unreal.MaterialExpressionTextureSample, -1500, 0)
+        ntex.set_editor_property("texture", normal)
+        ntex.set_editor_property("sampler_type", unreal.MaterialSamplerType.SAMPLERTYPE_NORMAL)
+        ntr = mel.create_material_expression(mat, unreal.MaterialExpressionTransform, -1300, 0)
+        ntr.set_editor_property("transform_source_type", unreal.MaterialVectorCoordTransformSource.TRANSFORMSOURCE_TANGENT)
+        ntr.set_editor_property("transform_type", unreal.MaterialVectorCoordTransform.TRANSFORM_WORLD)
+        mel.connect_material_expressions(ntex, "RGB", ntr, "")
+        nrm = ntr
     cam = mel.create_material_expression(mat, unreal.MaterialExpressionCameraVectorWS, -1100, 100)
     half = mel.create_material_expression(mat, unreal.MaterialExpressionConstant, -1100, 200)
     half.set_editor_property("r", 0.5)
@@ -1906,7 +1916,7 @@ def peint_tex_material(name, texture, anim=None, box=None, glow=None, tint=None,
     return mat
 
 
-def painted_model(model, name, anim=None, glow=None, tint=None, moss=False, proj=None):
+def painted_model(model, name, anim=None, glow=None, tint=None, moss=False, proj=None, normal_map=False):
     """Remplace les matériaux glTF du modèle par le look peint (texture de couleur conservée)."""
     b = model.get_bounding_box()
     box = (b.min.x, b.max.x, b.min.y, b.max.y, b.min.z, b.max.z)
@@ -1919,7 +1929,8 @@ def painted_model(model, name, anim=None, glow=None, tint=None, moss=False, proj
         if tex is None:
             mats.append(None)
             continue
-        mats.append(peint_tex_material(f"M_Peint_{name}{i}", tex, anim, box, glow, tint, moss, proj))
+        ntex = mel.get_material_instance_texture_parameter_value(mi, "NormalTexture") if normal_map and isinstance(mi, unreal.MaterialInstance) else None
+        mats.append(peint_tex_material(f"M_Peint_{name}{i}", tex, anim, box, glow, tint, moss, proj, ntex))
     return mats
 
 
@@ -1977,7 +1988,7 @@ def place_model(model, label, loc, yaw, size_cm, z_base_cm, painted_name, tint=N
     tag(a, label)
     a.set_actor_scale3d(unreal.Vector(*sc))
     a.static_mesh_component.set_collision_enabled(unreal.CollisionEnabled.NO_COLLISION)
-    for i, pm_ in enumerate(painted_model(model, painted_name, tint=tint, moss=moss, proj=proj)):
+    for i, pm_ in enumerate(painted_model(model, painted_name, tint=tint, moss=moss, proj=proj, normal_map=moss)):
         if pm_ is not None:
             a.static_mesh_component.set_material(i, pm_)
     return a
@@ -2020,7 +2031,7 @@ def projection(pid, flip=0.0):
 # D18 (19/10) : l'arche de pierre aux deux figures agenouillées remplace l'arche des racines (redondante avec l'arbre
 # colossal, selon Olivier). Modèle sans végétation (assets/3d/arche-statues : image d'Olivier refs/inbox/arche-statues.png,
 # substitut local en attendant), habillé de mousse (matériau) et de lianes peintes (sprites_layout.py).
-statues = import_glb("arche-statues/trellis2-s42", "/Game/Assets/ArcheStatues", 80000, smooth=True)   # 150 k et 400 k essayés (19/10) : pas plus de détail, la limite est la reconstruction 3D d'une seule vue   # vu de près : détail (retour du 19/10)
+statues = import_glb("arche-statues/trellis2-s42", "/Game/Assets/ArcheStatues", 150000, smooth=True)   # forme remaillée à 1536 (image_to_3d --remesh 1536 --smooth 5)   # vu de près : détail (retour du 19/10)
 racine = None if statues is not None else import_glb("racine/trellis2-s42", "/Game/Assets/Racine", 30000)
 if statues is not None:
     loc, _ = oriented(am["t"], 0.0, 0.0, 0.0)

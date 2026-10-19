@@ -221,6 +221,34 @@ Dis-moi laquelle garder (ou un mélange : par exemple B au loin et C près de l'
 4. **J1 (sphère vidéo 360 + synchro)** : go/no-go jamais fait au casque, alors que c'est la base de l'architecture proche / lointain.
 5. Sons : repères sonores des créatures, écoute des ambiances (D7) ; caméras de revue et planche à remettre à jour pour la PR.
 
+## 🔍 Recherche : détail des modèles 3D (19/10, question d'Olivier)
+
+**Budget du Quest 3** : Meta recommande moins de 1,5 M triangles par image et moins de 200 draw calls (Quest 2 : 750 k) —
+[tableau de Meta](https://developers.meta.com/horizon/resources/device-optimization-comparison/). Le « ≤ 500 k » de
+`CLAUDE.md` est un réglage prudent hérité du Quest 2. Mais notre scène est mesurée limitée par la géométrie (étape de
+binning : un triangle qui couvre plusieurs tuiles est traité plusieurs fois, [Meta](https://developers.meta.com/horizon/documentation/unreal/unreal-advanced-rendering/))
+à ~95 % de GPU : toute hausse se mesure au casque, mais la marge théorique existe.
+
+**Où se perd le détail, étage par étage** :
+1. **Remaillage du modèle Comfy-Org** : la forme TRELLIS.2 sort à 1536³ ([docs Comfy](https://docs.comfy.org/tutorials/3d/trellis2)),
+   puis le workflow la refait à **768 avec 20 passes de lissage** : c'était la première perte. Exposé
+   (`image_to_3d.py --remesh 1536 --smooth 5`) : blocs, fissures et pierres nettement plus francs (turntable).
+2. **Une seule vue** : la profondeur est devinée (socles trop épais, dos inventé). Une 2e vue, ou des vues générées en local,
+   aideraient — pas possible pour le pont.
+3. Décimation (200 k → 600 k faces maintenant) puis simplification à l'import Unreal (60 k → 150 k pour le pont).
+4. **Texture** reconstruite floue : remplacée sur la face avant par **la projection de ton image** (le plus gros gain).
+5. **Ombrage peint** (deux tons) qui aplatit le relief : la **carte de normales** cuite par TRELLIS depuis la forme haute
+   définition est maintenant utilisée sur les statues (relief fin sans triangles, la technique classique : [principe](https://virtuall.pro/blog/how-to-make-normal-map)).
+
+**Pistes suivantes** (non faites) :
+- **Découper l'image en deux figures** et reconstruire chacune séparément : chaque figure profite de toute la grille 1536³
+  (deux fois plus de détail). Dupliquer une moitié en miroir ne marche pas ici : les deux figures sont différentes.
+- **Hunyuan3D 2.x** : les nœuds sont dans ComfyUI, pas le modèle ; réputé un peu plus fin en géométrie que TRELLIS 2
+  ([comparatif](https://www.3daistudio.com/blog/trellis-2-vs-hunyuan-3d-differences-explained)) → téléchargement à
+  autoriser. Tripo : service payant, exclu.
+- **Ta roche avec du relief** : carte de normales tirée de `tex-roche` (gratuit en géométrie, une lecture de texture) ; le
+  parallaxe (vrai creux) est trop cher au Quest.
+
 ## 🔴 Bloquants
 
 | # | Blocage | Bloque | Ce qu'il faut | Contournement en cours |

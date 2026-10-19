@@ -44,7 +44,7 @@ def reachable(api, info):
     return {k: v for k, v in api.items() if k in keep}
 
 
-def build(info, image, model, seed, prefix, texture_size, decimate):
+def build(info, image, model, seed, prefix, texture_size, decimate, remesh=768, smooth=20):
     api = convert(json.loads(TEMPLATE.read_text(encoding="utf-8")), info)
     for nid in ("246", "323"):  # aperçus intermédiaires de l'UI (structure voxel, couleurs par sommet)
         api.pop(nid, None)
@@ -56,6 +56,10 @@ def build(info, image, model, seed, prefix, texture_size, decimate):
         api[nid]["inputs"]["seed"] = seed + i
     api["288"]["inputs"]["value"] = texture_size
     api["186"]["inputs"]["target_face_count"] = decimate
+    # remaillage après la forme TRELLIS (1536³) : le modèle Comfy-Org le refait à 768 avec 20 passes de lissage, ce qui
+    # efface le détail fin ; réglable (19/10 : 1536 et 5 passes pour les statues vues de près)
+    api["241"]["inputs"]["resolution"] = remesh
+    api["241"]["inputs"]["smooth_iters"] = smooth
     api["322"]["inputs"]["filename_prefix"] = f"{prefix}/model"
     for yaw in YAWS:
         # Le mesh sort normalisé dans un cube unité centré : distance 2 à 35° de champ cadre tout l'objet.
@@ -84,7 +88,7 @@ def contact_sheet(paths, dest, label):
     sheet.save(dest, quality=90)
 
 
-def run(src, model, seed, texture_size, decimate, info):
+def run(src, model, seed, texture_size, decimate, info, remesh=768, smooth=20):
     name = Path(src).stem
     out = OUT / name / f"{model}-s{seed}"
     digest = hashlib.sha1(Path(src).read_bytes()).hexdigest()[:12]
@@ -92,13 +96,15 @@ def run(src, model, seed, texture_size, decimate, info):
     if (out / "model.glb").exists() and (out / "turntable.jpg").exists() and done.exists() \
             and json.loads(done.read_text(encoding="utf-8")).get("source_sha1") == digest \
             and json.loads(done.read_text(encoding="utf-8")).get("texture_size") == texture_size \
-            and json.loads(done.read_text(encoding="utf-8")).get("target_faces") == decimate:
+            and json.loads(done.read_text(encoding="utf-8")).get("target_faces") == decimate \
+            and json.loads(done.read_text(encoding="utf-8")).get("remesh", 768) == remesh \
+            and json.loads(done.read_text(encoding="utf-8")).get("smooth", 20) == smooth:
         print(f"{out.relative_to(ROOT)} déjà à jour, ignoré.")
         return out
     out.mkdir(parents=True, exist_ok=True)
     image = client.upload_image(src)
     prefix = f"barque/3d/{name}-{model}-s{seed}"
-    api = build(info, image, model, seed, prefix, texture_size, decimate)
+    api = build(info, image, model, seed, prefix, texture_size, decimate, remesh, smooth)
     t0 = time.time()
     entry = client.wait(client.submit(api), timeout=7200)
     outputs = entry["outputs"]
@@ -120,7 +126,7 @@ def run(src, model, seed, texture_size, decimate, info):
     if len(shots) == 4:
         contact_sheet(shots, out / "turntable.jpg", f"{name} — {model} — seed {seed}")
     meta = {"source": str(Path(src).resolve().relative_to(ROOT)), "source_sha1": digest, "model": MODELS[model], "seed": seed,
-            "texture_size": texture_size, "target_faces": decimate, "seconds": round(time.time() - t0),
+            "texture_size": texture_size, "target_faces": decimate, "remesh": remesh, "smooth": smooth, "seconds": round(time.time() - t0),
             "workflow": str(TEMPLATE.relative_to(ROOT)), "script": "pipeline/comfy/image_to_3d.py"}
     (out / "params.json").write_text(json.dumps(meta, indent=2, ensure_ascii=False), encoding="utf-8")
     print(f"{out.relative_to(ROOT)}  ({meta['seconds']} s, GLB {(out / 'model.glb').stat().st_size / 1e6:.1f} Mo)")
@@ -134,12 +140,14 @@ def main():
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--texture", type=int, default=2048)
     ap.add_argument("--faces", type=int, default=200000, help="faces visées après décimation")
+    ap.add_argument("--remesh", type=int, default=768, help="résolution du remaillage (768 dans le modèle Comfy-Org, 1536 = celle de TRELLIS)")
+    ap.add_argument("--smooth", type=int, default=20, help="passes de lissage du remaillage")
     args = ap.parse_args()
     info = client.requests.get(f"{client.COMFY_URL}/object_info", timeout=60).json()
     with gpu_lock("image_to_3d.py (ComfyUI TRELLIS.2 / Pixal3D)"):
         for src in args.images:
             for model in args.models:
-                run(src, model, args.seed, args.texture, args.faces, info)
+                run(src, model, args.seed, args.texture, args.faces, info, args.remesh, args.smooth)
 
 
 if __name__ == "__main__":

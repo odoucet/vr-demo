@@ -157,7 +157,7 @@ if not STEMS:
     audio.set_sound(music)
     audio.set_range(frame(MUSIC_OFFSET).value, end)
 
-# Fondus : noir au début de S1, fondu d'entrée de 10 s de 7,5 à 17,5 s (retours d'Olivier du 19/10 : 4 fois plus long,
+# Fondus : noir au début de S1, fondu d'entrée de 13 s, de 4,5 à 17,5 s (retours d'Olivier du 19/10 : plus long,
 # puis 5 s plus tôt ; l'image apparaît pendant le clapotis de S1), fondu de sortie sur l'extinction de la musique (événement
 # « fondu-noir » du séquencier). Piste de fondu pour Movie Render Queue ; au casque (pas de post-traitement),
 # même courbe sur la sphère noire devant les yeux (MPC Fondu, clés plus bas).
@@ -173,7 +173,7 @@ def _event_s(eid, default):
 
 T_FADE_OUT = _event_s("fondu-noir", 216.7)
 T_REVEAL = _event_s("lanternes-reveal", 206.7)
-FADE_IN_END, FADE_IN_S = MUSIC_OFFSET - 2.5, 10.0     # retour du 19/10 après-midi : 5 s plus tôt, même durée (7,5 → 17,5 s)
+FADE_IN_END, FADE_IN_S = MUSIC_OFFSET - 2.5, 13.0     # retours du 19/10 : finit à 17,5 s, commence à 4,5 s (3 s plus tôt)
 FADE_KEYS = [(0, 1.0), (FADE_IN_END - FADE_IN_S, 1.0), (FADE_IN_END, 0.0), (T_FADE_OUT, 0.0), (DURATION - 0.3, 1.0)]
 fade = seq.add_track(unreal.MovieSceneFadeTrack).add_section()
 fade.set_range(0, end)

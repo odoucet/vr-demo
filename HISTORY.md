@@ -398,4 +398,10 @@ autonome. `SUIVI.md` dit où en est le projet ; ce fichier raconte comment on y 
   du modèle. Résultat immédiat : les visages des deux figures se lisent quand on passe dessous. Olivier livre au passage
   deux textures peintes, roche et eau : la roche habille les rochers et le détail des statues, l'eau entre dans le
   shader de la rivière.
+- **Enquête sur le détail 3D** (Olivier : « est-ce le Quest qui impose la limite, ou nous qui nous mettons des limites
+  absurdes ? ») : un peu des deux. Meta recommande < 1,5 M triangles par image au Quest 3 ; nos 500 k étaient prudents,
+  mais la scène mesurée est limitée par la géométrie. Surtout, le détail se perdait avant le Quest : le workflow
+  d'exemple de ComfyUI remaillait la forme TRELLIS à 768 avec 20 passes de lissage. Rendu réglable ; à 1536 et 5 passes,
+  la vue tournante du pont gagne nettement. La carte de normales déjà cuite par TRELLIS, jusque-là ignorée par le
+  matériau peint, est branchée. Le fondu d'ouverture commence 3 s plus tôt (13 s, de 4,5 à 17,5 s).
 
