@@ -361,4 +361,7 @@ autonome. `SUIVI.md` dit où en est le projet ; ce fichier raconte comment on y 
   rochers géants moussus posés la nuit précédente se trouvaient au gué. Rochers déplacés. Le lac final paraissait vide
   jusqu'à la nuée : nénuphars en fleurs le long du passage, fleurs lumineuses la nuit. Voûte au-dessus de l'eau en
   résolution double (floue de près).
+- **Arche des racines** : nue vu de dessous ; habillée de lianes et de mousse peintes. Premier essai : quatorze rideaux
+  alignés en travers de la rivière, une haie suspendue ; dispersés sur l'épaisseur de l'arche, longueurs variées,
+  trouée au-dessus du chenal.
 
