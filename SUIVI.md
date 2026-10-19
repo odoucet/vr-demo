@@ -7,6 +7,52 @@ Légende : 🔴 bloque un jalon, aucun contournement · 🟠 j'avance avec un co
 
 ---
 
+## ▶ Test au casque du 19/10 au soir — liste de validation
+
+APK `builds/android_greybox/Barque-arm64.apk` installé (paquet `com.odoucet.barque.greybox`, volume à 1). Note chaque point
+OK / à revoir (format `moment : remarque`). En gras : ce qui n'a jamais été vu au casque.
+
+**Général (toute la balade)**
+1. **Fluidité** : saccades ? surtout de 0:20 à 1:40 (ponton, abysses), les plus chargés.
+2. **Arbres immobiles** : plus de rotation quand tu tournes la tête ? plus d'arbres qui se rentrent dedans ?
+3. **Relief des arbres et buissons proches** (bords de rivière) : volume en stéréo, ou défauts (étirements, bords) ?
+4. **Arbres qui s'effacent vus de profil** : discret ou gênant ?
+5. **Répétition** : arbres variés, plus d'« ovale » au bas des touffes, plus de plaque d'herbe sous les troncs ?
+6. **Vent** dans les arbres et les touffes : agréable, trop fort, imperceptible ?
+7. Lumière cohérente des arbres (côté éclairé vers le soleil).
+
+**Barque**
+8. **Nouvelle barque** : échelle (3,5 × 1,56 m), hauteur des yeux, franc-bord, planches nettes.
+9. **Lanterne** basse sur l'avant droit : gêne-t-elle encore ? tangue-t-elle ? assez visible la nuit ?
+
+**0:00 – 0:44 (noir, ponton)**
+10. **Fondu d'ouverture** : de 4,5 à 17,5 s, assez progressif ?
+11. Nénuphars : plus de scintillement ?
+12. **Canards qui nagent** et leur son (à gauche vers 0:30).
+
+**0:44 – 1:38 (abysses)**
+13. **Eau** : ta texture d'eau visible en regardant vers le bas ? eau moins terne ?
+14. **Grenouilles** (son) ; libellules sans marche arrière.
+
+**1:38 – 2:08 (gué)**
+15. **Troupeau lisible** : têtes et oreilles hors de l'eau, plus de rochers qui s'y confondent ; aucun canard traversé.
+
+**2:08 – 2:38 (pont)**
+16. **Le pont aux statues** : forme, figures et visages lisibles de loin et dessous ? fondations en briques ? passage
+    (5,5 m au ras de l'eau) confortable, pas l'impression de raser la pierre ?
+17. Petits triangles noirs sur la pierre : encore visibles ?
+
+**2:38 – 3:22 (lune)**
+18. **Tête couchée** (berge gauche, ~2:38) : lisible comme un visage ? champignons lumineux autour.
+19. **Créature volante** plus proche devant la lune : assez « géante » ?
+20. **Chouettes** (son) ; lueurs des plantes de nuit sans plantes blanches.
+
+**3:22 – 4:00 (lac)**
+21. **Reflets** : traînées des lueurs et des lucioles sur l'eau, chemin de lune.
+22. **Nénuphars lumineux** sur le lac ; nuée finale de lucioles ; fondu au noir final.
+
+**Son** : niveaux des sons de faune (canards, grenouilles, chouettes), aucune voix ni bruit parasite.
+
 ## ▶ Chantier sans casque (19/10, ~6 h, à partir de 11 h 50)
 
 Casque indisponible (suivi de position perdu) ; Olivier : « avançons le maximum », images et vidéos envoyées dans la

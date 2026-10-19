@@ -414,4 +414,6 @@ autonome. `SUIVI.md` dit où en est le projet ; ce fichier raconte comment on y 
   Hunyuan3D 2.1 (téléchargé avec l'accord d'Olivier : géométrie plus sculptée mais sans texture). Les petits triangles
   noirs repérés par Olivier sont des texels jamais cuits : bouchés automatiquement. Les reconstructions à 30 minutes
   venaient de la mémoire du GPU partagée avec l'éditeur Unreal ; le nœud de nettoyage d'Olivier est branché.
+- **Fin de journée** : APK complet empaqueté et installé, liste de 22 points de validation au casque rédigée dans SUIVI.md
+  (tout ce qui n'a été vu qu'en rendu PC depuis le matin).
 
