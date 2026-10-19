@@ -9,7 +9,7 @@ comfyui:
   url: http://172.19.32.1:8188          # ComfyUI lancé avec --listen 0.0.0.0
   root: G:/ComfyUI_windows_portable/ComfyUI
 blender:
-  exe: null                             # non installé (SUIVI.md, D9)
+  exe: G:/blender/blender-5.2.2-windows-x64/blender.exe   # portable, installé le 19/10 (accord D9)
 android:
   # Versions exigées par UE 5.8 (Engine/Config/Android/Android_SDK.json) ; installation : SUIVI.md, D10.
   platforms: android-36

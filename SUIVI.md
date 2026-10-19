@@ -7,6 +7,28 @@ Légende : 🔴 bloque un jalon, aucun contournement · 🟠 j'avance avec un co
 
 ---
 
+## ⏸ Pause du 19/10 au soir — chantier « reprise 3D et eau » en cours (rien de construit ni vérifié)
+
+- ✅ **Blender 5.2.2 LTS portable** installé dans `G:\blender` (accord D9), déclaré dans `pipeline/tools.yaml`.
+- ✅ **Modèles 3D régénérés** avec les réglages fins (forme 1536, 5 passes de lissage, texture 4096, nettoyage VRAM avant
+  le remaillage : ~3 min par modèle au lieu de 27) : barque, ponton, tête, lanterne, abysses, créature volante.
+  **Troupeau** : échec mémoire au remaillage, ancien modèle gardé (à relancer seul).
+- ✍ **Écrit, pas encore construit** dans `greybox.py` : eau (sillage de Kelvin, vague d'étrave, écume des flancs, rides,
+  texture d'eau sans saut, reflets qui ondoient, écume qui lèche les berges), vent uniforme (rafale), niveaux de détail de
+  l'arche (300 k / 100 k / 30 k).
+- **À faire à la reprise** : retirer les deux planches de la barque dans Blender ; réimporter tous les modèles ; construire ;
+  animatic vérifié image par image (eau surtout) ; APK + mesure ; reprendre l'animation du héron.
+
+## ▶ Retours au casque du 19/10, 4e essai (mesure faite, casque porté)
+
+- 📊 **Fluidité** (`review/perf/greybox-20261019-2100.png`) : 72 i/s presque partout, mais GPU à 96-97 % de 0:20 à 2:30 et
+  **le gué décroche (69 en moyenne, creux à 63)** : arche à 300 k triangles en vue + troupeau. → Arche ramenée à 150 k.
+- 🔧 **Vent** visible, mais non uniforme : des arbres voisins s'entrechoquent → phase quasi uniforme (une rafale).
+- 🔧 **Héron** : « presque pas mal », animation à revoir.
+- 🔴 **L'eau** : « le truc le plus moche » — aucune animation, la texture saute ; « c'est clairement ce qui fait pas
+  fini ». Saut : erreur de ma part (texture d'eau avancée sur un cycle sans fondu) → corrigé. Animation : à reprendre en
+  profondeur (prochain chantier).
+
 ## ▶ Retours au casque du 19/10, 3e essai du soir
 
 - ✅ Nénuphars mieux ; troupeau « parfait » ; arche fluide et jolie ; tête « mieux à droite, on la voit bien » ; plus de bruit
@@ -244,7 +266,7 @@ existe) : il faut recréer le dépôt (ou passer par le support GitHub). Plan pr
 1. `git filter-repo` en local : retirer les animatics vidéo et l'ancien MP3 (planches JPG gardées).
 2. Ajouter la musique WAV et les 10 stems en LFS (D13, ~460 Mo).
 3. Pousser vers le dépôt recréé ; garder la copie locale actuelle en sauvegarde jusqu'à vérification.
-| D9 | M'autoriser à installer Blender portable (sans droits admin, sur G:) | j'attends ; nettoyage des maillages via les nœuds ComfyUI en attendant | — | |
+| D9 | Blender portable (sans droits admin, sur G:) | **accordé par Olivier le 19/10 au soir** : installé dans `G:\blender` (édition des modèles 3D : planches de la barque, reprises) | — | ✅ accord |
 
 ## ▶ Chantier « tout en images peintes » (18/10 au soir, 8 h d'autonomie)
 

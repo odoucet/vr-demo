@@ -87,6 +87,13 @@ def _tool_exists(name):
     return False
 
 
+def _blender_exe():
+    sys.path.insert(0, str(ROOT / "pipeline"))
+    import tools
+    exe = tools.CONFIG.get("blender", {}).get("exe")
+    return tools.from_windows(exe) if exe and tools.from_windows(exe).exists() else None
+
+
 def _comfy_url():
     sys.path.insert(0, str(ROOT / "pipeline"))
     import tools
@@ -95,7 +102,7 @@ def _comfy_url():
 
 TOOLS = {
     "unreal": lambda: _tool_exists("unreal"),
-    "blender": lambda: os.environ.get("BLENDER_EXE") and Path(os.environ["BLENDER_EXE"]).exists(),
+    "blender": lambda: _blender_exe() is not None,
     "comfyui": lambda: shutil.which("curl") and subprocess.run(
         ["curl", "-s", "-m", "3", "-o", os.devnull, _comfy_url() + "/system_stats"]).returncode == 0,
 }

@@ -434,4 +434,9 @@ autonome. `SUIVI.md` dit où en est le projet ; ce fichier raconte comment on y 
   erreur d'unité (la hauteur du sujet lue en échelle, pas en centimètres : 5 mm de balancement). Et une idée d'Olivier
   pour une fin « un peu morne » : un héron qui vient se poser sur le rebord de la barque, en deux images peintes
   (atterrissage, posé) animées dans le shader le long d'une courbe, attaché à la barque.
+- **Reprise de la 3D et de l'eau** (Olivier : « l'eau, c'est clairement ce qui fait pas fini » ; « reprends tous les
+  imports ») : Blender installé avec son accord (D9) ; tous les modèles TRELLIS régénérés avec les réglages trouvés sur
+  le pont — avec le nœud de nettoyage mémoire d'Olivier, ~3 min par modèle au lieu de 27. L'eau est réécrite autour de la
+  barque (sillage, étrave, écume) et en surface ; l'arche recevra des niveaux de détail plutôt que d'être allégée
+  (« ou alors une version adaptative ? UE gère ça non ? » — oui, hors Nanite). Pause demandée en fin de traitement.
 
