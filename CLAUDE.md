@@ -72,9 +72,9 @@ Musique fournie par Olivier (`audio/music/`). Le séquencier se cale sur la musi
 
 ## Outils
 
-- **Unreal Engine 5.8** : MCP natif (http://127.0.0.1:8000/mcp) + Python éditeur.
+- **Unreal Engine 5.8** : MCP natif (http://172.19.32.1:8000/mcp, adresse de Windows vue depuis WSL) + Python éditeur.
 - **Blender 5.1+** : MCP officiel Blender Lab + scripts `bpy` en `--background`.
-- **ComfyUI local** (API HTTP localhost:8188) : workflows en JSON dans `pipeline/comfy/workflows/`,
+- **ComfyUI local** (API HTTP 172.19.32.1:8188) : workflows en JSON dans `pipeline/comfy/workflows/`,
   soumis via `/prompt`, seeds fixées. Gratuit : itère autant que nécessaire.
 - **ComfyUI Cloud / modèles partenaires** : payant → demander l'accord d'Olivier avant usage.
 - **GitHub** : PR, issues, commentaires = canal de revue.

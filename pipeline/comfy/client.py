@@ -7,8 +7,11 @@ import uuid
 from pathlib import Path
 
 import requests
+import yaml
 
-COMFY_URL = os.environ.get("COMFY_URL", "http://127.0.0.1:8188")
+_TOOLS = Path(__file__).resolve().parents[1] / "tools.yaml"
+COMFY_URL = os.environ.get(
+    "COMFY_URL", yaml.safe_load(_TOOLS.read_text(encoding="utf-8"))["comfyui"]["url"])
 WORKFLOWS = Path(__file__).parent / "workflows"
 CLIENT_ID = f"vr-demo-{uuid.uuid4().hex[:8]}"
 

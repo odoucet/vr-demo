@@ -83,11 +83,17 @@ def _tool_exists(name):
     return False
 
 
+def _comfy_url():
+    sys.path.insert(0, str(ROOT / "pipeline"))
+    import tools
+    return tools.CONFIG["comfyui"]["url"]
+
+
 TOOLS = {
     "unreal": lambda: _tool_exists("unreal"),
     "blender": lambda: os.environ.get("BLENDER_EXE") and Path(os.environ["BLENDER_EXE"]).exists(),
     "comfyui": lambda: shutil.which("curl") and subprocess.run(
-        ["curl", "-s", "-m", "3", "-o", os.devnull, "http://127.0.0.1:8188/system_stats"]).returncode == 0,
+        ["curl", "-s", "-m", "3", "-o", os.devnull, _comfy_url() + "/system_stats"]).returncode == 0,
 }
 
 

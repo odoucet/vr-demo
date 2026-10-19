@@ -4,9 +4,9 @@ unreal:
   editor: Engine/Binaries/Win64/UnrealEditor.exe
   editor_cmd: Engine/Binaries/Win64/UnrealEditor-Cmd.exe
   project: Unreal/Barque.uproject       # relatif au dépôt
-  mcp_url: http://127.0.0.1:8000/mcp
+  mcp_url: http://172.19.32.1:8000/mcp   # WSL en NAT : adresse de Windows vue depuis WSL
 comfyui:
-  url: http://127.0.0.1:8188
+  url: http://172.19.32.1:8188          # ComfyUI lancé avec --listen 0.0.0.0
   root: G:/ComfyUI_windows_portable/ComfyUI
 blender:
   exe: null                             # non installé (SUIVI.md, D9)
