@@ -1,11 +1,30 @@
 # Suivi — La barque des lucioles
 
 **Fichier unique de suivi.** Tenu par l'agent, lu par Olivier. Classé par criticité.
-Mis à jour : 2026-10-18
+Mis à jour : 2026-10-19
 
 Légende : 🔴 bloque un jalon, aucun contournement · 🟠 j'avance avec un contournement · 🟢 mineur
 
 ---
+
+## ▶ Retours du 19/10 matin (consignés, corrections pas encore commencées)
+
+Retours d'Olivier au casque sur la version « tout en images peintes » (APK installé le 19/10 à 9 h 04) :
+
+- ✅ **Direction confirmée** : « très fourni », les sprites sont la bonne idée à creuser (D16 tranchée).
+- ✅ **Oiseaux et feuilles qui tombent** : « trop bien ».
+- **[confort] Sprites qui pivotent avec la tête** : « trop bizarre », des arbres se rentrent dedans ou non selon
+  l'orientation de la tête. **Il faut des sprites fixes.** Cause : les modes « face » et « sphère » alignent chaque plan sur
+  la vue à chaque image. Pistes : orientation figée par instance (tournée vers la trajectoire de la barque au point le plus
+  proche, calculée au placement), plans en croix pour les sujets proches, et espacement suffisant pour que deux plans
+  voisins ne se croisent pas.
+- **Nénuphars qui scintillent** : plans posés à plat presque à la même hauteur, ils se disputent la profondeur. Pistes :
+  hauteur propre à chaque nénuphar, moins de recouvrements, ou ordre de tracé.
+- **Plantes toutes blanches au bout de la rivière, à droite** : à localiser (famille, instant). Suspects : texture importée
+  ratée (asset de 32 px) ou famille lumineuse « nuit » mal réglée.
+- **Canards immobiles, et certains dans le passage du troupeau** : les bêtes les traversent. Pistes : canards animés
+  (dérive lente, petits mouvements de tête) et zone du gué exclue du placement de la faune.
+- **Eau terne** : à côté d'un décor maintenant riche, c'est l'eau qui paraît pauvre. À reprendre.
 
 ## ▶ Pour ton test au casque
 
@@ -59,7 +78,7 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 | D13 | Versionner tes nouveaux fichiers audio (`audio/music/Luminous Wonder.wav` + 10 stems, ~460 Mo) | non versionnés (quota LFS GitHub) ; l'ancien MP3 supprimé de ton côté n'est pas non plus retiré du dépôt | je les ajoute au dépôt (LFS) et retire le MP3 | |
 | D14 | Marge de performance au Quest (S2 à 71,5 i/s, à la limite) | MSAA 2× gardé (bords nets) ; arbres lointains éclaircis | MSAA 1× : +2,7 ms de marge, bords crénelés qui scintillent ; ou alléger encore la végétation (moins de détail) ; ou plugin Meta XR pour demander le niveau GPU maximal (+10 %, installation à autoriser) | |
 | D15 | Élément visuel du final à la place des lanternes | nuée de lucioles autour de la barque et dans l'arbre de l'île | autre élément : fleurs lumineuses, lanternes flottantes près de la barque, reflet de lune… (`lake_fireflies` dans `greybox_geometry.py`) | |
-| D16 | Arbres (« le plus moche ») ou autre décor (statues géantes ?) | arbres actuels ; pistes à débattre (voir « Priorités ») | — | |
+| D16 | Arbres (« le plus moche ») ou autre décor (statues géantes ?) | arbres et décor en images peintes (sprites) | — | **sprites peints**, « c'est la bonne idée à creuser » (19/10) |
 | D9 | M'autoriser à installer Blender portable (sans droits admin, sur G:) | j'attends ; nettoyage des maillages via les nœuds ComfyUI en attendant | — | |
 
 ## ▶ Chantier « tout en images peintes » (18/10 au soir, 8 h d'autonomie)
@@ -142,12 +161,6 @@ Dis-moi laquelle garder (ou un mélange : par exemple B au loin et C près de l'
 
 ## 🟠 Importants (contournés)
 
-- **Casque injoignable depuis le redémarrage du 19/10 à 1 h 35** (voir « Incident casque » plus haut). Il ne réapparaît
-  plus en USB (`adb devices` vide). Il attend peut-être qu'on le porte, qu'on accepte de nouveau le débogage USB ou qu'on
-  le rallume. La dernière version (`builds/android_greybox/Barque-arm64.apk`, avec l'arbre colossal peint) est empaquetée
-  mais n'est **ni installée ni mesurée au casque**. La version installée est la précédente (nuit lumineuse et lanterne),
-  mesurée à 72 i/s.
-
 | # | Manque | Contournement | Ce qui le lèverait |
 |---|---|---|---|
 | I1 | Images d'assets en style peint (en cours chez Olivier) | visuels provisoires générés en local, essais 3D actuels marqués `placeholder` | dépôt dans `refs/inbox/` sous l'identifiant de `PROMPTS.md` |
@@ -189,6 +202,10 @@ Dis-moi laquelle garder (ou un mélange : par exemple B au loin et C près de l'
 - Échelles (D4) dès le greybox.
 
 ## Fait récemment
+
+- **19/10 matin** : casque revenu (redémarré et mis à jour par Olivier), dernier APK installé à 9 h 04 (arbre colossal
+  peint, rochers) ; pas encore mesuré par adb. WSL est passé en réseau NAT : ComfyUI et le MCP Unreal sont joints sur
+  `172.19.32.1` (adresses centralisées dans `pipeline/tools.yaml`). Journal de création ouvert : `HISTORY.md`.
 
 - **Retours du 18/10 au soir (APK installé au Quest, captures `review/iter-021/planche-casque.jpg`)** :
   - **Fondu au noir** : il n'était jamais rendu au casque, car la piste de fondu de la séquence passe par le post-traitement, absent sur Quest. Le fondu est maintenant fait par une sphère noire autour des yeux, dont l'opacité est animée. **S1 est enfin noir** jusqu'à 20 s, l'image s'ouvre en 2,5 s, et la fin passe au noir sur l'extinction de la musique. Vérifié par capture : noir à 242 s, l'appli reste sur le noir final.

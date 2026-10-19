@@ -11,6 +11,8 @@ Avancer le plus loin possible sans attendre Olivier. Ne jamais rester bloqué :
 - **Suivi unique : `SUIVI.md`.** Blocages classés 🔴 / 🟠 / 🟢, décisions attendues avec le défaut appliqué,
   vérifications au casque, fait récemment, état des jalons. Le mettre à jour à chaque itération et avant
   toute fin de session. Rien d'important ne doit vivre seulement dans la conversation.
+- **Journal : `HISTORY.md`.** À chaque itération, une entrée datée en fin de fichier : ce qui a été fait, les
+  retours d'Olivier (cités), les décisions et leurs raisons, les impasses. Matière d'un futur article sur le processus.
 - **Asset manquant → substitut.** Greybox, essai existant ou génération locale (ComfyUI : Flux 2 Klein,
   Flux Kontext, Z-Image, Qwen-Image-Edit). Marqué `placeholder: true` dans `assets/manifest.yaml` et listé
   dans `SUIVI.md`. Le remplacement par l'asset définitif doit se limiter à déposer le fichier et relancer
@@ -160,6 +162,7 @@ ce qui doit être vérifié au casque à chaque jalon.
 
 ```
 SUIVI.md             suivi unique : blocages, décisions attendues, état des jalons
+HISTORY.md           journal chronologique des étapes et décisions (pour l'article)
 PROMPTS.md           prompts Midjourney et Suno
 pipeline/            scripts (build.py, layout/, unreal/, blender/, comfy/, review/, audio/, spike/)
 assets/manifest.yaml traçabilité de chaque asset généré
