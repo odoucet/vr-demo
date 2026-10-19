@@ -1700,7 +1700,8 @@ if os.path.exists(SKY_PNG):
 CREATURES = {
     # bloc : (modèle, matériau du bloc, échelle du bloc de repli, échelle du modèle (x, y, z), décalage z cm, triangles max)
     "GB_Abysses": ("abysses/trellis2-s42", "Creature", (15, 7, 1.2), (15, 15, 4.5), 0.0, 20000),
-    "GB_Troupeau": ("troupeau/trellis2-s42", "Troupeau", (3.0, 2.2, 2.5), (4.1, 4.1, 4.1), -60.0, 12000),   # à mi-corps, ×5
+    # eau au poitrail (séquencier) : à -60 cm, seuls les dos moussus sortaient de l'eau, lus comme des rochers (19/10)
+    "GB_Troupeau": ("troupeau/trellis2-s42", "Troupeau", (3.0, 2.2, 2.5), (4.1, 4.1, 4.1), 0.0, 12000),   # pieds au sol sur la berge
     "GB_Volante": ("fly/trellis2-s42", "Volante", (40, 12, 4), (56, 56, 56), 0.0, 20000),
 }
 

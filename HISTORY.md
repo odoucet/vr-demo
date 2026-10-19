@@ -377,4 +377,6 @@ autonome. `SUIVI.md` dit où en est le projet ; ce fichier raconte comment on y 
   garder la même lenteur apparente.
 - **Reconstruction complète** (`python pipeline/build.py`, toutes les étapes) : passe. Elle a montré que les instances de
   matériau des sprites étaient réécrites à chaque build ; elles ont maintenant une empreinte, comme le reste.
+- **Le troupeau se lit enfin** : même sans les rochers, ses bêtes ne montraient que leur dos moussu, plus enfoncées que
+  « l'eau au poitrail » du séquencier. Remontées de 60 cm : têtes claires et oreilles tombantes visibles.
 

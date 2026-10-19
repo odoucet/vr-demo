@@ -35,8 +35,8 @@ session. Revue par l'animatic rendu par Unreal (lumière de chaque beat, musique
 - 🔧 **Reflets des lueurs dans l'eau la nuit** : plantes lumineuses, lucioles des berges et nuée finale se reflètent en
   traînées près de la ligne d'eau (`pipeline/layout/glow_map.py`, une lecture de texture de plus).
 - 🔧 **Voûte au-dessus de l'eau** plus nette de près : cases de l'atlas des touffes passées de 512 à 1 024 px.
-- 🔧 **Rochers géants retirés du gué** : moussus, ils se confondaient avec les bêtes du troupeau (créatures couvertes de
-  mousse, dans l'eau jusqu'au poitrail).
+- 🔧 **Troupeau lisible** : rochers géants retirés du gué (on les confondait avec les bêtes) et bêtes remontées de
+  60 cm : seuls leurs dos moussus sortaient de l'eau ; têtes et oreilles se voient maintenant, pieds au sol sur la berge.
 - 🔧 **Arche des racines habillée** : lianes dispersées sous la voûte (trouée au-dessus du chenal) ; le modèle 3D,
   lisse, paraissait nu vu de dessous.
 - 🔧 **Créature volante plus présente** : passe à 200 m au lieu de 300 (même direction, devant la lune, même vitesse
