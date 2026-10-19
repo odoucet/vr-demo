@@ -387,4 +387,9 @@ autonome. `SUIVI.md` dit où en est le projet ; ce fichier raconte comment on y 
   orientée par essais successifs depuis la barque (le modèle sortait couché sur le dos), maillage simplifié à facettes
   qui effaçait le visage (normales lissées, plus de triangles), buissons et cerf écartés de devant. La tête reste peu
   lisible à distance : point remonté à Olivier.
+- **« Quel élément de la chaîne fixe le nombre de polygones ? »** Trois étages : la reconstruction TRELLIS.2 (maillage
+  décimé à 200 000 faces dans ComfyUI, texture 2048), puis la simplification à l'import dans Unreal (60 000 triangles
+  pour le pont). Essais : 400 000 faces et texture 4096 côté ComfyUI, puis 150 000 et sans simplification côté Unreal :
+  rendu identique. Le manque de détail vient de la reconstruction d'une seule image, qui lisse les formes. Le fondu
+  d'ouverture est avancé de 5 s ; la tête, validée sur l'aperçu, est gelée jusqu'au casque.
 

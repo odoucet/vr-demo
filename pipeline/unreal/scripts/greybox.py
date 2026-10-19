@@ -1739,7 +1739,11 @@ return float3(wave * W * 0.04 * (1.0 - a), 0, wave * W * 0.09 * lat + sin(T * 0.
 
 # Mousse sur les statues de pierre (D18, modèles 3D sans végétation) : les faces tournées vers le haut verdissent,
 # en taches irrégulières ; la teinte suit l'ombrage déjà calculé (C).
-MOSS_CODE = """float n = 0.5 + 0.25 * sin(WP.x * 0.011 + sin(WP.y * 0.017) * 2.0) + 0.25 * sin(WP.y * 0.023 - WP.x * 0.007 + WP.z * 0.013);
+MOSS_CODE = """// contraste rendu à la pierre (les fissures et les blocs peints de la texture se perdaient dans l'ombrage peint)
+float l0 = dot(C, float3(0.3, 0.6, 0.1));
+C = max(lerp(float3(l0, l0, l0), C, 1.15) * pow(saturate(l0 * 2.2), 0.35) / max(pow(saturate(l0 * 2.2), 0.35), 1e-3) * 1.0, 0.0);
+C = C * (0.55 + 0.9 * smoothstep(0.02, 0.5, l0));
+float n = 0.5 + 0.25 * sin(WP.x * 0.011 + sin(WP.y * 0.017) * 2.0) + 0.25 * sin(WP.y * 0.023 - WP.x * 0.007 + WP.z * 0.013);
 float m = smoothstep(0.25, 0.7, normalize(N).z) * smoothstep(0.35, 0.65, n);
 float l = dot(C, float3(0.3, 0.6, 0.1));
 return lerp(C, l * float3(0.62, 1.05, 0.42) * 1.15, m * 0.85);"""
@@ -1943,12 +1947,12 @@ ARCH_EXTRA_M, ARCH_DEPTH_CM, ARCH_SINK_CM = 28.0, 700.0, -550.0
 # D18 (19/10) : l'arche de pierre aux deux figures agenouillées remplace l'arche des racines (redondante avec l'arbre
 # colossal, selon Olivier). Modèle sans végétation (assets/3d/arche-statues : image d'Olivier refs/inbox/arche-statues.png,
 # substitut local en attendant), habillé de mousse (matériau) et de lianes peintes (sprites_layout.py).
-statues = import_glb("arche-statues/trellis2-s42", "/Game/Assets/ArcheStatues", 60000, smooth=True)
+statues = import_glb("arche-statues/trellis2-s42", "/Game/Assets/ArcheStatues", 80000, smooth=True)   # 150 k et 400 k essayés (19/10) : pas plus de détail, la limite est la reconstruction 3D d'une seule vue   # vu de près : détail (retour du 19/10)
 racine = None if statues is not None else import_glb("racine/trellis2-s42", "/Game/Assets/Racine", 30000)
 if statues is not None:
     loc, _ = oriented(am["t"], 0.0, 0.0, 0.0)
     place_model(statues, "GB_ArcheStatues", loc, -pose_a["heading_deg"] - 90.0,
-                ((pose_a["width_m"] + ARCH_EXTRA_M) * 100.0, ARCH_DEPTH_CM, None), ARCH_SINK_CM, "ArcheStatues", tint=(0.8, 0.76, 0.72), moss=True)
+                ((pose_a["width_m"] + ARCH_EXTRA_M) * 100.0, ARCH_DEPTH_CM, None), ARCH_SINK_CM, "ArcheStatues", moss=True)
     for a_ in actors.get_all_level_actors():
         if a_.get_actor_label() == "GB_ArcheRacines":      # l'ancien tube du greybox
             actors.destroy_actor(a_)

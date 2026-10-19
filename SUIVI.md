@@ -25,8 +25,11 @@ session. Revue par l'animatic rendu par Unreal (lumière de chaque beat, musique
   **Coût à mesurer au casque.** Retour arrière : `RELIEF_M = {}` dans `sprites_layout.py`.
 - ✅ **Libellules qui reculaient en vol** (retour d'Olivier) : leurs à-coups inversaient la vitesse ; à-coups gardés,
   sans marche arrière, image tournée dans le sens réel du vol.
-- ✅ **Fondu d'ouverture 4 fois plus long** (retour d'Olivier) : 10 s au lieu de 2,5, même fin (22,5 s) ; l'image
-  commence à poindre pendant le clapotis de S1.
+- ✅ **Fondu d'ouverture** (retours d'Olivier) : 10 s au lieu de 2,5, puis avancé de 5 s : de 7,5 à 17,5 s.
+- ✅ **Tête couchée** : Olivier la trouve bien sur l'aperçu ; **on n'y touche plus avant la validation au casque**.
+- 🔍 **Pont peu détaillé** : ni le nombre de triangles (essais à 150 k et 400 k, sans simplification : identique) ni la
+  texture 4096 n'y changent rien ; la limite est la reconstruction 3D depuis une seule vue (formes lissées, texture
+  floue). Piste : projeter ton image d'origine sur la face avant du pont (celle que voit la barque).
 - 🔧 **Nouvelle barque** (retour d'Olivier : « la lanterne masque tout le décor ») : image retrouvée dans la transcription
   et écrite à la place de `refs/barque.png` (l'ancienne reste dans l'historique Git) ; TRELLIS.2 retenu (Pixal3D garde la
   perspective de l'image : barque penchée). 3,5 × 1,56 m, franc-bord ~45 cm. **Lanterne** (défaut, D11) : le modèle de

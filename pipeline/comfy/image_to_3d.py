@@ -90,7 +90,9 @@ def run(src, model, seed, texture_size, decimate, info):
     digest = hashlib.sha1(Path(src).read_bytes()).hexdigest()[:12]
     done = out / "params.json"
     if (out / "model.glb").exists() and (out / "turntable.jpg").exists() and done.exists() \
-            and json.loads(done.read_text(encoding="utf-8")).get("source_sha1") == digest:
+            and json.loads(done.read_text(encoding="utf-8")).get("source_sha1") == digest \
+            and json.loads(done.read_text(encoding="utf-8")).get("texture_size") == texture_size \
+            and json.loads(done.read_text(encoding="utf-8")).get("target_faces") == decimate:
         print(f"{out.relative_to(ROOT)} déjà à jour, ignoré.")
         return out
     out.mkdir(parents=True, exist_ok=True)
