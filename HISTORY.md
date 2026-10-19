@@ -309,3 +309,33 @@ autonome. `SUIVI.md` dit où en est le projet ; ce fichier raconte comment on y 
   chaque pas par une capture du casque. Résultat : sans suivi de position, le Quest refuse d'ouvrir une appli VR. Suivi
   réactivé ; il faut de la lumière ou un autre point de vue pour le casque.
 
+### 19/10 après-midi — Six heures sans casque
+
+- **La question d'Olivier** : que peut-on avancer sans casque, un rendu avec Unreal seul est-il possible ? Réponse : oui,
+  l'animatic rendu par Movie Render Queue (lumière de chaque beat, musique) fait foi pour le look ; le casque reste
+  nécessaire pour la perf, le relief, l'échelle, le confort. L'animatic n'avait plus été rendu depuis l'itération 11 :
+  relancé, envoyé dans la session en 720p.
+- **Retours sur l'animatic** : « enlève le filtre peinture du PC vu qu'on l'a pas dans le Quest » ; « on retrouve sur
+  toutes les images cet "ovale" sur le bas du sprite, c'est ça l'effet répétition ». L'ovale : la découpe en ellipse lisse
+  des touffes de feuillage, vue d'en dessous ; remplacée par un bord festonné propre à chaque image. Au passage, la
+  plaque d'herbe peinte sous chaque tronc est retirée.
+- **Une erreur rattrapée** : en retournant une image sur deux contre la répétition, la moitié des arbres étaient
+  éclairés du mauvais côté (images peintes éclairées par la gauche). Le miroir est maintenant choisi au placement selon
+  la direction du soleil du beat où l'on voit l'arbre.
+- **Relief en stéréo** : Depth Anything V3 est installé dans ComfyUI mais son nœud échoue (module manquant dans son
+  environnement isolé) ; plutôt que de toucher à l'installation, le relief est tiré de la silhouette peinte (profil de
+  dôme selon la distance au bord, modulé par les touches claires). Premier profil sphérique : flancs verticaux qui
+  étirent la texture vue de biais ; passé en parabolique. Grille creusée dans le shader de sommets, un seul maillage
+  instancié de plus par famille.
+- **Reflets des lueurs de nuit** : le shader de l'eau calculait déjà le point de rive touché par le rayon réfléchi (pour
+  le reflet de la lisière) ; une carte vue de dessus des sources lumineuses, lue en ce point, donne les reflets des
+  plantes lumineuses et des lucioles pour une seule lecture de texture.
+- **Débogage du reflet des lueurs** : invisible sur le premier rendu. Diagnostic en affichant les termes du shader un à
+  un sur l'eau (carte alignée, terme lu au point de rive fort, fenêtre de hauteur ouverte) : le reflet était multiplié par
+  le Fresnel, faible près de la barque. Une lumière vive se reflète aussi hors incidence rasante : pondération revue,
+  traînées brisées par les rides.
+- **Nouveaux retours d'Olivier** : « des libellules faire de la marche arrière en vol, c'est perturbant 😃 » (leurs
+  à-coups, une sinusoïde trop forte sur l'angle, inversaient la vitesse) ; le fondu d'ouverture « 4 fois plus long
+  (commencer plus tôt pour finir au même timing) » ; et la barque : « la lanterne masque tout le décor, c'est dommage »,
+  avec une nouvelle image de barque à passer en 3D.
+

@@ -79,8 +79,8 @@ def bleed(arr, opaque=250):
 
 
 def crown_only(a):
-    """Option crown : garde le houppier, retire le tronc (lignes sous la couronne où le sujet devient étroit) et arrondit
-    le bas en ellipse (touffes des grands houppiers : le générateur dessine toujours un arbre entier)."""
+    """Option crown : garde le houppier, retire le tronc (lignes sous la couronne où le sujet devient étroit) et ferme le
+    bas par un bord festonné (touffes des grands houppiers : le générateur dessine toujours un arbre entier)."""
     widths = (a > 0.5).sum(axis=1)
     top = int(np.argmax(widths > 0))
     widest = int(np.argmax(widths))
@@ -92,9 +92,43 @@ def crown_only(a):
     cols = np.nonzero((a > 0.5).any(axis=0))[0]
     cx, rx = (cols.min() + cols.max()) / 2, max((cols.max() - cols.min()) / 2, 1)
     ell = ((xx - cx) / rx) ** 2 + ((yy - cy) / (ry * 1.05)) ** 2
+    # bord festonné et propre à chaque image : avec une ellipse lisse, toutes les touffes avaient le même bas en arc,
+    # très visible vu d'en dessous (retour d'Olivier du 19/10) ; bruit à deux échelles (grappes, puis feuilles)
+    from scipy import ndimage
+    rng = np.random.default_rng(int(a.sum()) % (2 ** 32))
+    noise = (ndimage.gaussian_filter(rng.normal(size=a.shape), w / 14) * 1.0
+             + ndimage.gaussian_filter(rng.normal(size=a.shape), w / 45) * 0.5)
+    noise /= max(noise.std(), 1e-6)
+    edge = ell + 0.28 * noise
     out = a.copy()
-    out[yy > cy] *= np.clip((1.0 - ell[yy > cy]) * 6.0, 0, 1)     # moitié basse : bord en ellipse (plus de tronc)
+    out[yy > cy] *= np.clip((1.0 - edge[yy > cy]) * 25.0, 0, 1)   # moitié basse : bord irrégulier (plus de tronc)
     return out
+
+
+def no_ground(a):
+    """Arbres : retire la plaque d'herbe et l'ombre peintes sous le tronc (le même ovale revenait sous chaque arbre,
+    retour d'Olivier du 19/10). Dans le bas de l'image, seules les colonnes du tronc restent, et le pied s'estompe."""
+    solid = a > 0.5
+    rows = np.nonzero(solid.any(axis=1))[0]
+    if len(rows) < 20:
+        return a
+    top, bottom = rows.min(), rows.max()
+    h = bottom - top
+    probe = bottom - int(0.12 * h)                       # hauteur où l'on ne voit plus que le tronc
+    cols = np.nonzero(solid[probe])[0]
+    if len(cols) == 0:
+        return a
+    runs = np.split(cols, np.nonzero(np.diff(cols) > 3)[0] + 1)
+    trunk = max(runs, key=len)                           # le tronc : le plus large segment plein à cette hauteur
+    x0, x1 = trunk.min(), trunk.max()
+    pad = max(3, int(0.25 * (x1 - x0)))
+    out = a.copy()
+    zone = slice(probe, None)
+    keep = np.zeros(a.shape[1], bool)
+    keep[max(0, x0 - pad):x1 + pad + 1] = True
+    out[zone, ~keep] = 0.0
+    fade = np.clip((bottom - np.arange(a.shape[0])) / max(0.03 * h, 1.0), 0, 1)   # pied estompé (il s'enfonce dans la berge)
+    return out * fade[:, None]
 
 
 def clean(im, kind="tree", drop=None, crown=False):
@@ -131,6 +165,8 @@ def clean(im, kind="tree", drop=None, crown=False):
         a[(g > r * 1.08) & (g > b * 1.02) & (g - np.minimum(r, b) > 18)] = 0.0
     if crown:
         a = crown_only(a)
+    if kind == "tree":
+        a = no_ground(a)
     lab, n = ndimage.label(a > 0.3)
     if n > 1:
         sizes = ndimage.sum(np.ones_like(a), lab, range(1, n + 1))

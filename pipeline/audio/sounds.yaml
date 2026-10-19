@@ -57,3 +57,16 @@ sounds:
     beats: [S6-LUNE]
     query: whale song
     min_duration: 4
+  # Faune posée et animée (sprites, 19/10) : sons ponctuels spatialisés à sa place (sprites_layout.py, « sons »).
+  - id: sfx-canards
+    beats: [S2-PONTON, S3-ABYSSE, S7-LAC]
+    query: ducks quacking pond
+    min_duration: 8
+  - id: sfx-grenouilles
+    beats: [S3-ABYSSE]
+    query: frogs croaking
+    min_duration: 10
+  - id: sfx-chouette
+    beats: [S6-LUNE]
+    query: owl hooting
+    min_duration: 4

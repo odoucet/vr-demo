@@ -13,10 +13,12 @@ toutes, vers le passage de la barque (voir facing()).
 
 Modes (matériaux de greybox.py), tous immobiles :
 - debout : plan vertical, pied au sol, tourné vers le passage de la barque (arbres, buissons, faune) ;
+- relief : comme debout, mais grille creusée selon la carte de relief (pipeline/comfy/relief.py) : sujets proches du
+           parcours, qui ont ainsi du volume en stéréo (RELIEF_M : distance maximale au parcours par famille) ;
 - touffe : plan centré, tourné et incliné vers l'œil au passage (touffes des grands houppiers, vues d'en dessous) ;
 - fixe   : plan vertical, pied au sol, orientation choisie au placement (bandes de lisière et de collines) ;
 - sol    : plan horizontal posé sur l'eau (nénuphars, lotus, pétales).
-Instance : [x, y, z, hauteur (m), case, cap (degrés, repère du tracé), éclat, inclinaison (degrés)].
+Instance : [x, y, z, hauteur (m), case, cap (degrés, repère du tracé), éclat, inclinaison (degrés), miroir (0/1)].
 Repère du tracé (m, x avant au départ, y gauche, z haut). Déterministe.
 """
 import json
@@ -34,6 +36,8 @@ from vegetation import Field  # noqa: E402
 
 OUT = LAYOUT / "sprites.json"
 EYE = 1.1                     # hauteur des yeux au-dessus de l'eau (m)
+RELIEF_M = {"arbres": 25, "arbres2": 25, "arbres3": 25, "arbres4": 25, "buissons": 12, "fourres": 12, "heros": 999,
+            "faune": 999}
 SPRITES = ROOT / "assets" / "textures" / "sprites"
 
 # Choix des cases par usage : (famille, case, hauteur min, hauteur max, poids)
@@ -82,7 +86,7 @@ def main():
     def add(name, mode, inst):
         if name == "faune" and in_herd_path(inst[0], inst[1], 6.0):   # le troupeau passerait au travers
             return
-        sets.setdefault(name, {"mode": mode, "instances": []})["instances"].append([round(float(v), 3) for v in inst] + [0.0])
+        sets.setdefault(name, {"mode": mode, "instances": []})["instances"].append([round(float(v), 3) for v in inst] + [0.0, 0.0])
 
     last = {}
 
@@ -385,6 +389,11 @@ def main():
 
     # --- Orientation des plans immobiles ------------------------------------------------------------------------
     st = np.array([p["t"] for p in s])
+    beats = json.loads((ROOT / "pipeline" / "style" / "ambiance.json").read_text(encoding="utf-8"))["beats"]
+
+    def sun_at(t):
+        """Direction du soleil (repère du tracé) pendant le beat de l'instant t."""
+        return next(b for b in reversed(beats) if b["debut_s"] <= t)["soleil_dir"]
 
     def facing(x, y, z):
         """Cap et inclinaison (degrés) d'un plan : il regarde l'œil au point du parcours situé un peu avant le plus
@@ -395,15 +404,35 @@ def main():
         dist = math.sqrt(float(d2[i]) + (z - EYE) ** 2)
         j = int(np.argmin(np.abs(st - (st[i] - 0.8 * min(dist, 60.0)))))
         dx, dy, dz = sx[j] - x, sy[j] - y, EYE - z
-        return math.degrees(math.atan2(dy, dx)), math.degrees(math.atan2(dz, math.hypot(dx, dy)))
+        return math.degrees(math.atan2(dy, dx)), math.degrees(math.atan2(dz, math.hypot(dx, dy))), st[j]
 
     for spec in sets.values():
         if spec["mode"] not in ("debout", "touffe"):
             continue
         for inst in spec["instances"]:
-            yaw, pitch = facing(inst[0], inst[1], inst[2] + (0.0 if spec["mode"] == "touffe" else inst[3] * 0.5))
+            yaw, pitch, t_seen = facing(inst[0], inst[1], inst[2] + (0.0 if spec["mode"] == "touffe" else inst[3] * 0.5))
             inst[5] = round(yaw, 2)
             inst[7] = round(max(-70.0, min(70.0, pitch)), 2) if spec["mode"] == "touffe" else 0.0
+            if spec["mode"] == "debout":
+                # Les images sont peintes éclairées par la gauche ; sur le plan non retourné, ce côté apparaît à droite
+                # de qui regarde. Miroir si le soleil (au moment où on voit le sujet) est de l'autre côté ; soleil
+                # devant ou derrière : au hasard, pour la variété.
+                d = (math.cos(math.radians(yaw)), math.sin(math.radians(yaw)))
+                sun = sun_at(t_seen)
+                side = -d[1] * sun[0] + d[0] * sun[1]           # > 0 : soleil à droite de qui regarde le sujet
+                h = math.hypot(sun[0], sun[1]) or 1.0
+                inst[8] = float(side / h < -0.25 or (abs(side / h) <= 0.25 and rng.uniform() < 0.5))
+
+    # --- Sujets proches : versions en relief (mêmes données, grille creusée dans greybox.py) ---------------------
+    for name in list(sets):
+        spec = sets[name]
+        if spec["mode"] != "debout" or name not in RELIEF_M:
+            continue
+        near = [i for i in spec["instances"] if path_dist(i[0], i[1]) < RELIEF_M[name]]
+        if near:
+            spec["instances"] = [i for i in spec["instances"] if path_dist(i[0], i[1]) >= RELIEF_M[name]]
+            sets[f"{name}@relief"] = {"mode": "relief", "instances": near}
+    sets = {k: v for k, v in sets.items() if v["instances"]}
 
     out = {"units": "m", "sets": sets, "vie_animee": [[round(float(v), 3) for v in a] for a in vie]}
     OUT.write_text(json.dumps(out), encoding="utf-8")

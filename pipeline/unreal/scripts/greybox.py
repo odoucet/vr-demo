@@ -325,6 +325,15 @@ float3 col = lerp(deep, refl, fr);
 col += rip * rip * (0.3 + 0.7 * fr) * (sky * 1.1 + Lumiere.rgb * 0.05) * (1.0 - trees * 0.6);
 // scintillements : la pointe des crêtes renvoie le ciel en éclats qui bougent avec le courant
 col += pow(saturate(rip * 1.25 - 0.2), 6.0) * fr * (sky * 1.4 + Lumiere.rgb * 0.15) * (1.0 - trees * 0.5);
+// reflets des lueurs (plantes lumineuses la nuit, lucioles des berges, nuée finale) : carte vue de dessus lue au point
+// de rive dans la direction du regard ; une source basse (< 3 m) se reflète près de la ligne d'eau ; traînées brisées
+// par les rides
+float2 hm = (float2(hp.x, -hp.y) / 100.0 - float2(%(x0)f, %(y0)f)) / %(size)f;
+float3 gl = Texture2DSample(Glow, GlowSampler, hm).rgb;
+float night = 1.0 - saturate(Day);
+float3 glow = gl.r * night * float3(0.45, 0.9, 1.0) + gl.g * saturate(Lf) * (0.25 + 0.75 * night) * float3(1.0, 0.9, 0.45)
+            + gl.b * saturate(Ff) * float3(1.0, 0.85, 0.4);
+col += glow * (1.0 - saturate(tanE * dist / 300.0)) * (0.15 + 1.2 * rip * rip) * (0.5 + 0.5 * fr) * 1.2;   // lumière vive : visible même hors incidence rasante
 // écume le long des berges
 float foam = (1.0 - smoothstep(0.0, 0.05, shore)) * (0.55 + 0.45 * r2);
 col = lerp(col, Lumiere.rgb * 0.5 + sky * 0.35, foam * 0.75);
@@ -446,7 +455,7 @@ DETAIL_SCALARS = {"DetailScale": 300.0, "DetailStrength": 0.0, "ColorMix": 0.0, 
                   "DetailMean2": 0.25, "Vary": 0.0, "LocalSpace": 0.0}
 
 
-def look_texture(tid, srgb=True):
+def look_texture(tid, srgb=True, compression=None):
     """Texture peinte assets/textures/<tid>.png → /Game/Look/Textures (réimportée si le fichier change).
     srgb=False : données (carte de l'eau, rides), lues telles quelles."""
     import hashlib
@@ -476,7 +485,7 @@ def look_texture(tid, srgb=True):
             eal.delete_asset(path)
     if not srgb:
         tex.set_editor_property("srgb", False)
-        tex.set_editor_property("compression_settings", unreal.TextureCompressionSettings.TC_VECTOR_DISPLACEMENTMAP)
+        tex.set_editor_property("compression_settings", compression or unreal.TextureCompressionSettings.TC_VECTOR_DISPLACEMENTMAP)
     mark_saved(tex, digest)
     return tex
 
@@ -485,6 +494,7 @@ with open(os.path.join(ROOT, "assets", "textures", "stats.json"), encoding="utf-
     TEX_MEAN = json.load(f)
 WATER_MAP_TEX = look_texture("eau_carte", srgb=False)
 RIDES_TEX = look_texture("rides", srgb=False)
+GLOW_TEX = look_texture("eau_lueurs", srgb=False, compression=unreal.TextureCompressionSettings.TC_DEFAULT)   # glow_map.py
 
 
 UNDERWATER_START = "// sous l'eau (eau plate à z = 0)"
@@ -951,17 +961,23 @@ float m = smoothstep(0.6, 0.88, mx) * smoothstep(0.4, 0.65, lum);
 return c + lerp(Tex.rgb, float3(0.6, 0.9, 1.0) * mx, 0.3) * m * glow * 2.2;"""
 # Plan immobile vu presque par la tranche : il s'efface au lieu de devenir un aplat (mipmap grossière, bords droits).
 # Pas pour les plans posés sur l'eau (Tranche = 0) : vus depuis la barque, ils sont toujours rasants.
+# Relief des sujets proches : la grille avance vers l'œil (D = -Y local, à l'échelle de l'instance) selon la carte de
+# relief de la case (pipeline/comfy/relief.py), lue dans le shader de sommets.
+SPRITE_RELIEF_CODE = """return D * (Texture2DSampleLevel(R, RSampler, UV, 0).r * A);"""
 SPRITE_TINT_CODE = """return Tex * (1.0 + Tint * float3(0.08, 0.015, -0.1));"""
 SPRITE_EDGE_CODE = """return A * lerp(1.0, smoothstep(0.12, 0.3, abs(dot(normalize(N), normalize(V)))), E);"""
 
 
-def sprite_material():
-    path = f"{GB}/M_GB_Sprite"
-    digest = spec_digest("sprite-v6", SPRITE_UV_CODE, SPRITE_COLOR_CODE, SPRITE_EDGE_CODE, SPRITE_TINT_CODE, MPC_DIGEST)
+def sprite_material(relief=False):
+    """Matériau des sprites ; relief=True : variante dont la grille se creuse selon la carte de relief (sujets proches)."""
+    name = "M_GB_SpriteRelief" if relief else "M_GB_Sprite"
+    path = f"{GB}/{name}"
+    digest = spec_digest("sprite-v6", SPRITE_UV_CODE, SPRITE_COLOR_CODE, SPRITE_EDGE_CODE, SPRITE_TINT_CODE, MPC_DIGEST,
+                         SPRITE_RELIEF_CODE if relief else "")
     mat = eal.load_asset(path) if eal.does_asset_exist(path) else None
     if up_to_date(mat, digest):
         return mat
-    mat = mat or tools.create_asset("M_GB_Sprite", GB, unreal.Material, unreal.MaterialFactoryNew())
+    mat = mat or tools.create_asset(name, GB, unreal.Material, unreal.MaterialFactoryNew())
     mel.delete_all_material_expressions(mat)
     mat.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_UNLIT)
     mat.set_editor_property("float_precision_mode", unreal.MaterialFloatPrecisionMode.MFPM_FULL)
@@ -989,6 +1005,21 @@ def sprite_material():
         mel.connect_material_expressions(src, "", uvn, pin)
     uvi = mel.create_material_expression(mat, unreal.MaterialExpressionVertexInterpolator, -900, -300)   # calcul par sommet
     mel.connect_material_expressions(uvn, "", uvi, "VS")
+    if relief:
+        rtex = mel.create_material_expression(mat, unreal.MaterialExpressionTextureObjectParameter, -1100, 700)
+        rtex.set_editor_property("parameter_name", "Relief")
+        rtex.set_editor_property("texture", relief_texture("arbres"))
+        rtex.set_editor_property("sampler_type", unreal.MaterialSamplerType.SAMPLERTYPE_LINEAR_GRAYSCALE)
+        dcon = mel.create_material_expression(mat, unreal.MaterialExpressionConstant3Vector, -1300, 800)
+        dcon.set_editor_property("constant", unreal.LinearColor(0, -1, 0, 0))
+        dtr = mel.create_material_expression(mat, unreal.MaterialExpressionTransform, -1100, 800)
+        dtr.set_editor_property("transform_source_type", unreal.MaterialVectorCoordTransformSource.TRANSFORMSOURCE_LOCAL)
+        dtr.set_editor_property("transform_type", unreal.MaterialVectorCoordTransform.TRANSFORM_WORLD)
+        mel.connect_material_expressions(dcon, "", dtr, "")
+        wpo = custom_node(mat, SPRITE_RELIEF_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["R", "UV", "D", "A"], -800, 700)
+        for pin, src in (("R", rtex), ("UV", uvn), ("D", dtr), ("A", scalar("Creux", 0.16, -1100, 900))):
+            mel.connect_material_expressions(src, "", wpo, pin)
+        mel.connect_material_property(wpo, "", unreal.MaterialProperty.MP_WORLD_POSITION_OFFSET)
     tex = mel.create_material_expression(mat, unreal.MaterialExpressionTextureSampleParameter2D, -700, -300)
     tex.set_editor_property("parameter_name", "Atlas")
     tex.set_editor_property("texture", look_texture("sprite_arbres"))
@@ -1017,9 +1048,16 @@ def sprite_material():
     mel.connect_material_property(edge, "", unreal.MaterialProperty.MP_OPACITY_MASK)
     mel.recompile_material(mat)
     if mel.get_statistics(mat).num_pixel_shader_instructions <= 0:
-        raise RuntimeError("M_GB_Sprite ne compile pas")
+        raise RuntimeError(f"{name} ne compile pas")
     mark_saved(mat, digest)
     return mat
+
+
+def relief_texture(name):
+    return look_texture(f"relief_{name}", srgb=False, compression=unreal.TextureCompressionSettings.TC_GRAYSCALE)
+
+
+RELIEF_CREUX = {"buissons": 0.2, "fourres": 0.2, "heros": 0.1, "faune": 0.1}   # avancée max (hauteur de case = 1)
 
 
 def sprite_set(key, mode, instances, cull_cm):
@@ -1040,8 +1078,11 @@ def sprite_set(key, mode, instances, cull_cm):
     mi_path = f"{GB}/MI_GB_Sprite_{tag_}"
     mi = eal.load_asset(mi_path) if eal.does_asset_exist(mi_path) else tools.create_asset(
         f"MI_GB_Sprite_{tag_}", GB, unreal.MaterialInstanceConstant, unreal.MaterialInstanceConstantFactoryNew())
-    mi.set_editor_property("parent", MATS["Sprite"])
+    mi.set_editor_property("parent", MATS["SpriteRelief" if mode == "relief" else "Sprite"])
     mel.set_material_instance_texture_parameter_value(mi, "Atlas", atlas)
+    if mode == "relief":
+        mel.set_material_instance_texture_parameter_value(mi, "Relief", relief_texture(name))
+        mel.set_material_instance_scalar_parameter_value(mi, "Creux", RELIEF_CREUX.get(name, 0.12))
     for k, v in (("Cols", float(cols)), ("Rows", float(rows)), ("Tranche", 0.0 if mode == "sol" else 1.0)):
         mel.set_material_instance_scalar_parameter_value(mi, k, v)
     mel.update_material_instance(mi)
@@ -1053,11 +1094,25 @@ def sprite_set(key, mode, instances, cull_cm):
     elif mode == "touffe":     # vertical, centré
         verts = [[-hw, 0, -0.5], [hw, 0, -0.5], [hw, 0, 0.5], [-hw, 0, 0.5]]
         nrm = [[0, -1, 0]] * 4
+    elif mode == "relief":     # vertical, pied au sol, grille creusée par le matériau (arbres 8 × 16, petits sujets 8 × 8)
+        rows = 8 if name in ("buissons", "fourres", "faune") else 16
+        nz = rows + 1
+        nx = max(5, round(rows * aspect) + 1)
+        verts = [[-hw + 2 * hw * i / (nx - 1), 0, j / (nz - 1)] for j in range(nz) for i in range(nx)]
+        uvs = [[i / (nx - 1), 1 - j / (nz - 1)] for j in range(nz) for i in range(nx)]
+        tris = []
+        for j in range(nz - 1):
+            for i in range(nx - 1):
+                a_, b_ = j * nx + i, (j + 1) * nx + i
+                tris += [[a_, a_ + 1, b_ + 1], [a_, b_ + 1, b_]]
+        nrm = [[0, -1, 0]] * len(verts)
     else:                      # vertical, pied au sol
         verts = [[-hw, 0, 0], [hw, 0, 0], [hw, 0, 1], [-hw, 0, 1]]
         nrm = [[0, -1, 0]] * 4
-    quad = build_mesh(f"Sprite_{tag_}", {"vertices": verts, "triangles": [[0, 1, 2], [0, 2, 3]], "normals": nrm,
-                                         "uv": [[0, 1], [1, 1], [1, 0], [0, 0]], "color": [1, 1, 1, 1]})
+    if mode != "relief":
+        tris, uvs = [[0, 1, 2], [0, 2, 3]], [[0, 1], [1, 1], [1, 0], [0, 0]]
+    quad = build_mesh(f"Sprite_{tag_}", {"vertices": verts, "triangles": tris, "normals": nrm, "uv": uvs,
+                                         "color": [1, 1, 1, 1]})
     holder = tag(actors.spawn_actor_from_class(unreal.Actor, unreal.Vector(0, 0, 0)), f"GB_Sprites_{tag_}")
     root = _sds.k2_gather_subobject_data_for_instance(holder)[0]
     _sds.add_new_subobject(unreal.AddNewSubobjectParams(parent_handle=root, new_class=unreal.HierarchicalInstancedStaticMeshComponent))
@@ -1068,21 +1123,23 @@ def sprite_set(key, mode, instances, cull_cm):
     hism.set_editor_property("cast_shadow", False)
     hism.set_editor_property("instance_end_cull_distance", cull_cm)
     hism.set_editor_property("num_custom_data_floats", 3)
+    if mode == "relief":
+        hism.set_editor_property("bounds_scale", 1.4)    # la grille avance vers l'œil
     xf, data = [], []
     up = unreal.Vector(0, 0, 1)
-    for x, y, z, h, cell, yaw, bright, pitch in instances:
+    for x, y, z, h, cell, yaw, bright, pitch, mirror in instances:
         it = items[int(cell)]
         fh, fw = it["v1"] - it["v0"], (it["u1"] - it["u0"]) * aspect
-        k = 1.0 / max(fh, 1e-3) if mode in ("debout", "fixe") else 1.0 / max(fh, fw, 1e-3)   # le sujet prend la hauteur h
+        k = 1.0 / max(fh, 1e-3) if mode in ("debout", "fixe", "relief") else 1.0 / max(fh, fw, 1e-3)   # le sujet prend la hauteur h
         if mode == "sol":
             rot = unreal.Rotator(0, 0, -yaw)
         else:                      # la face du plan (-Y local) regarde dans la direction (cap, inclinaison) du tracé
             cy, sy_, cp, sp = math.cos(math.radians(yaw)), math.sin(math.radians(yaw)), math.cos(math.radians(pitch)), math.sin(math.radians(pitch))
             rot = unreal.MathLibrary.make_rot_from_yz(unreal.Vector(-cy * cp, sy_ * cp, -sp), up)
-        # sujets debout : image retournée une fois sur deux et teinte propre (moins de répétition), tirées de la position
+        # sujets debout : miroir choisi au placement (côté éclairé vers le soleil), teinte propre tirée de la position
         hsh = (math.sin(x * 12.9898 + y * 78.233) * 43758.5453) % 1.0
-        flip = -1.0 if mode == "debout" and hsh < 0.5 else 1.0
-        tint = ((hsh * 7.0) % 1.0) * 1.6 - 0.8 if mode == "debout" else 0.0
+        flip = -1.0 if mirror > 0.5 else 1.0
+        tint = ((hsh * 7.0) % 1.0) * 1.6 - 0.8 if mode in ("debout", "relief") else 0.0
         xf.append(unreal.Transform(ue(x, y, z), rot, unreal.Vector(h * k * flip, h * k, h * k)))
         data.append((cell, tint, bright))
     hism.add_instances(xf, False, True)
@@ -1124,10 +1181,12 @@ else if (type < 2.5)                                 // papillon : vol erratique
     size = 13.0 * day;
     c.x *= 0.2 + 0.8 * abs(sin(T * 13.0 + ph * 9.0));
 }
-else if (type < 3.5)                                 // libellule : file et s'arrête net au-dessus de l'eau
+else if (type < 3.5)                                 // libellule : file, ralentit presque à l'arrêt, repart
 {
-    float tt = t + 0.6 * sin(t * 3.0);
+    // à-coups sans marche arrière (retour d'Olivier du 19/10 : avec 0,6, la vitesse s'inversait) : dérivée 1 + 0,9 cos > 0
+    float tt = t + 0.3 * sin(t * 3.0);
     o = float3(cos(tt) * rad, sin(tt) * rad, 15.0 * sin(t * 7.0));
+    v = float3(-sin(tt), cos(tt), 0);
     size = 14.0 * day;
 }
 else if (type > 6.5)                                 // canard : nage en petit cercle, dodeline (reste la nuit)
@@ -1157,7 +1216,7 @@ return float2((fmod(cell, 4.0) + UV.x) / 4.0, (floor(cell / 4.0) + UV.y) / 2.0);
 def vie_material():
     path = f"{GB}/M_GB_Vie"
     atlas = look_texture("sprite_vie")
-    digest = spec_digest("vie-v6", VIE_WPO_CODE, VIE_UV_CODE, SPRITE_COLOR_CODE, MPC_DIGEST, eal.get_metadata_tag(atlas, "source_sha1"))
+    digest = spec_digest("vie-v7", VIE_WPO_CODE, VIE_UV_CODE, SPRITE_COLOR_CODE, MPC_DIGEST, eal.get_metadata_tag(atlas, "source_sha1"))
     mat = eal.load_asset(path) if eal.does_asset_exist(path) else None
     if up_to_date(mat, digest):
         return mat
@@ -1242,6 +1301,7 @@ def vie_mesh(items):
 SPRITE_CULL = {"arbres": 18000, "arbres2": 18000, "arbres3": 18000, "arbres4": 18000, "buissons": 7000, "fourres": 8000, "lisieres": 0, "feuillages": 0, "eau": 6000, "faune": 6000, "nuit": 6000, "heros": 0}
 if os.path.exists(SPRITE_LAYOUT):
     MATS["Sprite"] = sprite_material()
+    MATS["SpriteRelief"] = sprite_material(relief=True)
     with open(SPRITE_LAYOUT, encoding="utf-8") as f:
         for _name, _spec in json.load(f)["sets"].items():
             sprite_set(_name, _spec["mode"], _spec["instances"], SPRITE_CULL.get(_name.split("@")[0], 10000))
@@ -1494,12 +1554,12 @@ if os.path.exists(SKY_PNG):
         sky_tex = eal.load_asset(f"{GB}/ciel")
         eal.set_metadata_tag(sky_tex, "source_sha1", sky_digest)
         eal.save_loaded_asset(sky_tex)
-    SKY_WATER_VERSION = "ciel-eau-v14"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
+    SKY_WATER_VERSION = "ciel-eau-v15"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
     sky_mat_path = f"{GB}/M_GB_CielPeint"
     sky_mat = eal.load_asset(sky_mat_path) if eal.does_asset_exist(sky_mat_path) else None
     rebuild_sky_water = not up_to_date(sky_mat, spec_digest(SKY_WATER_VERSION, sky_digest, MPC_DIGEST, WATER_CODE,
                                                             eal.get_metadata_tag(WATER_MAP_TEX, "source_sha1"),
-                                                            eal.get_metadata_tag(RIDES_TEX, "source_sha1")))
+                                                            eal.get_metadata_tag(RIDES_TEX, "source_sha1"), eal.get_metadata_tag(GLOW_TEX, "source_sha1")))
     sky_mat = sky_mat or tools.create_asset("M_GB_CielPeint", GB, unreal.Material, unreal.MaterialFactoryNew())
 if os.path.exists(SKY_PNG) and rebuild_sky_water:
     mel.delete_all_material_expressions(sky_mat)
@@ -1528,7 +1588,7 @@ if os.path.exists(SKY_PNG) and rebuild_sky_water:
     mel.recompile_material(sky_mat)
     mark_saved(sky_mat, spec_digest(SKY_WATER_VERSION, sky_digest, MPC_DIGEST, WATER_CODE,
                                     eal.get_metadata_tag(WATER_MAP_TEX, "source_sha1"),
-                                    eal.get_metadata_tag(RIDES_TEX, "source_sha1")))
+                                    eal.get_metadata_tag(RIDES_TEX, "source_sha1"), eal.get_metadata_tag(GLOW_TEX, "source_sha1")))
     # Eau peinte (voir WATER_CODE) : rides qui suivent le courant, reflet du ciel déformé, reflets de crêtes,
     # bande sombre du reflet des arbres près des berges, écume le long des rives, fond profond ; translucide
     # pour voir la créature des abysses. Sans réflexions temps réel (coût Quest faible).
@@ -1542,11 +1602,11 @@ if os.path.exists(SKY_PNG) and rebuild_sky_water:
     wpos = mel.create_material_expression(water, unreal.MaterialExpressionWorldPosition, -1000, 100)
     wt = mel.create_material_expression(water, unreal.MaterialExpressionTime, -1000, 200)
     wnode = custom_node(water, WATER_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT4,
-                        ["Dir", "WP", "T", "Map", "Rides", "Sky", "Teinte", "Lumiere", "B", "Ab", "Af"], -600, 0)
+                        ["Dir", "WP", "T", "Map", "Rides", "Sky", "Teinte", "Lumiere", "B", "Ab", "Af", "Glow", "Day", "Lf", "Ff"], -600, 0)
     mel.connect_material_expressions(wcam, "", wnode, "Dir")
     mel.connect_material_expressions(wpos, "", wnode, "WP")
     mel.connect_material_expressions(wt, "", wnode, "T")
-    for i, (pin, tex) in enumerate((("Map", WATER_MAP_TEX), ("Rides", RIDES_TEX), ("Sky", sky_tex))):
+    for i, (pin, tex) in enumerate((("Map", WATER_MAP_TEX), ("Rides", RIDES_TEX), ("Sky", sky_tex), ("Glow", GLOW_TEX))):
         to = mel.create_material_expression(water, unreal.MaterialExpressionTextureObject, -1000, 300 + 100 * i)
         to.set_editor_property("texture", tex)
         mel.connect_material_expressions(to, "", wnode, pin)
@@ -1556,7 +1616,8 @@ if os.path.exists(SKY_PNG) and rebuild_sky_water:
     wb.set_editor_property("collection", MPC)
     wb.set_editor_property("parameter_name", "Barque")
     mel.connect_material_expressions(wb, "", wnode, "B")
-    for i, (pin, pname) in enumerate((("Ab", "AbyssPos"), ("Af", "AbyssFade"))):
+    for i, (pin, pname) in enumerate((("Ab", "AbyssPos"), ("Af", "AbyssFade"), ("Day", "VieJour"), ("Lf", "LucioleFade"),
+                                      ("Ff", "FinaleFade"))):
         cpw = mel.create_material_expression(water, unreal.MaterialExpressionCollectionParameter, -1000, 950 + 100 * i)
         cpw.set_editor_property("collection", MPC)
         cpw.set_editor_property("parameter_name", pname)
@@ -1896,22 +1957,25 @@ def painted_filter():
     return mat
 
 
-FILTER = painted_filter()
+# Retour d'Olivier (19/10) : pas de filtre peinture sur PC, puisque le Quest ne l'a pas ; les rendus offline montrent
+# ce que montre le casque. Le volume reste pour l'exposition fixe et l'absence de flou de mouvement.
+PAINT_FILTER = False
+FILTER = painted_filter() if PAINT_FILTER else None
+ppv = tag(actors.spawn_actor_from_class(unreal.PostProcessVolume, unreal.Vector(0, 0, 0)), "PostTraitement")
+ppv.set_editor_property("unbound", True)
+settings = ppv.get_editor_property("settings")
 if FILTER is not None:
-    ppv = tag(actors.spawn_actor_from_class(unreal.PostProcessVolume, unreal.Vector(0, 0, 0)), "FiltrePeinture")
-    ppv.set_editor_property("unbound", True)
-    settings = ppv.get_editor_property("settings")
     settings.set_editor_property("weighted_blendables",
                                  unreal.WeightedBlendables([unreal.WeightedBlendable(1.0, FILTER)]))
-    # pas de flou de mouvement dans les rendus offline (il n'y en a pas au casque ; il étirait l'eau en rayons)
-    settings.set_editor_property("override_motion_blur_amount", True)
-    settings.set_editor_property("motion_blur_amount", 0.0)
-    # exposition fixe (pas d'exposition automatique au casque) : l'animatic montre la nuit comme le Quest
-    settings.set_editor_property("override_auto_exposure_method", True)
-    settings.set_editor_property("auto_exposure_method", unreal.AutoExposureMethod.AEM_MANUAL)
-    settings.set_editor_property("override_auto_exposure_apply_physical_camera_exposure", True)
-    settings.set_editor_property("auto_exposure_apply_physical_camera_exposure", False)
-    ppv.set_editor_property("settings", settings)
+# pas de flou de mouvement dans les rendus offline (il n'y en a pas au casque ; il étirait l'eau en rayons)
+settings.set_editor_property("override_motion_blur_amount", True)
+settings.set_editor_property("motion_blur_amount", 0.0)
+# exposition fixe (pas d'exposition automatique au casque) : l'animatic montre la nuit comme le Quest
+settings.set_editor_property("override_auto_exposure_method", True)
+settings.set_editor_property("auto_exposure_method", unreal.AutoExposureMethod.AEM_MANUAL)
+settings.set_editor_property("override_auto_exposure_apply_physical_camera_exposure", True)
+settings.set_editor_property("auto_exposure_apply_physical_camera_exposure", False)
+ppv.set_editor_property("settings", settings)
 
 # Recentrage VR : au lancement, origine de suivi « LocalFloor » (centrée sur la position du joueur au démarrage,
 # au niveau du sol) au lieu de « Stage » (centre de la zone du Quest) : le spectateur est toujours sur le banc,

@@ -7,6 +7,30 @@ Légende : 🔴 bloque un jalon, aucun contournement · 🟠 j'avance avec un co
 
 ---
 
+## ▶ Chantier sans casque (19/10, ~6 h, à partir de 11 h 50)
+
+Casque indisponible (suivi de position perdu) ; Olivier : « avançons le maximum », images et vidéos envoyées dans la
+session. Revue par l'animatic rendu par Unreal (lumière de chaque beat, musique), qui fait foi hors casque pour le look.
+
+- ✅ **Filtre peinture retiré du rendu PC** (retour d'Olivier : le Quest ne l'a pas) : animatic net, fidèle au casque.
+- ✅ **« Ovale » au bas des sprites** (retour d'Olivier : l'effet de répétition) : le bas des touffes de feuillage
+  était découpé en ellipse lisse, identique pour toutes ; il est maintenant festonné et propre à chaque image. Les
+  arbres avaient tous une plaque d'herbe peinte sous le tronc : retirée, pied estompé.
+- ✅ **Lumière cohérente** : une image retournée était éclairée du mauvais côté ; le miroir est désormais choisi au
+  placement pour que le côté éclairé regarde le soleil du beat où l'on voit le sujet.
+- 🔧 **Relief des sujets proches** (à juger au casque, en stéréo) : arbres à moins de 25 m du parcours, buissons et
+  fourrés à moins de 12 m, faune, arbre colossal : grille creusée selon une carte de relief tirée de la silhouette
+  peinte (`pipeline/comfy/relief.py`), au lieu du plan plat. ~110 k triangles de plus au total (une partie visible à la
+  fois) : **coût à mesurer**. Retour arrière : `RELIEF_M = {}` dans `sprites_layout.py`.
+- ✅ **Libellules qui reculaient en vol** (retour d'Olivier) : leurs à-coups inversaient la vitesse ; à-coups gardés,
+  sans marche arrière, image tournée dans le sens réel du vol.
+- ✅ **Fondu d'ouverture 4 fois plus long** (retour d'Olivier) : 10 s au lieu de 2,5, même fin (22,5 s) ; l'image
+  commence à poindre pendant le clapotis de S1.
+- ⏳ **Nouvelle barque** (retour d'Olivier : « la lanterne masque tout le décor ») : image reçue dans la conversation
+  seulement ; **à déposer dans `refs/barque-2.png`** pour la reconstruction 3D.
+- 🔧 **Reflets des lueurs dans l'eau la nuit** : plantes lumineuses, lucioles des berges et nuée finale se reflètent en
+  traînées près de la ligne d'eau (`pipeline/layout/glow_map.py`, une lecture de texture de plus).
+
 ## ▶ Retours du 19/10 matin : corrigés, vérifiés dans l'éditeur, pas encore au casque
 
 Retours d'Olivier au casque sur la version « tout en images peintes » (APK installé le 19/10 à 9 h 04) :
