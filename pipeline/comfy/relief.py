@@ -6,8 +6,9 @@ La silhouette de chaque case de l'atlas (assets/textures/sprite_<famille>.png) e
 profil de dôme selon la distance au bord (un houppier se bombe, un tronc fin reste presque plat), modulée par les
 touches claires du feuillage (les touffes éclairées avancent). 0 = plan du sprite, 1 = le plus proche de l'œil.
 greybox.py en tire, pour les sujets proches, une grille creusée selon cette carte au lieu du plan plat.
-Depth Anything V3 (ComfyUI) a été essayé le 19/10 : son nœud échoue dans son environnement isolé (module manquant) ;
-le gonflement de silhouette suffit pour des sujets peints isolés et ne demande pas de GPU.
+Depth Anything V3 (ComfyUI) a été essayé le 19/10 : son nœud échoue dans son environnement isolé (module manquant), et
+selon Olivier ces modèles ne savent pas traiter des images peintes, façon dessin animé. Piste écartée : le gonflement
+de silhouette suffit pour des sujets peints isolés et ne demande pas de GPU.
 """
 import argparse
 import json

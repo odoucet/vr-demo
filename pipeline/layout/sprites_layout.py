@@ -318,20 +318,26 @@ def main():
         x, y, z = bank_spot(t, rng.choice([-1, 1]), rng.uniform(1.5, 5.0))
         add("faune", "debout", [x, y, z, 0.38, 2, 0, 0.95])
     ducks = []                                                       # canards : nagent (vie animée, plus bas)
+    sounds = {}                                                      # points d'émission des sons de faune (greybox.py)
     for t, n in ((40, 3), (72, 4), (88, 3), (198, 5)):
         x0, y0, _ = bank_spot(t, rng.choice([-1, 1]), -2.5)
         if in_herd_path(x0, y0, 9.0):
             continue
+        sounds[f"canards-{t}"] = [x0, y0, 0.3]
         for _ in range(n):
             ducks.append((x0 + rng.uniform(-1.5, 1.5), y0 + rng.uniform(-1.5, 1.5)))
-    for _ in range(8):                                               # grenouilles près des nénuphars (S3)
+    for k in range(8):                                               # grenouilles près des nénuphars (S3)
         x, y, _z = bank_spot(rng.uniform(50, 88), rng.choice([-1, 1]), -rng.uniform(1.0, 3.0))
         add("faune", "debout", [x, y, 0.02, 0.16, 4, 0, 0.95])
+    for t, side in ((58, 1), (80, -1)):                              # leur chœur, de part et d'autre
+        x, y, _z = bank_spot(t, side, 1.0)
+        sounds[f"grenouilles-{t}"] = [x, y, 0.3]
     add("faune", "debout", [pm["x"] + 0.4, pm["y"] - 0.2, 0.95, 0.28, 5, 0, 1.0])   # martin-pêcheur sur le ponton
     for t, side in ((150, -1), (172, 1)):                            # chouettes sur une souche (nuit)
         x, y, z = bank_spot(t, side, rng.uniform(2.0, 3.5))
         add("fourres", "debout", [x, y, z - 0.05, 1.0, 6, 0, 0.9])
         add("faune", "debout", [x, y, z + 0.62, 0.42, 6, 0, 0.95])
+        sounds[f"chouette-{t}"] = [x, y, z + 0.8]
     for t in (58, 84, 110, 190):                                     # tortues au ras de l'eau
         x, y, z = bank_spot(t, rng.choice([-1, 1]), rng.uniform(-0.2, 0.3))
         add("faune", "debout", [x, y, max(z, -0.05), 0.22, 7, 0, 0.95])
@@ -434,7 +440,7 @@ def main():
             sets[f"{name}@relief"] = {"mode": "relief", "instances": near}
     sets = {k: v for k, v in sets.items() if v["instances"]}
 
-    out = {"units": "m", "sets": sets, "vie_animee": [[round(float(v), 3) for v in a] for a in vie]}
+    out = {"units": "m", "sons": {k: [round(float(c), 2) for c in v] for k, v in sounds.items()}, "sets": sets, "vie_animee": [[round(float(v), 3) for v in a] for a in vie]}
     OUT.write_text(json.dumps(out), encoding="utf-8")
     total = sum(len(v["instances"]) for v in sets.values())
     print(f"→ {OUT.relative_to(ROOT)} : {total} sprites, {len(vie)} animaux et feuilles animés")

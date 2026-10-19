@@ -209,8 +209,8 @@ assets:
   script: pipeline/comfy/image_to_3d.py refs/barque.png --models trellis2
   seed: 42
   licence: généré localement depuis les images d'Olivier (Midjourney)
-  note: 'import Unreal : 3,5 m, hauteur ×0,74, proue +X ; lanterne en papier lumineux ajoutée par greybox.py'
-  generated: '2026-10-17'
+  note: 'nouvelle image d''Olivier (19/10, barque sans lanterne, corde à la proue) ; import Unreal : 3,5 × 1,56 m, franc-bord ~45 cm, proue +X ; lanterne : modèle 3d/lanterne posé sur l''avant droit par greybox.py'
+  generated: '2026-10-19'
 - id: 3d/abysses
   type: mesh
   placeholder: true
@@ -248,9 +248,9 @@ assets:
   type: texture
   placeholder: true
   file: assets/sky/ciel.png
-  source: refs/ciel.png (Olivier, Midjourney, prompt « ciel » de PROMPTS.md, 3072×1536), raccordé horizontalement et
-    agrandi à 4096×2048 (modèle 4x_foolhardy_Remacri, bords prolongés pour garder le raccord). Ancienne version :
-    génération locale Z-Image Turbo, graine 2 (assets/sky/ciel_s2.png)
+  source: refs/ciel.png (Olivier, Midjourney, prompt « ciel » de PROMPTS.md, 3072×1536), raccordé horizontalement
+    et agrandi à 4096×2048 (modèle 4x_foolhardy_Remacri, bords prolongés pour garder le raccord). Ancienne version
+    — génération locale Z-Image Turbo, graine 2 (assets/sky/ciel_s2.png)
   workflow: pipeline/comfy/workflows/upscale_model.json
   script: pipeline/comfy/sky.py --olivier
   seed: 2
@@ -397,7 +397,8 @@ assets:
   type: texture
   placeholder: true
   file: assets/textures/sprite_arbres.png
-  source: 8 images peintes générées en local (Z-Image Turbo), détourées (BiRefNet, nœud RemoveBackground), atlas 4 × 2 ; images sources dans assets/textures/sprites/arbres/
+  source: 8 images peintes générées en local (Z-Image Turbo), détourées (BiRefNet, nœud RemoveBackground), atlas
+    4 × 2 ; images sources dans assets/textures/sprites/arbres/
   workflow: pipeline/comfy/workflows/z_image_turbo_t2i.json + LoadBackgroundRemovalModel / RemoveBackground
   script: pipeline/comfy/sprites.py arbres
   seed: 1000-1007 (sauf graines propres indiquées dans sprites.yaml)
@@ -408,7 +409,8 @@ assets:
   type: texture
   placeholder: true
   file: assets/textures/sprite_arbres2.png
-  source: 8 images peintes générées en local (Z-Image Turbo), détourées (BiRefNet, nœud RemoveBackground), atlas 4 × 2 ; images sources dans assets/textures/sprites/arbres2/
+  source: 8 images peintes générées en local (Z-Image Turbo), détourées (BiRefNet, nœud RemoveBackground), atlas
+    4 × 2 ; images sources dans assets/textures/sprites/arbres2/
   workflow: pipeline/comfy/workflows/z_image_turbo_t2i.json + LoadBackgroundRemovalModel / RemoveBackground
   script: pipeline/comfy/sprites.py arbres2
   seed: 1100-1107 (sauf graines propres indiquées dans sprites.yaml)
@@ -419,7 +421,8 @@ assets:
   type: texture
   placeholder: true
   file: assets/textures/sprite_arbres3.png
-  source: 8 images peintes générées en local (Z-Image Turbo), détourées (BiRefNet, nœud RemoveBackground), atlas 4 × 2 ; images sources dans assets/textures/sprites/arbres3/ ; ajoutées le 19/10 (arbres qui se répétaient)
+  source: 8 images peintes générées en local (Z-Image Turbo), détourées (BiRefNet, nœud RemoveBackground), atlas
+    4 × 2 ; images sources dans assets/textures/sprites/arbres3/ ; ajoutées le 19/10 (arbres qui se répétaient)
   workflow: pipeline/comfy/workflows/z_image_turbo_t2i.json + LoadBackgroundRemovalModel / RemoveBackground
   script: pipeline/comfy/sprites.py arbres3
   seed: 2100-2107 (sauf graines propres indiquées dans sprites.yaml)
@@ -430,7 +433,8 @@ assets:
   type: texture
   placeholder: true
   file: assets/textures/sprite_arbres4.png
-  source: 8 images peintes générées en local (Z-Image Turbo), détourées (BiRefNet, nœud RemoveBackground), atlas 4 × 2 ; images sources dans assets/textures/sprites/arbres4/ ; ajoutées le 19/10 (arbres qui se répétaient)
+  source: 8 images peintes générées en local (Z-Image Turbo), détourées (BiRefNet, nœud RemoveBackground), atlas
+    4 × 2 ; images sources dans assets/textures/sprites/arbres4/ ; ajoutées le 19/10 (arbres qui se répétaient)
   workflow: pipeline/comfy/workflows/z_image_turbo_t2i.json + LoadBackgroundRemovalModel / RemoveBackground
   script: pipeline/comfy/sprites.py arbres4
   seed: 2200-2207 (sauf graines propres indiquées dans sprites.yaml)
@@ -441,7 +445,8 @@ assets:
   type: texture
   placeholder: true
   file: assets/textures/sprite_buissons.png
-  source: 8 images peintes générées en local (Z-Image Turbo), détourées (BiRefNet, nœud RemoveBackground), atlas 4 × 2 ; images sources dans assets/textures/sprites/buissons/
+  source: 8 images peintes générées en local (Z-Image Turbo), détourées (BiRefNet, nœud RemoveBackground), atlas
+    4 × 2 ; images sources dans assets/textures/sprites/buissons/
   workflow: pipeline/comfy/workflows/z_image_turbo_t2i.json + LoadBackgroundRemovalModel / RemoveBackground
   script: pipeline/comfy/sprites.py buissons
   seed: 1200-1207 (sauf graines propres indiquées dans sprites.yaml)
@@ -452,7 +457,8 @@ assets:
   type: texture
   placeholder: true
   file: assets/textures/sprite_fourres.png
-  source: 8 images peintes générées en local (Z-Image Turbo), détourées (BiRefNet, nœud RemoveBackground), atlas 4 × 2 ; images sources dans assets/textures/sprites/fourres/
+  source: 8 images peintes générées en local (Z-Image Turbo), détourées (BiRefNet, nœud RemoveBackground), atlas
+    4 × 2 ; images sources dans assets/textures/sprites/fourres/
   workflow: pipeline/comfy/workflows/z_image_turbo_t2i.json + LoadBackgroundRemovalModel / RemoveBackground
   script: pipeline/comfy/sprites.py fourres
   seed: 1300-1307 (sauf graines propres indiquées dans sprites.yaml)
@@ -463,7 +469,8 @@ assets:
   type: texture
   placeholder: true
   file: assets/textures/sprite_lisieres.png
-  source: 4 images peintes générées en local (Z-Image Turbo), détourées (BiRefNet, nœud RemoveBackground), atlas 1 × 4 ; images sources dans assets/textures/sprites/lisieres/
+  source: 4 images peintes générées en local (Z-Image Turbo), détourées (BiRefNet, nœud RemoveBackground), atlas
+    1 × 4 ; images sources dans assets/textures/sprites/lisieres/
   workflow: pipeline/comfy/workflows/z_image_turbo_t2i.json + LoadBackgroundRemovalModel / RemoveBackground
   script: pipeline/comfy/sprites.py lisieres
   seed: 1400-1403 (sauf graines propres indiquées dans sprites.yaml)
@@ -474,7 +481,8 @@ assets:
   type: texture
   placeholder: true
   file: assets/textures/sprite_feuillages.png
-  source: 8 images peintes générées en local (Z-Image Turbo), détourées (BiRefNet, nœud RemoveBackground), atlas 4 × 2 ; images sources dans assets/textures/sprites/feuillages/
+  source: 8 images peintes générées en local (Z-Image Turbo), détourées (BiRefNet, nœud RemoveBackground), atlas
+    4 × 2 ; images sources dans assets/textures/sprites/feuillages/
   workflow: pipeline/comfy/workflows/z_image_turbo_t2i.json + LoadBackgroundRemovalModel / RemoveBackground
   script: pipeline/comfy/sprites.py feuillages
   seed: 1500-1507 (sauf graines propres indiquées dans sprites.yaml)
@@ -485,7 +493,8 @@ assets:
   type: texture
   placeholder: true
   file: assets/textures/sprite_vie.png
-  source: 8 images peintes générées en local (Z-Image Turbo), détourées (BiRefNet, nœud RemoveBackground), atlas 4 × 2 ; images sources dans assets/textures/sprites/vie/
+  source: 8 images peintes générées en local (Z-Image Turbo), détourées (BiRefNet, nœud RemoveBackground), atlas
+    4 × 2 ; images sources dans assets/textures/sprites/vie/
   workflow: pipeline/comfy/workflows/z_image_turbo_t2i.json + LoadBackgroundRemovalModel / RemoveBackground
   script: pipeline/comfy/sprites.py vie
   seed: 1600-1607 (sauf graines propres indiquées dans sprites.yaml)
@@ -496,10 +505,46 @@ assets:
   type: texture
   placeholder: true
   file: assets/textures/sprite_eau.png
-  source: 8 images peintes générées en local (Z-Image Turbo), détourées (BiRefNet, nœud RemoveBackground), atlas 4 × 2 ; images sources dans assets/textures/sprites/eau/
+  source: 8 images peintes générées en local (Z-Image Turbo), détourées (BiRefNet, nœud RemoveBackground), atlas
+    4 × 2 ; images sources dans assets/textures/sprites/eau/
   workflow: pipeline/comfy/workflows/z_image_turbo_t2i.json + LoadBackgroundRemovalModel / RemoveBackground
   script: pipeline/comfy/sprites.py eau
   seed: 1700-1707 (sauf graines propres indiquées dans sprites.yaml)
   prompt: pipeline/comfy/sprites.yaml (famille eau, gabarit top)
   licence: généré localement
   generated: '2026-10-19'
+- id: sfx/sfx-canards
+  type: sound
+  file: audio/sfx/sfx-canards.ogg
+  source: 'Freesound #238593 « Ducks quacking » par zulfint'
+  url: https://freesound.org/people/zulfint/sounds/238593/
+  licence: http://creativecommons.org/publicdomain/zero/1.0/
+  credit: Ducks quacking by zulfint (freesound.org)
+  format: aperçu OGG ~192 kb/s (original à récupérer via OAuth pour le master)
+  beats:
+  - S2-PONTON
+  - S3-ABYSSE
+  - S7-LAC
+  script: pipeline/audio/freesound.py pick sfx-canards 238593
+- id: sfx/sfx-grenouilles
+  type: sound
+  file: audio/sfx/sfx-grenouilles.ogg
+  source: 'Freesound #743685 « frogs croaking - calling back and forth » par mycompasstv'
+  url: https://freesound.org/people/mycompasstv/sounds/743685/
+  licence: http://creativecommons.org/publicdomain/zero/1.0/
+  credit: frogs croaking - calling back and forth by mycompasstv (freesound.org)
+  format: aperçu OGG ~192 kb/s (original à récupérer via OAuth pour le master)
+  beats:
+  - S3-ABYSSE
+  script: pipeline/audio/freesound.py pick sfx-grenouilles 743685
+- id: sfx/sfx-chouette
+  type: sound
+  file: audio/sfx/sfx-chouette.ogg
+  source: 'Freesound #465697 « Owl Hoot » par Breviceps'
+  url: https://freesound.org/people/Breviceps/sounds/465697/
+  licence: http://creativecommons.org/publicdomain/zero/1.0/
+  credit: Owl Hoot by Breviceps (freesound.org)
+  format: aperçu OGG ~192 kb/s (original à récupérer via OAuth pour le master)
+  beats:
+  - S6-LUNE
+  script: pipeline/audio/freesound.py pick sfx-chouette 465697

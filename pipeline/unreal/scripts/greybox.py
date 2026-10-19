@@ -180,13 +180,18 @@ def custom_node(mat, code, out_type, names, x, y):
     return node
 
 
-# Lanterne de proue dans le repère de la barque (cm) : mesurée dans le maillage (voir BOAT_* plus bas).
-LANTERN_LOCAL = (91.0, 0.0, 108.0)
-# Barque (détails plus bas) : hauteur réduite (2,6 au lieu de 3,5) : franc-bord de ~45 cm au lieu de 68.
-BOAT_SCALE, BOAT_SCALE_Z, BOAT_YAW = 3.5, 2.6, -90.0
-# Lanterne qui tangue (retour d'Olivier : « trop figée ») : même balancement, calculé dans le shader, pour la perche et
-# le corps de la lanterne (zone du maillage de la barque), le papier lumineux et le halo. Pivot au pied de la lanterne
-# (16 cm sous son centre à l'échelle d'import), roulis ~3° autour de l'axe de la barque, tangage ~2°.
+# Barque (retour d'Olivier du 19/10 : « la lanterne masque tout le décor » ; nouvelle image refs/barque.png, sans
+# lanterne) : modèle TRELLIS.2, longueur 100 sur +X à l'import (proue côté corde, +X), largeur ±26, fond à -15,
+# plat-bord à +7 au milieu, +15 aux pointes. Mis à 3,5 × 1,56 m (la proportion d'origine ferait 1,82 m de large),
+# hauteur × 3 : franc-bord ~45 cm avec 22 cm de tirant d'eau.
+BOAT_SCALE, BOAT_SCALE_Y, BOAT_SCALE_Z, BOAT_YAW = 3.5, 3.0, 3.0, 0.0
+BOAT_BOTTOM, BOAT_DRAFT = -15.2, 22.0
+# Lanterne : modèle à part (assets/3d/lanterne, papier à nervures), haute de 32 cm, posée bas sur l'avant droit (sur
+# le banc avant) : elle éclaire la nuit sans masquer le décor. Centre dans le repère de la barque (cm).
+LANTERN_H = 32.0
+LANTERN_LOCAL = (125.0, 36.0, 40.0 + LANTERN_H / 2)
+# Lanterne qui tangue (retour d'Olivier : « trop figée ») : même balancement, calculé dans le shader, pour le modèle de
+# la lanterne et son halo. Pivot au pied de la lanterne, roulis ~3° autour de l'axe de la barque, tangage ~2°.
 SWAY_CODE = """float ar = 0.055 * sin(T * 1.25) + 0.025 * sin(T * 0.73 + 1.7);   // roulis (rad)
 float ap = 0.035 * sin(T * 0.97 + 0.6);                                   // tangage
 float3 f = normalize(float3(F.xy, 0.0) + float3(1e-4, 0.0, 0.0));         // sens de la barque
@@ -195,14 +200,9 @@ float3 v = WP.xyz - Pv;
 float3 r1 = v * cos(ar) + cross(f, v) * sin(ar) + f * dot(f, v) * (1.0 - cos(ar));
 float3 r2 = r1 * cos(ap) + cross(sd, r1) * sin(ap) + sd * dot(sd, r1) * (1.0 - cos(ap));
 return (r2 - v) * W;"""
-# barque : perche et lanterne seulement (repère d'import : longueur sur +Y, lanterne à y 22-30, pied à z ~1)
-SWAY_BOAT_CODE = """float W = saturate((LP.z - 1.0) / 5.0) * step(abs(LP.x), 7.0) * step(18.0, LP.y) * step(LP.y, 36.0);
-float3 Pv = OP.xyz + TP.xyz;
-float3 F = TF.xyz;
-""" + SWAY_CODE
-# papier et halo (centrés sur la lanterne, axe X = sens de la barque) : pivot 16 cm (× échelle) sous le centre
+# lanterne et halo (centrés sur la lanterne, axe X = sens de la barque) : pivot à son pied
 SWAY_CANDLE_CODE = f"""float W = 1.0;
-float3 Pv = OP.xyz - float3(0.0, 0.0, {16.0 * BOAT_SCALE_Z:.1f});
+float3 Pv = OP.xyz - float3(0.0, 0.0, {LANTERN_H / 2:.1f});
 float3 F = TF.xyz;
 """ + SWAY_CODE
 
@@ -333,7 +333,12 @@ float3 gl = Texture2DSample(Glow, GlowSampler, hm).rgb;
 float night = 1.0 - saturate(Day);
 float3 glow = gl.r * night * float3(0.45, 0.9, 1.0) + gl.g * saturate(Lf) * (0.25 + 0.75 * night) * float3(1.0, 0.9, 0.45)
             + gl.b * saturate(Ff) * float3(1.0, 0.85, 0.4);
-col += glow * (1.0 - saturate(tanE * dist / 300.0)) * (0.15 + 1.2 * rip * rip) * (0.5 + 0.5 * fr) * 1.2;   // lumière vive : visible même hors incidence rasante
+col += glow * (1.0 - saturate(tanE * dist / 300.0)) * (0.15 + 1.2 * rip * rip) * (0.5 + 0.5 * fr) * 2.6;
+// chemin de lune (la nuit) : reflet de la lune étiré à la verticale par les rides, en éclats sur les crêtes
+float nsky = saturate(1.0 - dot(Teinte.rgb, float3(0.3, 0.5, 0.2)) * 3.0);
+float3 rdm = normalize(rd + float3((r2 - 0.5) * 0.04, (r1 - 0.5) * 0.04, (rip - 0.45) * 0.5));
+float mg = smoothstep(0.990, 0.9985, dot(rdm, float3(%(mx).5f, %(my).5f, %(mz).5f)));
+col += float3(1.0, 0.95, 0.82) * mg * (0.4 + 1.6 * rip) * nsky * (1.0 - trees * 0.8) * 1.8;   // lumière vive : visible même hors incidence rasante
 // écume le long des berges
 float foam = (1.0 - smoothstep(0.0, 0.05, shore)) * (0.55 + 0.45 * r2);
 col = lerp(col, Lumiere.rgb * 0.5 + sky * 0.35, foam * 0.75);
@@ -342,13 +347,13 @@ col = lerp(col, Lumiere.rgb * 0.5 + sky * 0.35, foam * 0.75);
 float cb = cos(B.z), sb = sin(B.z);
 float2 rel = WP.xy - B.xy;
 float lx = dot(rel, float2(cb, sb)), ly = dot(rel, float2(-sb, cb));
-float hull = (lx / 178.0) * (lx / 178.0) + (ly / 64.0) * (ly / 64.0);
+float hull = (lx / 178.0) * (lx / 178.0) + (ly / 78.0) * (ly / 78.0);   // coque 3,5 × 1,56 m
 float arm = abs(abs(ly) - max(-lx - 120.0, 0.0) * 0.36);
 float wake = exp(-arm / 20.0) * saturate((-lx - 120.0) / 80.0) * exp(lx / 1600.0) * (0.5 + 0.5 * sin(lx * 0.07 + T * 2.6 + r2 * 3.0));
 float ring = exp(-abs(sqrt(hull) - 1.1) * 8.0) * (0.55 + 0.45 * sin(atan2(ly, lx) * 11.0 + T * 3.2)) * saturate(sqrt(hull) - 0.95) * 4.0;
 float boatfoam = saturate(wake * 0.8 + ring * 0.7);
 col = lerp(col, Lumiere.rgb * 0.45 + sky * 0.45, boatfoam * 0.65);
-float2 lp = B.xy + float2(cb, sb) * %(lantx).1f;
+float2 lp = B.xy + float2(cb, sb) * %(lantx).1f + float2(-sb, cb) * %(lanty).1f;
 float dlw = length(WP.xy - lp);
 float flick = 0.86 + 0.1 * sin(T * 11.0) * sin(T * 6.7 + 1.3) + 0.04 * sin(T * 23.0);
 col += float3(%(cr).2f, %(cg).2f, %(cb).2f) * flick * (0.25 + 0.75 * rip) * 0.9 / (1.0 + (dlw / 140.0) * (dlw / 140.0));
@@ -358,8 +363,8 @@ float halo = exp(-dot(da, da) / (420.0 * 420.0)) * saturate(1.0 + Ab.z / 900.0) 
 col += float3(0.15, 1.6, 2.0) * 0.18 * halo * (0.6 + 0.4 * rip);
 float op = max(lerp(0.68, 0.97, fr) * (1.0 - 0.55 * halo), max(foam, boatfoam * 0.8));   // eau plus claire au-dessus de la créature
 op *= smoothstep(0.9, 1.02, hull);
-return float4(col, op);""" % {"lantx": LANTERN_LOCAL[0], "cr": CANDLE_RGB[0], "cg": CANDLE_RGB[1], "cb": CANDLE_RGB[2], "x0": WATER_MAP["x0"], "y0": WATER_MAP["y0"], "size": WATER_MAP["size_m"], "drift": SKY_DRIFT,
-   "lkx": RIVER["lake"]["x"] * 100, "lky": -RIVER["lake"]["y"] * 100, "lkr2": (RIVER["lake"]["radius_m"] * 100) ** 2}
+return float4(col, op);""" % {"lantx": LANTERN_LOCAL[0], "lanty": LANTERN_LOCAL[1], "cr": CANDLE_RGB[0], "cg": CANDLE_RGB[1], "cb": CANDLE_RGB[2], "x0": WATER_MAP["x0"], "y0": WATER_MAP["y0"], "size": WATER_MAP["size_m"], "drift": SKY_DRIFT,
+   "mx": MOON_DIR[0], "my": MOON_DIR[1], "mz": MOON_DIR[2], "lkx": RIVER["lake"]["x"] * 100, "lky": -RIVER["lake"]["y"] * 100, "lkr2": (RIVER["lake"]["radius_m"] * 100) ** 2}
 
 
 BRUSH_PNG = os.path.join(ROOT, "assets", "textures", "pinceau.png")
@@ -385,6 +390,7 @@ def brush_texture():
 
 
 PEINT_CODE = """#define LANT_X %(lx).1f
+#define LANT_Y %(ly).1f
 #define LANT_Z %(lz).1f
 #define CANDLE float3(%(cr).2f, %(cg).2f, %(cb).2f)
 float3 n = normalize(N.xyz);
@@ -407,7 +413,7 @@ col += albedo * Lumiere.rgb * rim * 0.8;
 col *= 1.0 + (brush - 0.5) * 0.18;
 // lanterne de proue : lumière chaude de bougie qui vacille, sur tout ce qui l'entoure (B = barque : x, y, lacet en z)
 float cb = cos(B.z), sb = sin(B.z);
-float3 lp = float3(B.x + cb * LANT_X, B.y + sb * LANT_X, LANT_Z);
+float3 lp = float3(B.x + cb * LANT_X - sb * LANT_Y, B.y + sb * LANT_X + cb * LANT_Y, LANT_Z);
 float dl = length(WP.xyz - lp);
 float flick = 0.86 + 0.1 * sin(T * 11.0) * sin(T * 6.7 + 1.3) + 0.04 * sin(T * 23.0);
 float lamp = flick * saturate(1.0 - dl / 1100.0) / (1.0 + (dl / 170.0) * (dl / 170.0));
@@ -424,7 +430,7 @@ if (under > 0.0)
 }
 // ligne d'eau : liseré clair là où l'objet traverse la surface
 col += Lumiere.rgb * 0.06 * (1.0 - smoothstep(0.0, 3.5, abs(WP.z)));
-return col;""" % {"lx": LANTERN_LOCAL[0], "lz": LANTERN_LOCAL[2], "cr": CANDLE_RGB[0], "cg": CANDLE_RGB[1], "cb": CANDLE_RGB[2]}
+return col;""" % {"lx": LANTERN_LOCAL[0], "ly": LANTERN_LOCAL[1], "lz": LANTERN_LOCAL[2], "cr": CANDLE_RGB[0], "cg": CANDLE_RGB[1], "cb": CANDLE_RGB[2]}
 
 
 # Une seule lecture de texture par pixel (projection selon l'axe dominant de la normale), au lieu des trois
@@ -1306,7 +1312,11 @@ if os.path.exists(SPRITE_LAYOUT):
         for _name, _spec in json.load(f)["sets"].items():
             sprite_set(_name, _spec["mode"], _spec["instances"], SPRITE_CULL.get(_name.split("@")[0], 10000))
         f.seek(0)
-        _vie = json.load(f).get("vie_animee", [])
+        _layout = json.load(f)
+        _vie = _layout.get("vie_animee", [])
+    # points d'émission des sons de faune (canards, grenouilles, chouettes) : le paysage sonore y attache ses sons
+    for _sname, _spos in _layout.get("sons", {}).items():
+        tag(actors.spawn_actor_from_class(unreal.TargetPoint, ue(*_spos)), f"GB_Son_{_sname}")
     if _vie and os.path.exists(os.path.join(ROOT, "assets", "textures", "sprite_vie.png")):
         MATS["Vie"] = vie_material()
         _va = place_mesh(vie_mesh(_vie), "GB_VieAnimee", "Vie")
@@ -1329,14 +1339,11 @@ def oriented(t, ahead_m, side_m, z_m=0.0):
 # Ponton et arche des racines : modèles 3D (images d'Olivier refs/ponton.png, refs/racine.png → TRELLIS.2),
 # placés plus bas, après l'import des modèles (place_props).
 
-# Barque : racine invisible (animée par la séquence, porte la caméra) + modèle 3D attaché.
-# Modèle : assets/3d/barque/trellis2-s42 (image refs/barque.png, repère standard). Mesures à l'import :
-# longueur 100 cm sur +Y (proue côté perche), fond à -35 cm, bordé à -9 cm. Mis à 3,5 m (D4), tourné de -90°
-# pour que la proue regarde +X, posé avec 25 cm de tirant d'eau. Bloc en repli si le modèle manque.
+# Barque : racine invisible (animée par la séquence, porte la caméra) + modèle 3D attaché (assets/3d/barque/
+# trellis2-s42, image refs/barque.png ; mesures et échelles avec BOAT_SCALE plus haut). Bloc en repli s'il manque.
 BOAT_GLB = os.path.join(ROOT, "assets", "3d", "barque", "trellis2-s42", "model.glb")
 BOAT_DIR, BOAT_MESH = "/Game/Assets/Barque", "/Game/Assets/Barque/model/StaticMeshes/model"
-# Hauteur réduite (2,6 au lieu de 3,5) : franc-bord de ~45 cm au lieu de 68, pour voir l'eau par-dessus le bord.
-BOAT_Z = 35.1 * BOAT_SCALE_Z - 25.0
+BOAT_Z = -BOAT_BOTTOM * BOAT_SCALE_Z - BOAT_DRAFT
 
 
 def import_glb(rel_glb, dest_dir, max_tris=None):
@@ -1378,8 +1385,9 @@ def hull_floor(model):
     vl = next(x for x in (vl if isinstance(vl, tuple) else (vl,)) if type(x).__name__ == "GeometryScriptVectorList")
     pts = []
     for v in unreal.GeometryScript_List.convert_vector_list_to_array(vl):
-        x, y, z = v.x * BOAT_SCALE, v.y * BOAT_SCALE, v.z * BOAT_SCALE_Z + BOAT_Z
-        bx, by = y, -x                                   # rotation de -90° (relative_rotation du modèle)
+        x, y, z = v.x * BOAT_SCALE, v.y * BOAT_SCALE_Y, v.z * BOAT_SCALE_Z + BOAT_Z
+        ca, sa = math.cos(math.radians(BOAT_YAW)), math.sin(math.radians(BOAT_YAW))
+        bx, by = x * ca - y * sa, x * sa + y * ca        # rotation du modèle (relative_rotation)
         if -10.0 <= z <= 15.0:
             pts.append((round(bx, 1), round(by, 1)))
     pts = sorted(set(pts))
@@ -1425,16 +1433,26 @@ if model is not None:
     hull.attach_to_actor(boat, "", unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, False)
     hull.root_component.set_editor_property("relative_location", unreal.Vector(0, 0, BOAT_Z))
     hull.root_component.set_editor_property("relative_rotation", unreal.Rotator(0, 0, BOAT_YAW))
-    hull.root_component.set_editor_property("relative_scale3d", unreal.Vector(BOAT_SCALE, BOAT_SCALE, BOAT_SCALE_Z))
-    # Lanterne de proue : corps mesuré dans le maillage (x ±4, y 22-30, z 8-24 cm à l'échelle d'import), soit
-    # ~30 × 55 cm centré à (+91, 0, 154) cm dans le repère de la barque. Papier lumineux posé par-dessus
-    # (le maillage n'a pas de matériau séparé pour la lanterne) et lumière au centre.
-    LANTERN = unreal.Vector(26 * BOAT_SCALE, 0, BOAT_Z + 16 * BOAT_SCALE_Z)
-    paper = place_mesh(CYL, "LanternePapier", "LanternePapier", boat.get_actor_location(), scale=(0.34, 0.34, 0.56))
+    hull.root_component.set_editor_property("relative_scale3d", unreal.Vector(BOAT_SCALE, BOAT_SCALE_Y, BOAT_SCALE_Z))
+    # Lanterne : modèle à part (papier à nervures), centré sur LANTERN, papier allumé par la bougie (matériau
+    # « bougie », qui la fait aussi tanguer) ; lumière et halo au centre. Repli : cylindre lumineux.
+    LANTERN = unreal.Vector(*LANTERN_LOCAL)
+    lantern_model = import_glb("lanterne/trellis2-s42", "/Game/Assets/Lanterne", 6000)
+    if lantern_model is not None:
+        lb = lantern_model.get_bounding_box()
+        ls_ = LANTERN_H / max(lb.max.z - lb.min.z, 1e-3)
+        paper = actors.spawn_actor_from_object(lantern_model, boat.get_actor_location())
+        tag(paper, "Lanterne")
+        paper.static_mesh_component.set_collision_enabled(unreal.CollisionEnabled.NO_COLLISION)
+        lc_ = unreal.Vector(LANTERN.x, LANTERN.y, LANTERN.z - (lb.min.z + lb.max.z) / 2 * ls_)
+        scale_ = unreal.Vector(ls_, ls_, ls_)
+    else:
+        paper = place_mesh(CYL, "LanternePapier", "LanternePapier", boat.get_actor_location())
+        lc_, scale_ = LANTERN, unreal.Vector(0.22, 0.22, LANTERN_H / 100.0)
     paper.attach_to_actor(boat, "", unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, False)
-    paper.root_component.set_editor_property("relative_location", LANTERN)
+    paper.root_component.set_editor_property("relative_location", lc_)
     paper.root_component.set_editor_property("relative_rotation", unreal.Rotator(0, 0, 0))
-    paper.root_component.set_editor_property("relative_scale3d", unreal.Vector(0.34, 0.34, 0.56 * BOAT_SCALE_Z / BOAT_SCALE))
+    paper.root_component.set_editor_property("relative_scale3d", scale_)
     paper.static_mesh_component.set_editor_property("cast_shadow", False)
     # Plancher de la barque : planches opaques juste au-dessus de la ligne de flottaison, dans la coque ; l'eau
     # ne se voit plus à l'intérieur même si le masque du shader de l'eau échoue (retour d'Olivier).
@@ -1445,7 +1463,7 @@ if model is not None:
     halo = place_mesh(SPHERE, "HaloLanterne", "HaloLanterne", boat.get_actor_location())
     halo.attach_to_actor(boat, "", unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, False)
     halo.root_component.set_editor_property("relative_location", LANTERN)
-    halo.root_component.set_editor_property("relative_scale3d", unreal.Vector(1.0, 1.0, 1.0))
+    halo.root_component.set_editor_property("relative_scale3d", unreal.Vector(0.7, 0.7, 0.7))
     halo.static_mesh_component.set_editor_property("cast_shadow", False)
     lantern = tag(actors.spawn_actor_from_class(unreal.PointLight, boat.get_actor_location()), "LumiereLanterne")
     lantern.attach_to_actor(boat, "", unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, False)
@@ -1554,7 +1572,7 @@ if os.path.exists(SKY_PNG):
         sky_tex = eal.load_asset(f"{GB}/ciel")
         eal.set_metadata_tag(sky_tex, "source_sha1", sky_digest)
         eal.save_loaded_asset(sky_tex)
-    SKY_WATER_VERSION = "ciel-eau-v15"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
+    SKY_WATER_VERSION = "ciel-eau-v16"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
     sky_mat_path = f"{GB}/M_GB_CielPeint"
     sky_mat = eal.load_asset(sky_mat_path) if eal.does_asset_exist(sky_mat_path) else None
     rebuild_sky_water = not up_to_date(sky_mat, spec_digest(SKY_WATER_VERSION, sky_digest, MPC_DIGEST, WATER_CODE,
@@ -1683,6 +1701,10 @@ return float3(wave * W * 0.04 * (1.0 - a), 0, wave * W * 0.09 * lat + sin(T * 0.
 }
 
 
+LAMP_CODE = (f"float lum = dot(Tex, float3(0.3, 0.6, 0.1));\n"
+             f"return C * 0.4 + Tex * float3({CANDLE_RGB[0]}, {CANDLE_RGB[1]}, {CANDLE_RGB[2]}) * smoothstep(0.25, 0.6, lum) * 2.6 * {FLICKER};")
+
+
 def peint_tex_material(name, texture, anim=None, box=None, glow=None, tint=None):
     """Look peint pour un modèle texturé (créatures, barque) : couleur de la texture, même ombrage deux tons
     que M_Peint. anim : animation procédurale (ANIM_CODES) ; glow : teinte de bioluminescence (abysses)."""
@@ -1690,8 +1712,9 @@ def peint_tex_material(name, texture, anim=None, box=None, glow=None, tint=None)
     box_def = ""
     if box is not None:
         box_def = "".join(f"#define {k} {v:.3f}\n" for k, v in zip(("BXN", "BXX", "BYN", "BYX", "BZN", "BZX"), box))
-    anim_code = box_def + ANIM_CODES[anim] if anim and anim != "lanterne" else None
-    digest = spec_digest("peint-tex-v8", PEINT_CODE, SWAY_BOAT_CODE if anim == "lanterne" else None, MPC_DIGEST, texture.get_path_name(), anim_code, glow, tint)
+    anim_code = box_def + ANIM_CODES[anim] if anim and anim != "bougie" else None
+    digest = spec_digest("peint-tex-v9", PEINT_CODE, SWAY_CANDLE_CODE if anim == "bougie" else None, LAMP_CODE if anim == "bougie" else None,
+                         MPC_DIGEST, texture.get_path_name(), anim_code, glow, tint)
     existing = eal.load_asset(path) if eal.does_asset_exist(path) else None
     if up_to_date(existing, digest):
         return existing
@@ -1738,9 +1761,15 @@ def peint_tex_material(name, texture, anim=None, box=None, glow=None, tint=None)
         fd.set_editor_property("parameter_name", "AbyssFade")
         mel.connect_material_expressions(fd, "", gl, "F")
         out = gl
+    if anim == "bougie":          # lanterne : le papier (clair) s'allume à la bougie, les nervures restent sombres
+        lmp = custom_node(mat, LAMP_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["C", "Tex", "T"], -250, 0)
+        mel.connect_material_expressions(out, "", lmp, "C")
+        mel.connect_material_expressions(tex, "RGB", lmp, "Tex")
+        mel.connect_material_expressions(mel.create_material_expression(mat, unreal.MaterialExpressionTime, -500, 300), "", lmp, "T")
+        out = lmp
     mel.connect_material_property(out, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
-    if anim == "lanterne":
-        wire_sway(mat, SWAY_BOAT_CODE, (0, 1, 0), (0, 26, 1))
+    if anim == "bougie":
+        wire_sway(mat, SWAY_CANDLE_CODE, (1, 0, 0))
     if anim_code is not None:
         lp = mel.create_material_expression(mat, unreal.MaterialExpressionLocalPosition, -900, 500)
         tt = mel.create_material_expression(mat, unreal.MaterialExpressionTime, -900, 600)
@@ -1812,10 +1841,14 @@ creature("GB_Abysses", "GB_Abysses", ue(0, -60, -3.2))
 for i in range(5):
     creature(f"GB_Troupeau{i}", "GB_Troupeau", ue(0, -60 - i * 4, 0.6))
 creature("GB_Volante", "GB_Volante", ue(*moon_xy, 150))
-if model is not None:      # la barque prend aussi le look peint
-    for i, pm in enumerate(painted_model(model, "Barque", "lanterne")):
+if model is not None:      # la barque et la lanterne prennent aussi le look peint
+    for i, pm in enumerate(painted_model(model, "Barque")):
         if pm is not None:
             hull.static_mesh_component.set_material(i, pm)
+    if lantern_model is not None:
+        for i, pm in enumerate(painted_model(lantern_model, "Lanterne", "bougie")):
+            if pm is not None:
+                paper.static_mesh_component.set_material(i, pm)
 
 # --- Ponton et arche des racines (modèles 3D, look peint) -------------------------------------------------------
 def place_model(model, label, loc, yaw, size_cm, z_base_cm, painted_name, tint=None):

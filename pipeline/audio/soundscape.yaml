@@ -16,3 +16,13 @@ sounds:
   - {id: amb-foret-nuit,    start: 155,   end: 206, volume: 0.6, fade_in: 6, fade_out: 6}
   - {id: cue-volante,       start: 166,   end: 182, volume: 1.0, fade_in: 2, fade_out: 4, attach: GB_Volante}
   - {id: amb-lac-nuit,      start: 200,   end: 240, volume: 0.6, fade_in: 6, fade_out: 3}
+  # Faune (19/10) : sons attachés à leur point d'émission (sprites_layout.py, « sons »), portée courte (ATT_Proche).
+  # Choisis sans écoute, vérifiés automatiquement (pas de parole détectée par Whisper) : à valider à l'écoute (D7).
+  - {id: sfx-canards,     start: 28,  end: 54,  volume: 0.7, fade_in: 3, fade_out: 4, attach: GB_Son_canards-40, portee: proche}
+  - {id: sfx-canards,     start: 62,  end: 98,  volume: 0.7, fade_in: 3, fade_out: 4, attach: GB_Son_canards-72, portee: proche}
+  - {id: sfx-grenouilles, start: 46,  end: 72,  volume: 0.6, fade_in: 4, fade_out: 4, attach: GB_Son_grenouilles-58, portee: proche}
+  - {id: sfx-grenouilles, start: 70,  end: 96,  volume: 0.6, fade_in: 4, fade_out: 4, attach: GB_Son_grenouilles-80, portee: proche}
+  - {id: sfx-chouette,    start: 144, end: 149, volume: 0.9, fade_in: 0.2, fade_out: 0.5, attach: GB_Son_chouette-150, portee: proche}
+  - {id: sfx-chouette,    start: 151, end: 156, volume: 0.9, fade_in: 0.2, fade_out: 0.5, attach: GB_Son_chouette-150, portee: proche}
+  - {id: sfx-chouette,    start: 162, end: 167, volume: 0.9, fade_in: 0.2, fade_out: 0.5, attach: GB_Son_chouette-172, portee: proche}
+  - {id: sfx-canards,     start: 186, end: 214, volume: 0.6, fade_in: 4, fade_out: 5, attach: GB_Son_canards-198, portee: proche}

@@ -26,10 +26,17 @@ session. Revue par l'animatic rendu par Unreal (lumière de chaque beat, musique
   sans marche arrière, image tournée dans le sens réel du vol.
 - ✅ **Fondu d'ouverture 4 fois plus long** (retour d'Olivier) : 10 s au lieu de 2,5, même fin (22,5 s) ; l'image
   commence à poindre pendant le clapotis de S1.
-- ⏳ **Nouvelle barque** (retour d'Olivier : « la lanterne masque tout le décor ») : image reçue dans la conversation
-  seulement ; **à déposer dans `refs/barque-2.png`** pour la reconstruction 3D.
+- 🔧 **Nouvelle barque** (retour d'Olivier : « la lanterne masque tout le décor ») : image retrouvée dans la transcription
+  et écrite à la place de `refs/barque.png` (l'ancienne reste dans l'historique Git) ; TRELLIS.2 retenu (Pixal3D garde la
+  perspective de l'image : barque penchée). 3,5 × 1,56 m, franc-bord ~45 cm. **Lanterne** (défaut, D11) : le modèle de
+  lanterne en papier, 32 cm, posé sur l'avant droit, sous la ligne d'horizon ; son papier s'allume à la bougie et elle
+  tangue. Si tu préfères : sans lanterne, ou ailleurs (`LANTERN_LOCAL` dans `greybox.py`).
 - 🔧 **Reflets des lueurs dans l'eau la nuit** : plantes lumineuses, lucioles des berges et nuée finale se reflètent en
   traînées près de la ligne d'eau (`pipeline/layout/glow_map.py`, une lecture de texture de plus).
+- 🔧 **Chemin de lune** sur l'eau la nuit : reflet de la lune peinte, étiré à la verticale par les rides, en éclats.
+- 🔧 **Sons de la faune** (choisis sans écoute, sans parole détectée par Whisper ; **à valider à l'écoute**, D7) :
+  canards (3 groupes), chœurs de grenouilles en S3, hululements des chouettes en S6, spatialisés à leur place et
+  audibles seulement en passant (portée 25 m).
 
 ## ▶ Retours du 19/10 matin : corrigés, vérifiés dans l'éditeur, pas encore au casque
 
@@ -110,6 +117,15 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 | D14 | Marge de performance au Quest (S2 à 71,5 i/s, à la limite) | MSAA 2× gardé (bords nets) ; arbres lointains éclaircis | MSAA 1× : +2,7 ms de marge, bords crénelés qui scintillent ; ou alléger encore la végétation (moins de détail) ; ou plugin Meta XR pour demander le niveau GPU maximal (+10 %, installation à autoriser) | |
 | D15 | Élément visuel du final à la place des lanternes | nuée de lucioles autour de la barque et dans l'arbre de l'île | autre élément : fleurs lumineuses, lanternes flottantes près de la barque, reflet de lune… (`lake_fireflies` dans `greybox_geometry.py`) | |
 | D16 | Arbres (« le plus moche ») ou autre décor (statues géantes ?) | arbres et décor en images peintes (sprites) | — | **sprites peints**, « c'est la bonne idée à creuser » (19/10) |
+| D17 | Animatics vidéo déjà poussés dans l'historique Git (~925 Mo en LFS, quota GitHub limité) | désormais hors dépôt (`.gitignore`), planches seules versionnées ; l'historique n'est pas réécrit | les retirer de l'historique (réécriture, à autoriser) ou acheter du quota LFS | |
+
+**Nettoyage LFS (dans la todo d'Olivier, à lancer sur son accord écrit)** — ~2,2 Go en LFS sur tout l'historique, dont
+~1,3 Go d'animatics vidéo (`review/iter-*/animatic.mp4`), ≥ 460 Mo d'assets Unreal (versions successives), ~150 Mo de
+textures. Réécrire l'historique ne libère pas le quota sur GitHub (les objets LFS restent comptés tant que le dépôt
+existe) : il faut recréer le dépôt (ou passer par le support GitHub). Plan proposé :
+1. `git filter-repo` en local : retirer les animatics vidéo et l'ancien MP3 (planches JPG gardées).
+2. Ajouter la musique WAV et les 10 stems en LFS (D13, ~460 Mo).
+3. Pousser vers le dépôt recréé ; garder la copie locale actuelle en sauvegarde jusqu'à vérification.
 | D9 | M'autoriser à installer Blender portable (sans droits admin, sur G:) | j'attends ; nettoyage des maillages via les nœuds ComfyUI en attendant | — | |
 
 ## ▶ Chantier « tout en images peintes » (18/10 au soir, 8 h d'autonomie)

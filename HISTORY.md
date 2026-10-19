@@ -338,4 +338,18 @@ autonome. `SUIVI.md` dit où en est le projet ; ce fichier raconte comment on y 
   à-coups, une sinusoïde trop forte sur l'angle, inversaient la vitesse) ; le fondu d'ouverture « 4 fois plus long
   (commencer plus tôt pour finir au même timing) » ; et la barque : « la lanterne masque tout le décor, c'est dommage »,
   avec une nouvelle image de barque à passer en 3D.
+- **Les sons de la faune** : le paysage s'était peuplé (canards, grenouilles, chouettes) mais restait muet. Trois sons
+  CC0 de Freesound, choisis sans pouvoir les écouter : les candidats sont passés dans Whisper (aucune parole, la leçon de
+  l'ambiance du lac) et mesurés (niveau, part de basses fréquences pour écarter circulation et vent). Le placement des
+  sprites écrit maintenant des points d'émission ; les sons y sont attachés avec une portée courte, pour qu'on les
+  entende en passant. Un deux-points mal échappé dans le manifeste bloquait l'outil Freesound depuis deux jours.
+- **Le chemin de lune** : la lune, peinte dans le ciel, ne se reflétait pas (le reflet de l'eau lit la texture du ciel,
+  pas la lune). Sa direction étant connue, l'eau calcule un reflet de la lune étiré à la verticale par les rides.
+- **Le poids des vidéos** : un push a envoyé 432 Mo en LFS, dont trois animatics. Les vidéos sortent du dépôt (seules
+  les planches restent) ; nettoyer l'historique demanderait une réécriture, laissée à la décision d'Olivier (D17).
+- **Profondeur estimée** : Olivier confirme que Depth Anything ne convient pas (« tes images sont cartoonisées et le
+  moteur ne sait pas traiter ce genre de choses »). Le gonflement de silhouette reste la méthode du relief.
+- **Nouvelle barque** : l'image envoyée dans la conversation n'existait pas sur le disque ; elle a été retrouvée en base64
+  dans la transcription de la session, écrite à la place de refs/barque.png à la demande d'Olivier, puis passée en 3D
+  (TRELLIS.2 et Pixal3D).
 

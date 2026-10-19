@@ -362,6 +362,16 @@ att.set_editor_property("falloff_distance", 60000.0)    # 600 m : la créature v
 att.set_editor_property("attenuation_shape_extents", unreal.Vector(2000.0, 0, 0))
 attenuation.set_editor_property("attenuation", att)
 eal.save_loaded_asset(attenuation, only_if_is_dirty=True)
+# sons de faune (portee: proche) : on les entend en passant à côté, plus du tout à 30 m
+near_path = "/Game/Audio/ATT_Proche"
+near_att = eal.load_asset(near_path) if eal.does_asset_exist(near_path) else tools.create_asset(
+    "ATT_Proche", "/Game/Audio", unreal.SoundAttenuation, unreal.SoundAttenuationFactory())
+natt = near_att.get_editor_property("attenuation")
+natt.set_editor_property("spatialize", True)
+natt.set_editor_property("falloff_distance", 2500.0)
+natt.set_editor_property("attenuation_shape_extents", unreal.Vector(400.0, 0, 0))
+near_att.set_editor_property("attenuation", natt)
+eal.save_loaded_asset(near_att, only_if_is_dirty=True)
 
 
 def sound_asset(sid):
@@ -386,7 +396,7 @@ def sound_asset(sid):
 bindings = {}
 for snd in SOUNDSCAPE:
     wave = sound_asset(snd["id"])
-    want_att = attenuation if "attach" in snd else None
+    want_att = (near_att if snd.get("portee") == "proche" else attenuation) if "attach" in snd else None
     if wave.get_editor_property("looping") != ("attach" not in snd) or wave.get_editor_property("attenuation_settings") != want_att:
         wave.set_editor_property("looping", "attach" not in snd)
         wave.set_editor_property("attenuation_settings", want_att)
