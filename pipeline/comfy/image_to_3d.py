@@ -60,6 +60,11 @@ def build(info, image, model, seed, prefix, texture_size, decimate, remesh=768, 
     # efface le détail fin ; réglable (19/10 : 1536 et 5 passes pour les statues vues de près)
     api["241"]["inputs"]["resolution"] = remesh
     api["241"]["inputs"]["smooth_iters"] = smooth
+    # mémoire du GPU libérée avant le remaillage (plugin d'Olivier comfyui-obvpm, s'il est installé) : les poids de TRELLIS
+    # restaient chargés, le remaillage fin débordait en mémoire vive (19/10 : 27 min au lieu de ~6, ou échec mémoire)
+    if "CleanVRAM (obvpm)" in info:
+        api["900"] = {"class_type": "CleanVRAM (obvpm)", "inputs": {"anything": api["241"]["inputs"]["mesh"]}}
+        api["241"]["inputs"]["mesh"] = ["900", 0]
     api["322"]["inputs"]["filename_prefix"] = f"{prefix}/model"
     for yaw in YAWS:
         # Le mesh sort normalisé dans un cube unité centré : distance 2 à 35° de champ cadre tout l'objet.
@@ -125,6 +130,8 @@ def run(src, model, seed, texture_size, decimate, info, remesh=768, smooth=20):
             shots.append(client.download(files[0], out / f"turntable_{yaw:03d}.png"))
     if len(shots) == 4:
         contact_sheet(shots, out / "turntable.jpg", f"{name} — {model} — seed {seed}")
+    from comfy.glb_trous import fix_glb                     # texels jamais cuits → petits triangles noirs (19/10)
+    fix_glb(out / "model.glb")
     meta = {"source": str(Path(src).resolve().relative_to(ROOT)), "source_sha1": digest, "model": MODELS[model], "seed": seed,
             "texture_size": texture_size, "target_faces": decimate, "remesh": remesh, "smooth": smooth, "seconds": round(time.time() - t0),
             "workflow": str(TEMPLATE.relative_to(ROOT)), "script": "pipeline/comfy/image_to_3d.py"}

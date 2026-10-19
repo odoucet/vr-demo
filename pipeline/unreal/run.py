@@ -28,9 +28,10 @@ def run_live(script, timeout=5.0):
     """Exécution dans l'éditeur ouvert. Renvoie None si aucun éditeur n'est joignable."""
     wrapper = ROOT / "Unreal" / "Saved" / "barque_remote.py"
     wrapper.parent.mkdir(parents=True, exist_ok=True)
+    extra = "".join(f"os.environ[{k!r}] = {v!r}\n" for k, v in os.environ.items() if k.startswith("BARQUE_") and k != "BARQUE_ROOT")
     wrapper.write_text(
         "import os, runpy\n"
-        f"os.environ['BARQUE_ROOT'] = r'{to_windows(ROOT)}'\n"
+        f"os.environ['BARQUE_ROOT'] = r'{to_windows(ROOT)}'\n" + extra +
         f"runpy.run_path(r'{to_windows(Path(script).resolve())}', run_name='__main__')\n", encoding="utf-8")
     proc = subprocess.run([str(UE_PYTHON), "-X", "utf8", to_windows(CLIENT), to_windows(PLUGIN_PY), to_windows(wrapper), str(timeout)],
                           capture_output=True, text=True, encoding="utf-8", errors="replace", cwd="/mnt/c")

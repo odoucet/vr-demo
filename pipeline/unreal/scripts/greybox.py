@@ -1949,7 +1949,7 @@ def peint_tex_material(name, texture, anim=None, box=None, glow=None, tint=None,
     return mat
 
 
-def painted_model(model, name, anim=None, glow=None, tint=None, moss=False, proj=None, normal_map=False, sculpt=False):
+def painted_model(model, name, anim=None, glow=None, tint=None, moss=False, proj=None, normal_map=False, sculpt=False, fallback_tex=None):
     """Remplace les matériaux glTF du modèle par le look peint (texture de couleur conservée)."""
     b = model.get_bounding_box()
     box = (b.min.x, b.max.x, b.min.y, b.max.y, b.min.z, b.max.z)
@@ -1960,6 +1960,7 @@ def painted_model(model, name, anim=None, glow=None, tint=None, moss=False, proj
         if mi is None:
             break
         tex = mel.get_material_instance_texture_parameter_value(mi, "BaseColorTexture") if isinstance(mi, unreal.MaterialInstance) else None
+        tex = tex or fallback_tex          # modèle sans texture (Hunyuan3D : forme seule)
         if tex is None:
             mats.append(None)
             continue
@@ -2010,7 +2011,7 @@ if model is not None:      # la barque et la lanterne prennent aussi le look pei
                 paper.static_mesh_component.set_material(i, pm)
 
 # --- Ponton et arche des racines (modèles 3D, look peint) -------------------------------------------------------
-def place_model(model, label, loc, yaw, size_cm, z_base_cm, painted_name, tint=None, moss=False, proj=None, sculpt=False):
+def place_model(model, label, loc, yaw, size_cm, z_base_cm, painted_name, tint=None, moss=False, proj=None, sculpt=False, fallback_tex=None):
     """Pose un modèle importé : mis à l'échelle sur sa boîte (size_cm = (x, y, z), None = proportionnel),
     base posée à z_base_cm, tourné de yaw ; look peint (texture conservée)."""
     b = model.get_bounding_box()
@@ -2022,7 +2023,8 @@ def place_model(model, label, loc, yaw, size_cm, z_base_cm, painted_name, tint=N
     tag(a, label)
     a.set_actor_scale3d(unreal.Vector(*sc))
     a.static_mesh_component.set_collision_enabled(unreal.CollisionEnabled.NO_COLLISION)
-    for i, pm_ in enumerate(painted_model(model, painted_name, tint=tint, moss=moss, proj=proj, normal_map=moss or sculpt, sculpt=sculpt)):
+    for i, pm_ in enumerate(painted_model(model, painted_name, tint=tint, moss=moss, proj=proj, normal_map=moss or sculpt, sculpt=sculpt,
+                                          fallback_tex=fallback_tex)):
         if pm_ is not None:
             a.static_mesh_component.set_material(i, pm_)
     return a
@@ -2053,6 +2055,9 @@ pose_a = pose_at(am["t"])
 # ~9 m à 1 m au-dessus ; fondations en briques en partie hors de l'eau. Centre du trou décalé de -1 % (modèle).
 ARCH_WIDTH_CM, ARCH_WATERLINE, ARCH_HOLE_SHIFT = 4200.0, 0.25, -0.010
 ARCH_PROJECTION, ARCH_SCULPT, ARCH_MOSS = False, True, False     # essais du 19/10 (review/explorations/pont/)
+# variante du modèle : "trellis2" (TRELLIS.2, texturé) ou "hunyuan21" (Hunyuan3D 2.1, forme seule : projection de l'image
+# d'Olivier + roche en détail) ; variable d'environnement BARQUE_ARCHE pour les essais
+ARCH_VARIANT = os.environ.get("BARQUE_ARCHE", "trellis2")
 def projection(pid, flip=0.0):
     """Image projetée (PROJ_CODE) : texture et cadre écrits par pipeline/style/projection.py ; None s'ils manquent."""
     png = os.path.join(ROOT, "assets", "textures", f"proj-{pid}.png")
@@ -2067,15 +2072,35 @@ def projection(pid, flip=0.0):
 # D18 (19/10) : l'arche de pierre aux deux figures agenouillées remplace l'arche des racines (redondante avec l'arbre
 # colossal, selon Olivier). Modèle sans végétation (assets/3d/arche-statues : image d'Olivier refs/inbox/arche-statues.png,
 # substitut local en attendant), habillé de mousse (matériau) et de lianes peintes (sprites_layout.py).
-statues = import_glb("arche-statues/trellis2-s42", "/Game/Assets/ArcheStatues", 150000, smooth=True)   # forme remaillée à 1536 (image_to_3d --remesh 1536 --smooth 5)   # forme remaillée à 1536 (image_to_3d --remesh 1536 --smooth 5)   # vu de près : détail (retour du 19/10)
-racine = None if statues is not None else import_glb("racine/trellis2-s42", "/Game/Assets/Racine", 30000)
+# variante « deux » : les deux figures reconstruites séparément (image coupée aux mains, chacune sur toute la grille de
+# TRELLIS) puis assemblées ; décalage en travers et rotation propre à chaque figure (TRELLIS les a remises de face)
+ARCH_FIGURES = {"gauche": (0.24, float(os.environ.get("BARQUE_ROT_G", "180"))), "droite": (-0.26, float(os.environ.get("BARQUE_ROT_D", "270")))}   # trouvés par essais (19/10)
+statues = None if ARCH_VARIANT == "deux" else import_glb(f"arche-statues/{ARCH_VARIANT}-s42", f"/Game/Assets/ArcheStatues_{ARCH_VARIANT}", 150000, smooth=True)   # TRELLIS : forme remaillée à 1536 (image_to_3d --remesh 1536 --smooth 5)   # forme remaillée à 1536 (image_to_3d --remesh 1536 --smooth 5)   # vu de près : détail (retour du 19/10)
+racine = None if (statues is not None or ARCH_VARIANT == "deux") else import_glb("racine/trellis2-s42", "/Game/Assets/Racine", 30000)
+if ARCH_VARIANT == "deux":
+    loc, _ = oriented(am["t"], 0.0, 0.0, 0.0)
+    base_yaw = -pose_a["heading_deg"] - 90.0
+    across = unreal.MathLibrary.get_forward_vector(unreal.Rotator(0, 0, base_yaw))
+    arch_h = ARCH_WIDTH_CM * 0.485
+    for side, (off, rot) in ARCH_FIGURES.items():
+        fig = import_glb(f"arche-statues-{side}/trellis2-s42", f"/Game/Assets/ArcheStatues_{side}", 120000, smooth=True)
+        if fig is None:
+            continue
+        a_ = place_model(fig, f"GB_ArcheStatues_{side}", loc + across * (off * ARCH_WIDTH_CM), base_yaw + rot, (None, None, arch_h),
+                         -ARCH_WATERLINE * arch_h, f"ArcheStatues_{side}", sculpt=ARCH_SCULPT)
+        fb = a_.get_actor_bounds(False)
+        a_.add_actor_world_offset(unreal.Vector(loc.x + across.x * off * ARCH_WIDTH_CM - fb[0].x, loc.y + across.y * off * ARCH_WIDTH_CM - fb[0].y, 0.0), False, False)
+    for a_ in actors.get_all_level_actors():
+        if a_.get_actor_label() == "GB_ArcheRacines":
+            actors.destroy_actor(a_)
 if statues is not None:
     loc, _ = oriented(am["t"], 0.0, 0.0, 0.0)
     sb = statues.get_bounding_box()
     arch_h = ARCH_WIDTH_CM * (sb.max.z - sb.min.z) / (sb.max.x - sb.min.x)
     arch = place_model(statues, "GB_ArcheStatues", loc, -pose_a["heading_deg"] - 90.0, (ARCH_WIDTH_CM, None, None),
-                       -ARCH_WATERLINE * arch_h, "ArcheStatues", moss=ARCH_MOSS,
-                       proj=projection("arche-statues") if ARCH_PROJECTION else None, sculpt=ARCH_SCULPT)
+                       -ARCH_WATERLINE * arch_h, f"ArcheStatues_{ARCH_VARIANT}", moss=ARCH_MOSS or ARCH_VARIANT == "hunyuan21",
+                       proj=projection("arche-statues") if (ARCH_PROJECTION or ARCH_VARIANT == "hunyuan21") else None, sculpt=ARCH_SCULPT,
+                       fallback_tex=look_texture("tex-roche"))
     arch.add_actor_world_offset(arch.get_actor_forward_vector() * (-ARCH_HOLE_SHIFT * ARCH_WIDTH_CM), False, False)
     for a_ in actors.get_all_level_actors():
         if a_.get_actor_label() == "GB_ArcheRacines":      # l'ancien tube du greybox

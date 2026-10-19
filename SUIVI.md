@@ -249,6 +249,18 @@ binning : un triangle qui couvre plusieurs tuiles est traité plusieurs fois, [M
 - Le pont, en forme complète (42 m, même échelle sur les trois axes, eau à 25 % de sa hauteur : 5,5 m de passage), avec un
   ombrage « sculpté » proche de la vue tournante, se lit enfin : figures, visages, blocs (v07, v08 à 150 k triangles).
 
+**Comparatif des pistes** (`review/explorations/pont/comparatif.jpg`, même planche : vue tournante + 3 vues depuis la barque) :
+- **v11, TRELLIS.2 forme complète** (retenu par défaut) : composition fidèle à ton image, figures et visages lisibles, fondations
+  en briques visibles, 150 k triangles.
+- **v09, deux figures reconstruites séparément** : plus de détail par figure, mais TRELLIS « remet de face » chaque moitié
+  (pose perdue, l'arche ne se referme plus). Écarté.
+- **v10, Hunyuan3D 2.1** (forme seule, 1,2 M triangles bruts) : géométrie plus sculptée, mais pas de texture ; avec ton
+  image projetée, les côtés bavent. À garder en tête pour la tête couchée ou un futur asset vu de face.
+- **Petits triangles noirs** : texels jamais cuits par TRELLIS ; bouchés à la fin de chaque reconstruction
+  (`pipeline/comfy/glb_trous.py`, couleur du texel voisin). Il en reste quelques-uns, plus sombres que noirs.
+- **Reconstructions lentes** (27-30 min au lieu de ~6) : mémoire du GPU saturée (éditeur ouvert + TRELLIS) ; ton nœud
+  `CleanVRAM (obvpm)` est maintenant branché avant le remaillage.
+
 **Pistes suivantes** (non faites) :
 - **Découper l'image en deux figures** et reconstruire chacune séparément : chaque figure profite de toute la grille 1536³
   (deux fois plus de détail). Dupliquer une moitié en miroir ne marche pas ici : les deux figures sont différentes.

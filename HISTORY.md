@@ -409,4 +409,9 @@ autonome. `SUIVI.md` dit où en est le projet ; ce fichier raconte comment on y 
   Nanite, activé par défaut, faisait afficher au Quest un maillage de repli au dixième ; et les réimports gardaient
   l'ancienne texture : le pont d'Olivier portait celle du substitut gris, la nouvelle barque celle de l'ancienne. Corrigé,
   le pont se lit comme sa vue tournante. La projection, astucieuse, compensait un bug qu'on n'avait pas vu.
+- **Trois pistes pour le pont, comparées sur la même planche** : TRELLIS forme complète (retenue), deux figures
+  reconstruites séparément (plus de détail, mais TRELLIS redresse chaque moitié de face et l'arche ne se referme plus),
+  Hunyuan3D 2.1 (téléchargé avec l'accord d'Olivier : géométrie plus sculptée mais sans texture). Les petits triangles
+  noirs repérés par Olivier sont des texels jamais cuits : bouchés automatiquement. Les reconstructions à 30 minutes
+  venaient de la mémoire du GPU partagée avec l'éditeur Unreal ; le nœud de nettoyage d'Olivier est branché.
 
