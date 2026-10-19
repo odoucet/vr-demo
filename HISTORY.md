@@ -440,3 +440,27 @@ autonome. `SUIVI.md` dit où en est le projet ; ce fichier raconte comment on y 
   barque (sillage, étrave, écume) et en surface ; l'arche recevra des niveaux de détail plutôt que d'être allégée
   (« ou alors une version adaptative ? UE gère ça non ? » — oui, hors Nanite). Pause demandée en fin de traitement.
 
+
+## 20/10 — Session autonome de nuit (Olivier : « je te rends la 3D, le casque et tout, tu as 20 h devant toi »)
+
+- **Blender autonome** : lancé sans interface depuis WSL (2 s par démarrage). Les « deux planches » qu'Olivier voyait
+  depuis la place arrière étaient les bancs : deux morceaux séparés du maillage, larges de 26 cm dans une coque de 52,
+  donc suspendus dans le vide. Plutôt qu'une découpe par boîte (qui trouait la coque la veille), le script ne garde que
+  le plus gros morceau du maillage ; le même nettoyage retire les débris des autres modèles. La lanterne, posée sur le
+  banc avant, descend sur le plancher.
+- **Tous les modèles réimportés** dans leur version fine, avec un plafond de texture par usage (4096 de près, 2048 pour
+  les créatures, 1024 pour la lanterne) : la mémoire du Quest ne tiendrait pas tout en 4096. Barque à 80 k triangles.
+  L'arche reçoit ses niveaux de détail (300 k / 100 k / 30 k), réponse à « UE gère ça non ? ».
+- **L'eau, enfin comprise** : les rides étaient des traits allongés, orientés en travers de la rivière. Vus vers
+  l'aval, ils faisaient l'eau peinte voulue ; mais dès qu'on tournait la tête, la perspective les changeait en rayons
+  qui convergent — l'effet « pluie » des captures casque, et une bonne part du « pas fini ». Remplacés par un réseau de
+  crêtes sans direction : c'est la perspective seule qui les écrase en traits horizontaux, quel que soit le regard. La
+  pente de ces rides fait onduler les reflets. Le sillage de la veille partait de la poupe et ne se voyait pas : un vrai
+  sillage de Kelvin naît à l'étrave et longe les flancs, ce qui le met sous les yeux du passager assis à l'arrière.
+- **Vérifier le mouvement sans casque** : un rendu d'extrait de quelques secondes (Movie Render Queue sur une plage
+  d'images) remplace l'animatic complet pour juger l'eau et le héron.
+- **Héron** : l'image figée qui glissait est devenue une grille dont les ailes battent dans le shader ; les deux
+  premiers rendus ont montré qu'il passait en travers de la proue, ailes immenses, et que le fondu se faisait par gros
+  carrés : trajectoire par la gauche, taille réduite, fondu fin. Vu de la place assise, il semble debout dans l'eau ;
+  une vue de dessus montre qu'il est bien sur le plat-bord — la perspective d'un sprite plat trompe, la stéréo tranchera.
+- **Troupeau** régénéré (remaillage à 1024 : la mémoire ne suffit pas à 1536 pour ce modèle).

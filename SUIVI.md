@@ -28,6 +28,22 @@ Légende : 🔴 bloque un jalon, aucun contournement · 🟠 j'avance avec un co
   ailes repliées et fondu vers l'image « posé », qui se tasse puis respire.
 - ✅ **Vent** : phase quasi uniforme (une rafale), construit.
 
+- 📦 **APK installé au Quest** (20/10, ~23 h 30, `builds/android_greybox/`, 713 Mo) avec tout ce qui précède. Casque
+  posé et en veille : **fluidité non mesurée** (il faut le porter).
+
+### À vérifier au prochain essai (casque porté)
+
+1. **Fluidité** : barque passée de 30 k à 80 k triangles, textures 4096, eau plus riche ; arche à niveaux de détail (le gué
+   décrochait à 63 i/s) → je lance la mesure dès que tu portes le casque (`quest_perf.py`).
+2. **Barque** : plus de bancs flottants ? coque plus fine ? couleur du bois (plus sombre, lanterne moins forte de jour) ?
+3. **Lanterne** au plancher, à l'avant droit : gêne-t-elle encore ? éclaire-t-elle assez la nuit ?
+4. **Eau** : rides vivantes, plus d'effet « pluie » en tournant la tête ? reflets qui ondulent ? sillage visible sur les
+   côtés et derrière ? vague d'étrave ? texture qui ne saute plus ?
+5. **Vent** : les arbres bougent ensemble, sans s'entrechoquer ?
+6. **Héron** : battements, plané, posé sur le plat-bord (en perspective il semble debout dans l'eau ; vue de dessus il est
+   bien sur le rebord : la stéréo dira).
+7. **Troupeau** régénéré (plus net) ; tête, ponton, créatures : plus de détail qu'avant ?
+
 ## ▶ Retours au casque du 19/10, 4e essai (mesure faite, casque porté)
 
 - 📊 **Fluidité** (`review/perf/greybox-20261019-2100.png`) : 72 i/s presque partout, mais GPU à 96-97 % de 0:20 à 2:30 et
@@ -419,7 +435,7 @@ binning : un triangle qui couvre plusieurs tuiles est traité plusieurs fois, [M
 |---|---|---|---|
 | I1 | Images d'assets en style peint (en cours chez Olivier) | visuels provisoires générés en local, essais 3D actuels marqués `placeholder` | dépôt dans `refs/inbox/` sous l'identifiant de `PROMPTS.md` |
 | I2 | Concepts S1, S3, S4 manquants | concepts provisoires générés en local (`assets/concepts/`, `pipeline/comfy/concepts.py`, prompts de PROMPTS.md) | génération Midjourney |
-| I3 | Blender absent | nœuds de maillage ComfyUI (décimation, UV), import GLB dans UE | D9, ou installation par Olivier |
+| ~~I3~~ | ~~Blender absent~~ — **levé le 20/10** : Blender 5.2.2 portable (D9), utilisé en arrière-plan | — | — |
 | I4 | Pas de création de PR (connecteur GitHub sans accès, `gh` non connecté) | D6 | `gh auth login`, ou installer l'application GitHub de Claude sur le dépôt |
 | I5 | Musique en MP3 185 kb/s | MP3 utilisé tel quel | export WAV depuis Suno |
 | I6 | Freesound : seuls les aperçus OGG sont accessibles sans OAuth | aperçus utilisés pour le prototype | connexion OAuth pour les originaux (au master) |

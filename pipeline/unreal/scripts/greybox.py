@@ -313,12 +313,12 @@ float edge = back * 0.36 + 25.0;                                     // bras du 
 float band = exp(-pow((aly - edge) / (22.0 + back * 0.05), 2.0)) * step(0.0, back);
 float div = sin((back * 0.94 + aly * 0.34) * 0.075);                 // crêtes divergentes, en biais
 float inside = saturate(1.0 - aly / max(edge, 1.0)) * step(0.0, back);
-float trv = sin(back * 0.06) * inside * exp(-max(back, 0.0) / 900.0);   // vagues transversales
+float trv = sin(back * 0.06) * inside * exp(-max(back, 0.0) / 450.0);   // vagues transversales (courtes : au loin, des barres régulières)
 float wfade = exp(-max(back, 0.0) / 2200.0) * saturate(back / 40.0);
 float outside = smoothstep(0.98, 1.04, e);
 float bowh = exp(-pow((e - 1.06) / 0.06, 2.0)) * saturate((lx - 60.0) / 100.0);       // vague d'étrave
 float sideh = exp(-pow((e - 1.07) / 0.05, 2.0)) * (0.55 + 0.45 * sin(lx * 0.06 + T * 3.0));   // bourrelet des flancs
-float hw = ((band * div * 1.1 + trv * 0.25) * wfade + bowh * 0.8 + sideh * 0.4) * outside;
+float hw = ((band * div * 1.1 + trv * 0.15) * wfade + bowh * 0.8 + sideh * 0.4) * outside;
 // reflet du ciel peint, déformé par les rides et le sillage
 float3 rd = float3(v.x, v.y, abs(v.z));
 // houle lente : les reflets ondoient (19/10 : « zéro animation ») — deux trains d'ondes croisés, quelques mètres
@@ -1617,11 +1617,11 @@ HERON_WPO_CODE = """float p = saturate(P);
 float pa = saturate(p / 0.95);                            // 0.95 : contact avec le plat-bord
 float k = 1.0 - pow(1.0 - pa, 1.8);                       // ralentit en arrivant
 float3 a = float3(3200.0, -1600.0, 900.0);               // départ, repère de la barque (cm) : loin devant à gauche, haut
-float3 m = float3(900.0, -700.0, 380.0);
-float3 b = float3(20.0, -64.0, 47.0);                    // plat-bord gauche (demi-largeur ~70 cm, haut à ~47 cm), devant le spectateur
+float3 m = float3(700.0, -1000.0, 300.0);                // arrive par la gauche (avant le 20/10 : en travers de la proue)
+float3 b = float3(90.0, -58.0, 50.0);                    // sur le plat-bord gauche, en avant (rebord à ~64 cm du milieu, à ~50 cm de haut)
 float3 pl = lerp(lerp(a, m, k), lerp(m, b, k), k);        // courbe de Bézier : plane en descendant
 float3 dl = lerp(m - a, b - m, k);
-float fold = smoothstep(0.95, 0.98, p);                   // ailes repliées, passage à l'image « posé »
+float fold = smoothstep(0.95, 0.97, p);                   // ailes repliées, passage à l'image « posé »
 float env = max(saturate(1.0 - pa * 2.5), smoothstep(0.6, 0.85, pa)) * (1.0 - fold);   // battements : envol, freinage
 float fl = sin(T * 8.5);                                  // ~1,35 battement par seconde
 pl.z -= fl * env * 9.0;                                   // le corps monte quand les ailes s'abaissent
@@ -1635,12 +1635,12 @@ if (UV1.x < 0.5)
 {
     // ailes : bande du haut (au-dessus de la tête) et haut de l'image derrière le cou ; tête et pattes ne bougent pas
     float wing = max(smoothstep(0.36, 0.26, v), smoothstep(0.36, 0.46, u) * smoothstep(0.56, 0.46, v));
-    float s = lerp(0.3, lerp(-0.35, 1.0, 0.5 + 0.5 * fl), env);   // 1 : levées (l'image), 0,3 : plané, < 0 : abaissées
+    float s = lerp(0.3, lerp(-0.1, 1.0, 0.5 + 0.5 * fl), env);    // 1 : levées (l'image), 0,3 : plané, < 0 : abaissées
     s = lerp(s, 0.1, fold);
     float vv = v + (0.48 - v) * (1.0 - s) * wing;
-    float x0 = (u - 0.5) * 170.0, y0 = (0.5 - vv) * 170.0;
+    float x0 = (u - 0.5) * 140.0, y0 = (0.5 - vv) * 140.0;   // envergure ~1,2 m (170 avant : il masquait tout en passant)
     float desc = saturate(-dl.z / max(length(dl), 1.0));
-    float ang = desc * 0.5 - 0.4 * smoothstep(0.8, 0.95, pa) * (1.0 - fold);   // pique en descendant, se cabre en freinant
+    float ang = desc * 0.5 - 0.25 * smoothstep(0.8, 0.95, pa) * (1.0 - fold);   // pique en descendant, se cabre en freinant
     float ca = cos(ang), sa = sin(ang);
     qx = (x0 * ca - y0 * sa) * flip;
     qy = x0 * sa + y0 * ca;
@@ -1648,14 +1648,14 @@ if (UV1.x < 0.5)
 }
 else
 {
-    qx = (u - 0.5) * 100.0 * flip;
-    qy = (1.0 - v) * 100.0 * (1.0 + 0.012 * sin(T * 1.7));   // respiration
+    qx = (u - 0.5) * 80.0 * flip;                             // ~75 cm debout (100 avant : il dominait le champ)
+    qy = (1.0 - v) * 80.0 * (1.0 + 0.012 * sin(T * 1.7));    // respiration
     show = step(0.001, fold);
 }
 return pw + (VR.xyz * qx + VU.xyz * qy) * show;"""
 # fondu de l'image « en vol » vers l'image « posé » : dissolution par cellules (matériau masqué, pas de transparence)
-HERON_MASK_CODE = """float fold = smoothstep(0.95, 0.98, saturate(P));
-float h = frac(sin(dot(floor(UV0 * 48.0), float2(12.9898, 78.233))) * 43758.5453);
+HERON_MASK_CODE = """float fold = smoothstep(0.95, 0.97, saturate(P));
+float h = frac(sin(dot(floor(UV0 * 160.0), float2(12.9898, 78.233))) * 43758.5453);   // cellules fines (48 : gros carrés)
 return A * (UV1.x < 0.5 ? step(h, 1.0 - fold) : step(h, fold));"""
 HERON_UV_CODE = """return float2((UV1.x + UV0.x) * 0.5, UV0.y);"""
 
@@ -1847,7 +1847,7 @@ if os.path.exists(SKY_PNG):
         sky_tex = eal.load_asset(f"{GB}/ciel")
         eal.set_metadata_tag(sky_tex, "source_sha1", sky_digest)
         eal.save_loaded_asset(sky_tex)
-    SKY_WATER_VERSION = "ciel-eau-v21"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
+    SKY_WATER_VERSION = "ciel-eau-v22"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
     sky_mat_path = f"{GB}/M_GB_CielPeint"
     sky_mat = eal.load_asset(sky_mat_path) if eal.does_asset_exist(sky_mat_path) else None
     rebuild_sky_water = not up_to_date(sky_mat, spec_digest(SKY_WATER_VERSION, sky_digest, MPC_DIGEST, WATER_CODE,
