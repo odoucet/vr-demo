@@ -171,7 +171,7 @@ sets:
     type: top
     cell: [1024, 1024]   # vus de près sous la barque : flous en 512, saut de mipmap visible (19/10)
     grid: [4, 2]
-    size: [1024, 1024]
+    size: [1536, 1536]   # génération plus grande (19/10 : résolution d'origine trop faible)
     seed: 1700
     items:
       - [nenuphars-groupe, "a cluster of four round green lily pads with notches, one small white water lily flower"]
@@ -181,7 +181,7 @@ sets:
       - [feuilles-flottantes, "three fallen green and yellow leaves floating flat"]
       - [nenuphars-jaunes, "small yellow water lily flowers among five small round floating leaves"]
       - [lotus-feuilles, "two large round lotus leaves overlapping, bluish green"]
-      - [petales-flottants, "a few scattered pale pink cherry blossom petals floating flat"]
+      - [boutons-nenuphar, "three small round lily pads with two closed pale pink water lily buds", {seed: 1798}]   # les pétales seuls ramenaient des feuillages (19/10)
   faune:
     type: small
     cell: [512, 512]

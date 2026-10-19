@@ -7,6 +7,27 @@ Légende : 🔴 bloque un jalon, aucun contournement · 🟠 j'avance avec un co
 
 ---
 
+## ▶ Retours au casque du 19/10, 2e essai du soir (corrigés, APK installé à 20 h 30 environ)
+
+⚠ Mesure de fluidité impossible : le casque a de nouveau perdu sa position (boîte « Trouver la position »).
+
+- ✅ Herbe hors des rochers ; nénuphars mieux ; bête géante dans le ciel bien visible ; fin avec les lucioles « vachement
+  bien » ; « plein de détails partout, on a presque envie de regarder la vidéo plusieurs fois ».
+- ✅ **Barque** : deux lattes du modèle en V, entre le banc et la place assise, flottaient ; la place assise avance de 25 cm
+  (sur le banc arrière) : elles passent derrière. Les retirer du maillage abîmait la coque.
+- ✅ **Rochers 3D** : gardés sur la rive gauche seulement.
+- 🔧 **Vent** accentué (1,2 → 3,5 % de la hauteur à la cime) : à revoir.
+- ✅ **Nénuphars** régénérés en 1536 px (images de ~1 100 à 1 500 px au lieu de ~800) ; les pétales flottants
+  ramenaient des feuillages : remplacés par des boutons de nénuphar.
+- ✅ **Début plus vivant** : hirondelles et papillons autour de la barque, deux hérons bas au-dessus du ponton (18-60 s).
+- ✅ **Troupeau 15 s plus tôt** (même lieu, la barque en est à ~33 m au lieu de 18), sons décalés d'autant.
+- 🔧 **Arche à 300 k triangles** (150 k avant) : **coût à mesurer** ; les marques vues de dessous sont des coutures de la
+  texture reconstruite (une seule vue), pas des trous.
+- ✅ **Tête couchée** passée sur la berge droite, du côté où regarde la barque, plus grande (12,5 m), visage de profil vers
+  l'amont.
+- ✅ **Voiture à la fin** : grondement dans l'enregistrement de l'ambiance du lac ; elle s'arrête avant, la nuit en forêt
+  termine la balade.
+
 ## ▶ Retours au casque du 19/10 au soir (enregistrement audio d'Olivier)
 
 - ✅ Fondu d'ouverture, lanterne (« ne gêne pas du tout »), arbres fixes (« ça rend très bien »), canards, feuilles dans

@@ -10,12 +10,15 @@ sounds:
   - {id: sfx-roseaux,       start: 30,    end: 46,  volume: 0.4, fade_in: 2, fade_out: 3}
   - {id: amb-riviere-foret, start: 44,    end: 132, volume: 0.6, fade_in: 6, fade_out: 6}
   - {id: cue-abysses,       start: 66.5,  end: 80,  volume: 1.0, fade_in: 1, fade_out: 3, attach: GB_Abysses}
-  - {id: cue-troupeau,      start: 100.5, end: 112, volume: 0.9, fade_in: 1, fade_out: 2, attach: GB_Troupeau0}
-  - {id: sfx-gue-eau,       start: 103,   end: 124, volume: 0.8, fade_in: 2, fade_out: 3, attach: GB_Troupeau2}
+  - {id: cue-troupeau,      start: 85.5,  end: 97, volume: 0.9, fade_in: 1, fade_out: 2, attach: GB_Troupeau0}
+  - {id: sfx-gue-eau,       start: 88,    end: 109, volume: 0.8, fade_in: 2, fade_out: 3, attach: GB_Troupeau2}
   - {id: amb-sous-racines,  start: 128,   end: 160, volume: 0.6, fade_in: 4, fade_out: 6}
   - {id: amb-foret-nuit,    start: 155,   end: 206, volume: 0.6, fade_in: 6, fade_out: 6}
   - {id: cue-volante,       start: 166,   end: 182, volume: 1.0, fade_in: 2, fade_out: 4, attach: GB_Volante}
-  - {id: amb-lac-nuit,      start: 200,   end: 240, volume: 0.6, fade_in: 6, fade_out: 3}
+  # ambiance du lac arrêtée à 231 s : l'enregistrement contient un grondement grave (voiture) 33 s après son début (retour
+  # d'Olivier du 19/10 : « on croit entendre une voiture qui démarre ») ; la nuit en forêt, propre, termine la balade
+  - {id: amb-lac-nuit,      start: 200,   end: 231, volume: 0.6, fade_in: 6, fade_out: 4}
+  - {id: amb-foret-nuit,    start: 226,   end: 240, volume: 0.5, fade_in: 5, fade_out: 3}
   # Faune (19/10) : sons attachés à leur point d'émission (sprites_layout.py, « sons »), portée courte (ATT_Proche).
   # Choisis sans écoute, vérifiés automatiquement (pas de parole détectée par Whisper) : à valider à l'écoute (D7).
   - {id: sfx-canards,     start: 28,  end: 54,  volume: 0.7, fade_in: 3, fade_out: 4, attach: GB_Son_canards-40, portee: proche}

@@ -85,8 +85,9 @@ def main():
     # tête de pierre couchée (greybox.py, HEAD_T / HEAD_SIDE_M) : rive gauche à 165 s, dégagée des buissons
     hp_ = min(s, key=lambda q: abs(q["t"] - 165.0))
     hh_ = math.radians(hp_["heading_deg"])
-    head_xy = (hp_["x"] - math.sin(hh_) * (hp_["width_m"] / 2 + 1.0),
-               hp_["y"] + math.cos(hh_) * (hp_["width_m"] / 2 + 1.0))
+    head_side = -1.0                                  # berge droite (greybox.py, HEAD_SIDE)
+    head_xy = (hp_["x"] - math.sin(hh_) * head_side * (hp_["width_m"] / 2 + 1.0),
+               hp_["y"] + math.cos(hh_) * head_side * (hp_["width_m"] / 2 + 1.0))
     pm = marks["ponton"]
     rng = np.random.default_rng(31)
     sets = {}
@@ -455,6 +456,10 @@ def main():
     along(25, 170, 46, (6, 12), (0.4, 1.8), 2, (0.15, 0.3), (1.0, 2.5))         # papillons sur les berges fleuries
     along(25, 200, 30, (2, 7), (0.3, 1.0), 3, (0.3, 0.6), (1.5, 4.0))           # libellules au-dessus de l'eau
     along(20, 230, 260, (3, 14), (7.0, 12.0), 4, (0.25, 0.5), (0.5, 1.0))       # feuilles qui tombent
+    # début de la balade plus vivant autour du joueur (retour du 19/10) : oiseaux et papillons près de la barque
+    along(18, 60, 10, (0, 4), (0.8, 2.5), 1, (0.3, 0.5), (3, 8))                 # hirondelles autour de la barque
+    along(18, 60, 18, (2, 6), (0.6, 1.8), 2, (0.15, 0.3), (0.8, 2.0))            # papillons
+    along(20, 50, 2, (0, 12), (14.0, 20.0), 0, (0.05, 0.08), (12, 20))           # hérons bas au-dessus du ponton
     along(40, 120, 90, (3, 12), (6.0, 10.0), 5, (0.25, 0.45), (0.5, 1.0))       # pétales (cerisiers)
     along(120, 230, 120, (3, 14), (7.0, 12.0), 6, (0.25, 0.5), (0.5, 1.0))      # feuilles mortes
     # canards : un groupe = des cercles concentriques parcourus dans le même sens à la même vitesse angulaire, phases

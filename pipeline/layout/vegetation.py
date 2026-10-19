@@ -197,7 +197,7 @@ def main():
                 if z is not None and d > 0.8 and not excluded(px, py) and not SPRITES:   # buissons peints en sprites
                     fl = COL["fleurs"][rng.integers(4)] if rng.uniform() < 0.55 else None
                     P.bush(chunk(px, py), px, py, z, rng.uniform(0.9, 2.2), rng, COL["feuillage"][rng.integers(5)], fl)
-            if rng.uniform() < 0.25:                                  # rocher au bord de l'eau
+            if rng.uniform() < 0.25 and side > 0:                     # rocher au bord de l'eau, rive gauche (19/10 : inutiles à droite)
                 off = side * (p["width_m"] / 2 + rng.uniform(-0.8, 1.5))
                 px, py = p["x"] + nx * off, p["y"] + ny * off
                 z, d = F.at(px, py)

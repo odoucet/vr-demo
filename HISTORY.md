@@ -424,4 +424,9 @@ autonome. `SUIVI.md` dit où en est le projet ; ce fichier raconte comment on y 
 - **Corrections du soir** : lanterne recentrée, canards en cercles concentriques, rochers 3D évités par les sprites,
   nénuphars en résolution double, lucioles finales qui s'allument vraiment une à une et montent moins. Nouvel APK
   installé (19 h 07).
+- **Deuxième essai du soir** : planches flottantes de la barque (la place assise passe sur le banc, plutôt que d'amputer
+  le maillage qui abîmait la coque), rochers à droite retirés, vent accentué, nénuphars régénérés en grand, plus de vie
+  au début, troupeau 15 s plus tôt pour laisser l'arche seule, arche à 300 k triangles, tête couchée déplacée sur la
+  berge que regarde la barque. Le « bruit de voiture » de la fin : un grondement dans l'enregistrement de l'ambiance du
+  lac, repéré à la part de basses fréquences de chaque demi-seconde.
 

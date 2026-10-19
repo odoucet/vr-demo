@@ -4,7 +4,7 @@
 # Choix éditorial : modifier ici, puis `python pipeline/review/cameras.py`.
 
 fov_deg: 90
-seat_x_m: -1.2          # place assise : banc arrière, 1,20 m derrière le centre de la barque (D11)
+seat_x_m: -0.95         # place assise : banc arrière, 0,95 m derrière le centre de la barque (D11, nouvelle barque 19/10)
 cameras:
   S2-PONTON:
     A: {t: 22, yaw: 0, pitch: 0, note: "départ dans la brume"}

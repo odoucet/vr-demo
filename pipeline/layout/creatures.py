@@ -73,7 +73,10 @@ def main():
 
     # --- Troupeau : sentier forêt droite → gué → forêt gauche, à 1,8 m/s, hauteur sur le terrain --------------
     hx, hy, ux, uy = herd_crossing(river)
-    tm = marks["troupeau-gue"]["t"]
+    # 15 s plus tôt que le repère (retour d'Olivier du 19/10 : le troupeau détournait l'attention de l'arche qui suit) ;
+    # même lieu de traversée, la barque en est donc plus loin (~33 m au lieu de 18)
+    HERD_ADVANCE_S = 15.0
+    tm = marks["troupeau-gue"]["t"] - HERD_ADVANCE_S
     heading = math.degrees(math.atan2(uy, ux))                  # vers la gauche du tracé
     hrng = np.random.default_rng(7)                             # troupeau irrégulier (retour d'Olivier)
     lag = 0.0

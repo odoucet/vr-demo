@@ -979,12 +979,12 @@ return c + lerp(Tex.rgb, float3(0.6, 0.9, 1.0) * mx, 0.3) * m * glow * 2.2;"""
 # Relief des sujets proches : la grille avance vers l'œil (D = -Y local, à l'échelle de l'instance) selon la carte de
 # relief de la case (pipeline/comfy/relief.py), lue dans le shader de sommets.
 SPRITE_RELIEF_CODE = """return D * (Texture2DSampleLevel(R, RSampler, UV, 0).r * A);"""
-# Vent : balancement lent, pied fixe, amplitude croissante vers la cime (~1,2 % de la hauteur), phase selon le lieu.
+# Vent : balancement lent, pied fixe, amplitude croissante vers la cime (~3,5 % de la hauteur), phase selon le lieu.
 # Le plan ne tourne pas avec la tête (retour d'Olivier du 19/10) : il oscille autour de sa position fixe.
 SPRITE_WIND_CODE = """float hs = length(U);                                  // hauteur du sujet (cm) : échelle de l'instance
 float z = saturate(LP.z / 100.0 + 0.5 * C);                 // pied (0) à cime (1) (plan de 100 unités ; touffes centrées)
 float s = sin(T * 0.8 + dot(WP.xy, float2(0.0011, 0.0017))) + 0.35 * sin(T * 2.1 + dot(WP.xy, float2(0.003, -0.002)));
-return float3(0.8, 0.6, 0.0) * s * 0.012 * hs * z * z * E;"""
+return float3(0.8, 0.6, 0.0) * s * 0.035 * hs * z * z * E;   // 1,2 % → 3,5 % (19/10 : invisible au casque)"""
 SPRITE_TINT_CODE = """return Tex * (1.0 + Tint * float3(0.08, 0.015, -0.1));"""
 SPRITE_EDGE_CODE = """return A * lerp(1.0, smoothstep(0.12, 0.3, abs(dot(normalize(N), normalize(V)))), E);"""
 
@@ -1388,7 +1388,7 @@ BOAT_DIR, BOAT_MESH = "/Game/Assets/Barque", "/Game/Assets/Barque/model/StaticMe
 BOAT_Z = -BOAT_BOTTOM * BOAT_SCALE_Z - BOAT_DRAFT
 
 
-def import_glb(rel_glb, dest_dir, max_tris=None, smooth=False):
+def import_glb(rel_glb, dest_dir, max_tris=None, smooth=False, cut=()):
     """Importe assets/3d/<rel_glb>/model.glb dans dest_dir (une fois par empreinte du fichier et par budget de
     triangles) ; None si absent. max_tris : simplification à l'import (budget Quest : ≤ 500 k triangles visibles)."""
     import hashlib
@@ -1397,7 +1397,8 @@ def import_glb(rel_glb, dest_dir, max_tris=None, smooth=False):
         return None
     mesh_path = f"{dest_dir}/model/StaticMeshes/model"
     with open(glb, "rb") as f:
-        digest = hashlib.sha1(f.read()).hexdigest()[:12] + (f"-{max_tris}" if max_tris else "") + ("-lisse" if smooth else "") + "-sans-nanite-v2"
+        digest = hashlib.sha1(f.read()).hexdigest()[:12] + (f"-{max_tris}" if max_tris else "") + ("-lisse" if smooth else "") + "-sans-nanite-v2" \
+            + (f"-coupe{hash(tuple(cut)) & 0xffff:04x}" if cut else "")
     if eal.does_asset_exist(mesh_path) and eal.get_metadata_tag(eal.load_asset(mesh_path), "source_sha1") == digest:
         return eal.load_asset(mesh_path)
     # dossier vidé avant réimport (19/10) : sinon l'import remplace le maillage mais garde les textures du modèle précédent
@@ -1419,10 +1420,16 @@ def import_glb(rel_glb, dest_dir, max_tris=None, smooth=False):
         eal.save_loaded_asset(mesh)
         mesh = eal.load_asset(mesh_path)
     unreal.log(f"{rel_glb} : {mesh.get_num_triangles(0)} triangles importés (sans Nanite)")
-    if max_tris and mesh.get_num_triangles(0) > max_tris:
+    if cut or (max_tris and mesh.get_num_triangles(0) > max_tris):
         dm = unreal.DynamicMesh()
         unreal.GeometryScript_AssetUtils.copy_mesh_from_static_mesh_v2(mesh, dm, unreal.GeometryScriptCopyMeshFromAssetOptions(), unreal.GeometryScriptMeshReadLOD())
-        dm.apply_editor_simplify_to_triangle_count(max_tris)
+        if max_tris and dm.get_triangle_count() > max_tris:
+            dm.apply_editor_simplify_to_triangle_count(max_tris)
+        for lo, hi in cut:         # morceaux à retirer (boîtes dans le repère d'import), ex. lattes de la barque qui flottent
+            box = unreal.Box(unreal.Vector(*lo), unreal.Vector(*hi))
+            dm, sel = unreal.GeometryScript_MeshSelection.select_mesh_elements_in_box(dm, box, unreal.GeometryScriptMeshSelectionType.TRIANGLES, False, 3)
+            dm, n = unreal.GeometryScript_MeshEdits.delete_selected_triangles_from_mesh(dm, sel)
+            unreal.log(f"{rel_glb} : {n} triangles retirés dans {lo} – {hi}")
         if smooth:                 # normales lissées par sommet : sculptures (le visage disparaissait dans les facettes)
             unreal.GeometryScript_Normals.set_per_vertex_normals(dm)
         unreal.GeometryScript_AssetUtils.copy_mesh_to_static_mesh(dm, mesh, unreal.GeometryScriptCopyMeshToAssetOptions(), unreal.GeometryScriptMeshWriteLOD())
@@ -1537,7 +1544,9 @@ else:
     boat.set_actor_scale3d(unreal.Vector(3.5, 1.3, 0.5))
 # Caméra du spectateur, sur le banc arrière (-1,20 m du centre), yeux à 1,10 m de l'eau. Reculée de 0,80 m
 # à 1,20 m pour réduire la place de la lanterne de proue dans le champ (SUIVI.md, D11).
-SEAT_X_CM = -120.0
+# place assise sur le banc arrière de la nouvelle barque (19/10) : à -120 cm, on était derrière le banc et deux lattes
+# du modèle flottaient sous les yeux ; elles sont maintenant derrière le spectateur (les retirer du maillage abîmait la coque)
+SEAT_X_CM = -95.0
 h0 = math.radians(start["heading_deg"])
 cam_loc = ue(start["x"] + SEAT_X_CM / 100 * math.cos(h0), start["y"] + SEAT_X_CM / 100 * math.sin(h0), EYE_CM / 100)
 cam = tag(actors.spawn_actor_from_class(unreal.CineCameraActor, cam_loc), "CameraBarque")
@@ -2075,7 +2084,7 @@ def projection(pid, flip=0.0):
 # variante « deux » : les deux figures reconstruites séparément (image coupée aux mains, chacune sur toute la grille de
 # TRELLIS) puis assemblées ; décalage en travers et rotation propre à chaque figure (TRELLIS les a remises de face)
 ARCH_FIGURES = {"gauche": (0.24, float(os.environ.get("BARQUE_ROT_G", "180"))), "droite": (-0.26, float(os.environ.get("BARQUE_ROT_D", "270")))}   # trouvés par essais (19/10)
-statues = None if ARCH_VARIANT == "deux" else import_glb(f"arche-statues/{ARCH_VARIANT}-s42", f"/Game/Assets/ArcheStatues_{ARCH_VARIANT}", 150000, smooth=True)   # TRELLIS : forme remaillée à 1536 (image_to_3d --remesh 1536 --smooth 5)   # forme remaillée à 1536 (image_to_3d --remesh 1536 --smooth 5)   # vu de près : détail (retour du 19/10)
+statues = None if ARCH_VARIANT == "deux" else import_glb(f"arche-statues/{ARCH_VARIANT}-s42", f"/Game/Assets/ArcheStatues_{ARCH_VARIANT}", 300000, smooth=True)   # TRELLIS : forme remaillée à 1536 (image_to_3d --remesh 1536 --smooth 5)   # forme remaillée à 1536 (image_to_3d --remesh 1536 --smooth 5)   # vu de près : détail (retour du 19/10)
 racine = None if (statues is not None or ARCH_VARIANT == "deux") else import_glb("racine/trellis2-s42", "/Game/Assets/Racine", 30000)
 if ARCH_VARIANT == "deux":
     loc, _ = oriented(am["t"], 0.0, 0.0, 0.0)
@@ -2118,18 +2127,21 @@ if racine is not None:
 # Tête de pierre couchée (D18) : sur la berge gauche au début de S6 (tombée de la nuit : champignons lumineux dans ses
 # traits, sprites_layout.py), couchée sur le côté, le visage vers la rivière, l'arrière (creux) dans la berge ; à moitié
 # enfoncée dans la berge et dans l'eau. Modèle : assets/3d/tete-couchee (image d'Olivier, substitut local en attendant).
-HEAD_T, HEAD_SIDE_M, HEAD_H_CM = 165.0, 1.0, 1000.0
+# berge droite depuis le 19/10 au soir (à gauche, la barque regardait de l'autre côté et on ne la reconnaissait pas) ;
+# HEAD_SIDE : 1 = gauche, -1 = droite
+HEAD_T, HEAD_SIDE, HEAD_SIDE_M, HEAD_H_CM = 165.0, -1, 1.0, 1250.0
 HEAD_TOWARD_DEG = 35.0       # visage tourné vers l'amont : il regarde la barque qui arrive (on le découvre en approchant)
 tete = import_glb("tete-couchee/trellis2-s42", "/Game/Assets/TeteCouchee", 50000, smooth=True)
 if tete is not None:
     ph_ = pose_at(HEAD_T)
-    loc, _ = oriented(HEAD_T, 0.0, ph_["width_m"] / 2 + HEAD_SIDE_M, 0.8)
+    loc, _ = oriented(HEAD_T, 0.0, HEAD_SIDE * (ph_["width_m"] / 2 + HEAD_SIDE_M), 0.8)
     hb = tete.get_bounding_box()
     hs = HEAD_H_CM / max(hb.max.x - hb.min.x, hb.max.y - hb.min.y, hb.max.z - hb.min.z)
     # le modèle importé a le visage vers le haut (+Z) : roulis 90° → visage vers +Y (la rivière, vue de la rive gauche),
     # tangage 90° → axe menton-front horizontal (tête couchée sur la joue) ; puis le cap de la rivière. Trouvé en
     # comparant les orientations depuis la barque (19/10).
-    hrot = unreal.Rotator(90.0, -90.0, ue_yaw(ph_["heading_deg"]) + HEAD_TOWARD_DEG)   # crâne vers l'amont, cou (creux) vers l'aval
+    # cap trouvé par essais depuis la barque (19/10) : berge gauche +35°, berge droite +185° (visage de profil vers l'amont)
+    hrot = unreal.Rotator(90.0, -90.0, ue_yaw(ph_["heading_deg"]) + (HEAD_TOWARD_DEG if HEAD_SIDE > 0 else 185.0))   # crâne vers l'amont, cou (creux) vers l'aval
     hc = unreal.Vector((hb.min.x + hb.max.x) / 2 * hs, (hb.min.y + hb.max.y) / 2 * hs, (hb.min.z + hb.max.z) / 2 * hs)
     head = actors.spawn_actor_from_object(tete, loc - unreal.MathLibrary.greater_greater_vector_rotator(hc, hrot), hrot)
     tag(head, "GB_TeteCouchee")
