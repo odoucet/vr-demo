@@ -130,6 +130,7 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 | D16 | Arbres (« le plus moche ») ou autre décor (statues géantes ?) | arbres et décor en images peintes (sprites) | — | **sprites peints**, « c'est la bonne idée à creuser » (19/10) |
 | D17 | Animatics vidéo déjà poussés dans l'historique Git (~925 Mo en LFS, quota GitHub limité) | désormais hors dépôt (`.gitignore`), planches seules versionnées ; l'historique n'est pas réécrit | les retirer de l'historique (réécriture, à autoriser) ou acheter du quota LFS | |
 | D18 | Statues géantes (ton idée « à débattre ») : 3 pistes en image de recherche, `review/explorations/statues/planche.jpg` (gardiens, tête couchée, arche sculptée) | rien d'intégré | choisir une piste et un moment de la balade : je la peins en sprite (comme l'arbre colossal) | |
+| D19 | Architecture proche / lointain (CLAUDE.md : lointain en vidéo 360 stéréo pré-rendue). Avec les images peintes, toute la balade tient 72 i/s en temps réel au Quest (mesuré le 19/10 avant le relief) ; J1 (sphère vidéo) n'a jamais été validé au casque | tout en temps réel ; J1/J1b gardés tels quels, non développés | revenir au lointain vidéo (J1 à valider au casque, puis rendus offline J5) ; ou le garder pour le PC VR seulement | |
 
 **Nettoyage LFS (dans la todo d'Olivier, à lancer sur son accord écrit)** — ~2,2 Go en LFS sur tout l'historique, dont
 ~1,3 Go d'animatics vidéo (`review/iter-*/animatic.mp4`), ≥ 460 Mo d'assets Unreal (versions successives), ~150 Mo de
