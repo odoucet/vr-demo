@@ -190,7 +190,10 @@ BOAT_BOTTOM, BOAT_DRAFT = -15.2, 22.0
 # Lanterne : modèle à part (assets/3d/lanterne, papier à nervures), haute de 32 cm, posée bas sur l'avant droit (sur
 # le banc avant) : elle éclaire la nuit sans masquer le décor. Centre dans le repère de la barque (cm).
 LANTERN_H = 32.0
-LANTERN_LOCAL = (125.0, 22.0, 40.0 + LANTERN_H / 2)   # 36 → 22 cm du milieu (19/10 : en tanguant, elle traversait la coque)
+# 20/10 : posée sur le plancher (14 cm), le banc avant qui la portait est retiré du modèle (bancs flottants) ; plus en
+# arrière (125 → 80 cm), où la coque est large au ras du plancher, et sur le côté (30 cm du milieu) : au centre, droit
+# devant la place assise, elle attirait l'œil
+LANTERN_LOCAL = (80.0, 30.0, 14.0 + LANTERN_H / 2)
 # Lanterne qui tangue (retour d'Olivier : « trop figée ») : même balancement, calculé dans le shader, pour le modèle de
 # la lanterne et son halo. Pivot au pied de la lanterne, roulis ~3° autour de l'axe de la barque, tangage ~2°.
 SWAY_CODE = """float ar = 0.055 * sin(T * 1.25) + 0.025 * sin(T * 0.73 + 1.7);   // roulis (rad)
@@ -282,33 +285,54 @@ float2 fd = float2(cos(ca), -sin(ca));                      // sens du courant, 
 float lake = 1.0 - saturate((m.a - 0.5 + m.g) * 20.0);      // lac : courant presque nul
 float speed = lerp(1.0, 0.25, lake);
 float shore = m.b;                                          // 0 sur la rive, 1 à 8 m
-// rides dans le repère monde (traits le long de la rivière, qui tourne peu) ; flowmap à deux phases : elles
-// avancent avec le courant local sans s'étirer ni se casser là où il change de direction
-float2 q = WP.xy / 350.0;
+// rides (20/10) : réseau de crêtes sans direction (rides-iso.png) ; la perspective seule les écrase en traits
+// horizontaux, quel que soit le regard (les traits orientés en travers de la rivière devenaient des rayons qui
+// convergent dès qu'on regardait sur le côté : effet « pluie »). Flowmap à deux phases : elles avancent avec le
+// courant local sans s'étirer ni revenir en arrière. G, B : pente de la surface, qui fait onduler les reflets.
+float2 q = WP.xy / 300.0;
 float ph0 = frac(T * 0.08), ph1 = frac(T * 0.08 + 0.5);
 float w = abs(ph0 * 2.0 - 1.0);
 float2 adv = fd * speed * 1.5;     // 19/10 : « zéro animation » à 0,9 (rides quasi immobiles) → courant lisible
-// traits en travers de la rivière (horizontaux à l'écran pour qui regarde vers l'aval, comme dans l'eau
-// peinte ; dans le sens du courant, la perspective les faisait converger en rayons)
-float2 q0 = (q - adv * ph0).yx, q1 = (q - adv * ph1).yx;
-float r0 = Texture2DSample(Rides, RidesSampler, q0 * float2(0.6, 2.2)).r;
-float r1 = Texture2DSample(Rides, RidesSampler, q1 * float2(0.6, 2.2) + 0.5).r;
-float rip = saturate(lerp(r0, r1, w) * 1.1);
-float r2 = saturate(r0 * 0.7 + r1 * 0.3 + 0.25);   // variation lente sans lecture supplémentaire
-// reflet du ciel peint, déformé par les rides
+float4 t0 = Texture2DSample(Rides, RidesSampler, q - adv * ph0);
+float4 t1 = Texture2DSample(Rides, RidesSampler, (q - adv * ph1) * 1.27 + 0.5);
+float rip = saturate(lerp(t0.r, t1.r, w) * 1.1);
+float2 nr = (lerp(t0.gb, t1.gb, w) - 0.5) * 2.0;
+float r2 = saturate(0.5 + nr.x * 0.5 + nr.y * 0.3);   // variation lente (découpe de l'écume, reflets des berges)
+// autour de la barque (B : x, y, lacet en z) — reprise du 20/10 (« le bateau ne fait aucun effet sur l'eau ») :
+// sillage de Kelvin né à l'étrave (deux bras à ~19,5° qui longent les flancs à ~50 cm de la coque puis s'ouvrent
+// derrière, crêtes en biais fixes par rapport à la barque, vagues transversales entre les bras), vague d'étrave,
+// bourrelet le long des flancs ; il fait onduler les reflets (hw) et pose de l'écume (plus bas)
+float cb = cos(B.z), sb = sin(B.z);
+float2 rel = WP.xy - B.xy;
+float lx = dot(rel, float2(cb, sb)), ly = dot(rel, float2(-sb, cb));
+float hull = (lx / 178.0) * (lx / 178.0) + (ly / 78.0) * (ly / 78.0);   // coque 3,5 × 1,56 m
+float e = sqrt(hull);
+float back = 165.0 - lx;                                             // distance derrière l'étrave (cm)
+float aly = abs(ly);
+float edge = back * 0.36 + 25.0;                                     // bras du sillage
+float band = exp(-pow((aly - edge) / (22.0 + back * 0.05), 2.0)) * step(0.0, back);
+float div = sin((back * 0.94 + aly * 0.34) * 0.075);                 // crêtes divergentes, en biais
+float inside = saturate(1.0 - aly / max(edge, 1.0)) * step(0.0, back);
+float trv = sin(back * 0.06) * inside * exp(-max(back, 0.0) / 900.0);   // vagues transversales
+float wfade = exp(-max(back, 0.0) / 2200.0) * saturate(back / 40.0);
+float outside = smoothstep(0.98, 1.04, e);
+float bowh = exp(-pow((e - 1.06) / 0.06, 2.0)) * saturate((lx - 60.0) / 100.0);       // vague d'étrave
+float sideh = exp(-pow((e - 1.07) / 0.05, 2.0)) * (0.55 + 0.45 * sin(lx * 0.06 + T * 3.0));   // bourrelet des flancs
+float hw = ((band * div * 1.1 + trv * 0.25) * wfade + bowh * 0.8 + sideh * 0.4) * outside;
+// reflet du ciel peint, déformé par les rides et le sillage
 float3 rd = float3(v.x, v.y, abs(v.z));
 // houle lente : les reflets ondoient (19/10 : « zéro animation ») — deux trains d'ondes croisés, quelques mètres
 float sw = sin(dot(WP.xy, float2(0.0021, 0.0013)) + T * 0.9) * 0.6 + sin(dot(WP.xy, float2(-0.0017, 0.0026)) - T * 0.7) * 0.4;
-float su = 0.5 + atan2(rd.y, rd.x) / (2.0 * PI) + T * %(drift)f + sw * 0.004;
+float su = 0.5 + atan2(rd.y, rd.x) / (2.0 * PI) + T * %(drift)f + sw * 0.004 + nr.x * 0.004;
 float se = min(asin(clamp(rd.z, 0.0, 1.0)), 0.96);   // pas au-delà de 55° : au zénith l'équirectangulaire s'étire en rayons
-float sv = clamp(0.82 - se / (0.5 * PI) * 0.82 + (rip - 0.3) * 0.025 + sw * 0.012, 0.0, 1.0);
+float sv = clamp(0.82 - se / (0.5 * PI) * 0.82 + nr.y * 0.03 + sw * 0.012 + hw * 0.05, 0.0, 1.0);
 float3 sky = Texture2DSample(Sky, SkySampler, float2(su, sv)).rgb * Teinte.rgb;
 float fr = 0.06 + 0.94 * pow(1.0 - abs(v.z), 4.0);
 // reflet de la lisière : le rayon réfléchi part vers le haut, vers la rive qu'il rencontre (distance aux rives
 // précalculée dans la carte ; dans le lac, intersection exacte avec le cercle de la rive) ; les arbres (~15 m,
 // cime irrégulière) masquent le ciel sous l'angle de leur cime
 float2 hd = normalize(rd.xy + float2(1e-4, 0.0));
-float tanE = rd.z / max(length(rd.xy), 1e-3) + (rip - 0.3) * 0.06;
+float tanE = rd.z / max(length(rd.xy), 1e-3) + nr.y * 0.08 + hw * 0.12;
 float c = dot(hd, float2(fd.y, -fd.x));                     // vers la rive gauche si > 0
 float dist = c > 0.0 ? (m.a - 0.5) * 8000.0 / max(c, 0.05) : m.g * 4000.0 / max(-c, 0.05);
 float2 pc = WP.xy - float2(%(lkx).1f, %(lky).1f);
@@ -326,10 +350,12 @@ float3 forest = Lumiere.rgb * lerp(float3(0.07, 0.13, 0.10), float3(0.2, 0.3, 0.
 float3 refl = lerp(sky, forest, trees * 0.9);
 float3 deep = (Lumiere.rgb * 0.5 + 0.2) * lerp(float3(0.03, 0.095, 0.095), float3(0.012, 0.045, 0.055), shore);
 float3 col = lerp(deep, refl, fr);
-// crêtes des rides : traits de lumière du ciel, comme posés au pinceau
-col += rip * rip * (0.3 + 0.7 * fr) * (sky * 1.1 + Lumiere.rgb * 0.05) * (1.0 - trees * 0.6);
+// crêtes des rides : traits de lumière du ciel, comme posés au pinceau (plus fins et plus doux que les traits de
+// rides.png, qui faisaient des rayures blanches)
+// ; discrètes en vue plongeante (de près, le réseau de crêtes faisait « reflets de piscine »)
+col += rip * rip * (0.08 + 0.75 * fr) * (sky * 0.8 + Lumiere.rgb * 0.05) * (1.0 - trees * 0.6);
 // scintillements : la pointe des crêtes renvoie le ciel en éclats qui bougent avec le courant
-col += pow(saturate(rip * 1.25 - 0.2), 6.0) * fr * (sky * 1.4 + Lumiere.rgb * 0.15) * (1.0 - trees * 0.5);
+col += pow(saturate(rip * 1.25 - 0.2), 6.0) * fr * (sky * 1.1 + Lumiere.rgb * 0.15) * (1.0 - trees * 0.5);
 // reflets des lueurs (plantes lumineuses la nuit, lucioles des berges, nuée finale) : carte vue de dessus lue au point
 // de rive dans la direction du regard ; une source basse (< 3 m) se reflète près de la ligne d'eau ; traînées brisées
 // par les rides
@@ -341,7 +367,7 @@ float3 glow = gl.r * night * float3(0.45, 0.9, 1.0) + gl.g * saturate(Lf) * (0.2
 col += glow * (1.0 - saturate(tanE * dist / 300.0)) * (0.15 + 1.2 * rip * rip) * (0.5 + 0.5 * fr) * 2.6;
 // chemin de lune (la nuit) : reflet de la lune étiré à la verticale par les rides, en éclats sur les crêtes
 float nsky = saturate(1.0 - dot(Teinte.rgb, float3(0.3, 0.5, 0.2)) * 3.0);
-float3 rdm = normalize(rd + float3((r2 - 0.5) * 0.04, (r1 - 0.5) * 0.04, (rip - 0.45) * 0.5));
+float3 rdm = normalize(rd + float3(nr.x * 0.04, nr.y * 0.04, (rip - 0.45) * 0.5 + hw * 0.3));
 float mg = smoothstep(0.990, 0.9985, dot(rdm, float3(%(mx).5f, %(my).5f, %(mz).5f)));
 col += float3(1.0, 0.95, 0.82) * mg * (0.4 + 1.6 * rip) * nsky * (1.0 - trees * 0.8) * 1.8;   // lumière vive : visible même hors incidence rasante
 // eau peinte d'Olivier (refs/tex-eau.png), entraînée par le courant avec les rides : vue plongeante, on voit la
@@ -359,37 +385,13 @@ col *= 0.82 + 0.36 * saturate(wl / %(eaumean).4f);
 float lap = 0.05 + 0.025 * sin(T * 1.1 + dot(WP.xy, float2(0.003, 0.002)));      // écume qui lèche la berge
 float foam = (1.0 - smoothstep(0.0, lap, shore)) * (0.55 + 0.45 * r2);
 col = lerp(col, Lumiere.rgb * 0.5 + sky * 0.35, foam * 0.75);
-// autour de la barque (B : x, y, lacet en z) : reprise du 19/10 (« le bateau ne fait aucun effet sur l'eau ») —
-// vague d'étrave écumante, bourrelet d'écume le long des flancs qui file vers l'arrière, sillage de Kelvin (deux bras
-// à ~19,5°, crêtes parallèles, vagues transversales entre eux) qui s'élargit et s'éteint sur ~25 m, rides qui partent
-// des flancs ; reflet de la lanterne ; pas d'eau dans la coque
-float cb = cos(B.z), sb = sin(B.z);
-float2 rel = WP.xy - B.xy;
-float lx = dot(rel, float2(cb, sb)), ly = dot(rel, float2(-sb, cb));
-float hull = (lx / 178.0) * (lx / 178.0) + (ly / 78.0) * (ly / 78.0);   // coque 3,5 × 1,56 m
-float e = sqrt(hull);
-float brk = saturate(r2 * 1.3 + rip * 0.4 - 0.25);                   // découpe irrégulière de l'écume
-// étrave : croissant d'écume devant la proue, qui se déchire et file sur les côtés
-float bow = exp(-max(e - 1.02, 0.0) * 9.0) * saturate((lx - 40.0) / 120.0) * step(0.97, e);
-bow *= 0.6 + 0.4 * sin(lx * 0.09 - T * 5.0 + ly * 0.05);
-// flancs : bourrelet qui défile vers l'arrière (la barque avance à 1 m/s)
-float side = exp(-abs(e - 1.08) * 14.0) * step(0.97, e) * (0.45 + 0.55 * saturate(sin(lx * 0.05 + T * 4.0 + abs(ly) * 0.02) * 0.5 + 0.5));
-// sillage de Kelvin derrière la poupe
-float back = max(-lx - 140.0, 0.0);
-float fade = exp(-back / 1400.0) * saturate(back / 60.0);
-float armd = abs(abs(ly) - back * 0.354);                            // distance au bras (tan 19,5°)
-float arm = exp(-armd / (18.0 + back * 0.03));
-float feather = 0.5 + 0.5 * sin((back + abs(ly)) * 0.11 - T * 3.0);  // crêtes parallèles le long des bras
-float inside = saturate(1.0 - abs(ly) / (back * 0.354 + 30.0));
-float transv = inside * (0.5 + 0.5 * sin(back * 0.075)) * exp(-back / 700.0);   // vagues transversales (fixes p/r barque)
-float wake = (arm * (0.55 + 0.45 * feather) * 1.1 + transv * 0.35) * fade;
-// rides qui partent des flancs (perturbent aussi le reflet)
-float ring = sin((e - T * 0.6) * 22.0) * exp(-max(e - 1.0, 0.0) * 2.2) * step(1.0, e);
-float boatfoam = saturate((bow * 1.2 + side * 0.9 + wake * 0.75) * (0.55 + 0.75 * brk));
-float3 foamcol = Lumiere.rgb * 0.75 + sky * 0.55 + 0.05;
-col += (sky * 0.35 + Lumiere.rgb * 0.06) * saturate(ring) * 0.35 * (1.0 - boatfoam);
-col += (sky * 0.25) * transv * fade * 0.6;
-col = lerp(col, foamcol, boatfoam * 0.8);
+// sillage : crêtes éclairées, creux plus sombres ; écume à l'étrave, le long des flancs et sur les crêtes des bras
+float brk = saturate(rip * 0.9 + r2 * 0.8 - 0.45);                   // découpe irrégulière de l'écume
+col += saturate(hw) * (sky * 0.5 + Lumiere.rgb * 0.05) * (0.4 + 0.6 * fr);
+col *= 1.0 - saturate(-hw) * 0.18;
+float boatfoam = saturate(bowh * 1.1 + sideh * 0.6 * saturate((lx + 100.0) / 250.0) + band * wfade * 0.6 * saturate(div)) * (0.45 + 0.8 * brk) * outside;
+float3 foamcol = Lumiere.rgb * 0.8 + sky * 0.6 + 0.05;
+col = lerp(col, foamcol, boatfoam * 0.85);
 float2 lp = B.xy + float2(cb, sb) * %(lantx).1f + float2(-sb, cb) * %(lanty).1f;
 float dlw = length(WP.xy - lp);
 float flick = 0.86 + 0.1 * sin(T * 11.0) * sin(T * 6.7 + 1.3) + 0.04 * sin(T * 23.0);
@@ -398,7 +400,7 @@ col += float3(%(cr).2f, %(cg).2f, %(cb).2f) * flick * (0.25 + 0.75 * rip) * 0.9 
 float2 da = WP.xy - Ab.xy;
 float halo = exp(-dot(da, da) / (420.0 * 420.0)) * saturate(1.0 + Ab.z / 900.0) * saturate(Af);
 col += float3(0.15, 1.6, 2.0) * 0.18 * halo * (0.6 + 0.4 * rip);
-float op = max(lerp(0.68, 0.97, fr) * (1.0 - 0.55 * halo), max(foam, boatfoam * 0.8));   // eau plus claire au-dessus de la créature
+float op = max(lerp(0.68, 0.97, fr) * (1.0 - 0.55 * halo), max(foam, boatfoam * 0.85));   // eau plus claire au-dessus de la créature
 op *= smoothstep(0.9, 1.02, hull);
 return float4(col, op);""" % {"lantx": LANTERN_LOCAL[0], "lanty": LANTERN_LOCAL[1], "cr": CANDLE_RGB[0], "cg": CANDLE_RGB[1], "cb": CANDLE_RGB[2], "x0": WATER_MAP["x0"], "y0": WATER_MAP["y0"], "size": WATER_MAP["size_m"], "drift": SKY_DRIFT,
    "mx": MOON_DIR[0], "my": MOON_DIR[1], "mz": MOON_DIR[2], "eaumean": TEX_MEAN_EAU, "lkx": RIVER["lake"]["x"] * 100, "lky": -RIVER["lake"]["y"] * 100, "lkr2": (RIVER["lake"]["radius_m"] * 100) ** 2}
@@ -454,6 +456,8 @@ float3 lp = float3(B.x + cb * LANT_X - sb * LANT_Y, B.y + sb * LANT_X + cb * LAN
 float dl = length(WP.xyz - lp);
 float flick = 0.86 + 0.1 * sin(T * 11.0) * sin(T * 6.7 + 1.3) + 0.04 * sin(T * 23.0);
 float lamp = flick * saturate(1.0 - dl / 1100.0) / (1.0 + (dl / 170.0) * (dl / 170.0));
+// de jour, la bougie compte peu (20/10 : la barque paraissait rose pâle en plein jour, délavée par la lanterne)
+lamp *= lerp(1.0, 0.35, saturate((dot(Lumiere.rgb, float3(0.3, 0.5, 0.2)) - 0.25) / 0.6));
 col += albedo * CANDLE * lamp * (0.3 + 0.7 * saturate(dot(n, normalize(lp - WP.xyz)))) * 2.4;
 // sous l'eau (eau plate à z = 0) : la couleur s'éteint vers celle de l'eau profonde selon la longueur du trajet
 // sous la surface (exact pour une eau plate, sans lire la profondeur : impossible sur Quest sans HDR mobile)
@@ -536,7 +540,7 @@ def look_texture(tid, srgb=True, compression=None):
 with open(os.path.join(ROOT, "assets", "textures", "stats.json"), encoding="utf-8") as f:
     TEX_MEAN = json.load(f)
 WATER_MAP_TEX = look_texture("eau_carte", srgb=False)
-RIDES_TEX = look_texture("rides", srgb=False)
+RIDES_TEX = look_texture("rides-iso", srgb=False, compression=unreal.TextureCompressionSettings.TC_DEFAULT)   # crêtes + pente (brush_texture.py)
 EAU_TEX = look_texture("tex-eau")       # eau peinte d'Olivier (refs/tex-eau.png → textures.py)
 GLOW_TEX = look_texture("eau_lueurs", srgb=False, compression=unreal.TextureCompressionSettings.TC_DEFAULT)   # glow_map.py
 
@@ -1420,9 +1424,17 @@ BOAT_DIR, BOAT_MESH = "/Game/Assets/Barque", "/Game/Assets/Barque/model/StaticMe
 BOAT_Z = -BOAT_BOTTOM * BOAT_SCALE_Z - BOAT_DRAFT
 
 
-def import_glb(rel_glb, dest_dir, max_tris=None, smooth=False, cut=(), lods=()):
+def model_dir(mid, source="trellis2-s42"):
+    """Dossier du modèle 3D <mid> : la version reprise dans Blender (pipeline/blender/nettoyage_3d.py) si elle existe,
+    sinon la reconstruction brute."""
+    return f"{mid}/blender" if os.path.exists(os.path.join(ROOT, "assets", "3d", mid, "blender", "model.glb")) else f"{mid}/{source}"
+
+
+def import_glb(rel_glb, dest_dir, max_tris=None, smooth=False, cut=(), lods=(), max_tex=2048):
     """Importe assets/3d/<rel_glb>/model.glb dans dest_dir (une fois par empreinte du fichier et par budget de
-    triangles) ; None si absent. max_tris : simplification à l'import (budget Quest : ≤ 500 k triangles visibles)."""
+    triangles) ; None si absent. max_tris : simplification à l'import (budget Quest : ≤ 500 k triangles visibles).
+    max_tex : taille maximale des textures dans le jeu (modèles régénérés en 4096 le 19/10 : 4096 seulement pour ce qui
+    se voit de près, la mémoire du Quest ne tiendrait pas tout en 4096)."""
     import hashlib
     glb = os.path.join(ROOT, "assets", "3d", rel_glb, "model.glb")
     if not os.path.exists(glb):
@@ -1430,7 +1442,7 @@ def import_glb(rel_glb, dest_dir, max_tris=None, smooth=False, cut=(), lods=()):
     mesh_path = f"{dest_dir}/model/StaticMeshes/model"
     with open(glb, "rb") as f:
         digest = hashlib.sha1(f.read()).hexdigest()[:12] + (f"-{max_tris}" if max_tris else "") + ("-lisse" if smooth else "") + "-sans-nanite-v2" \
-            + (f"-coupe{hash(tuple(cut)) & 0xffff:04x}" if cut else "") + (f"-lod{'_'.join(f'{a}x{b}' for a, b in lods)}" if lods else "")
+            + (f"-coupe{hash(tuple(cut)) & 0xffff:04x}" if cut else "") + (f"-lod{'_'.join(f'{a}x{b}' for a, b in lods)}" if lods else "") + f"-tex{max_tex}"
     if eal.does_asset_exist(mesh_path) and eal.get_metadata_tag(eal.load_asset(mesh_path), "source_sha1") == digest:
         return eal.load_asset(mesh_path)
     # dossier vidé avant réimport (19/10) : sinon l'import remplace le maillage mais garde les textures du modèle précédent
@@ -1467,12 +1479,17 @@ def import_glb(rel_glb, dest_dir, max_tris=None, smooth=False, cut=(), lods=()):
         unreal.GeometryScript_AssetUtils.copy_mesh_to_static_mesh(dm, mesh, unreal.GeometryScriptCopyMeshToAssetOptions(), unreal.GeometryScriptMeshWriteLOD())
         unreal.log(f"{rel_glb} : simplifié à {mesh.get_num_triangles(0)} triangles")
     if lods:   # niveaux de détail (le Quest n'a pas Nanite) : [(part des triangles, taille à l'écran), ...] après le LOD0
-        opts = unreal.EditorScriptingMeshReductionOptions()
+        opts = unreal.StaticMeshReductionOptions()
         opts.set_editor_property("auto_compute_lod_screen_size", False)
-        opts.set_editor_property("reduction_settings", [unreal.EditorScriptingMeshReductionSettings(1.0, 1.0)]
-                                 + [unreal.EditorScriptingMeshReductionSettings(f, sc) for f, sc in lods])
+        opts.set_editor_property("reduction_settings", [unreal.StaticMeshReductionSettings(1.0, 1.0)]
+                                 + [unreal.StaticMeshReductionSettings(f, sc) for f, sc in lods])
         n = unreal.get_editor_subsystem(unreal.StaticMeshEditorSubsystem).set_lods(mesh, opts)
         unreal.log(f"{rel_glb} : {n} niveaux de détail")
+    for tpath in eal.list_assets(dest_dir, recursive=True, include_folder=False):
+        tex = eal.load_asset(tpath)
+        if isinstance(tex, unreal.Texture2D) and tex.blueprint_get_size_x() > max_tex:
+            tex.set_editor_property("max_texture_size", max_tex)
+            eal.save_loaded_asset(tex)
     eal.set_metadata_tag(mesh, "source_sha1", digest)
     eal.save_loaded_asset(mesh)
     return mesh
@@ -1527,7 +1544,8 @@ def hull_floor(model):
 
 
 def boat_mesh():
-    return import_glb("barque/trellis2-s42", BOAT_DIR, 30000)
+    # 80 k triangles (30 k avant le 20/10) : on l'a sous les yeux tout le trajet ; bancs flottants retirés dans Blender
+    return import_glb(model_dir("barque"), BOAT_DIR, 80000, max_tex=4096)
 
 
 start = pose_at(0)
@@ -1546,7 +1564,7 @@ if model is not None:
     # Lanterne : modèle à part (papier à nervures), centré sur LANTERN, papier allumé par la bougie (matériau
     # « bougie », qui la fait aussi tanguer) ; lumière et halo au centre. Repli : cylindre lumineux.
     LANTERN = unreal.Vector(*LANTERN_LOCAL)
-    lantern_model = import_glb("lanterne/trellis2-s42", "/Game/Assets/Lanterne", 6000)
+    lantern_model = import_glb(model_dir("lanterne"), "/Game/Assets/Lanterne", 6000, max_tex=1024)
     if lantern_model is not None:
         lb = lantern_model.get_bounding_box()
         ls_ = LANTERN_H / max(lb.max.z - lb.min.z, 1e-3)
@@ -1590,31 +1608,62 @@ else:
 # Héron du final (idée d'Olivier du 19/10 : la fin était un peu morne) : il arrive de loin devant à gauche, plane en
 # descendant et se pose sur le rebord gauche de la barque, ailes levées (image « atterrissage »), puis reste posé
 # (image « pose »). Deux plans attachés à la barque, face à l'œil comme la petite vie ; progression HeronFinal (MPC).
+# Héron v3 (20/10, retour d'Olivier : « presque pas mal mais il va falloir revoir l'animation » ; avant : une image figée
+# qui glissait 16 s puis basculait d'un coup sur l'image « posé »). Le plan « en vol » est une grille : les ailes (haut de
+# l'image, hors tête) pivotent autour de la ligne des épaules, battent au départ, planent pendant l'approche, battent pour
+# freiner ; le corps monte quand elles s'abaissent, pique en descendant, se cabre au freinage. Au contact, ailes repliées
+# et fondu en 0,5 s vers l'image « posé », qui se tasse puis respire.
 HERON_WPO_CODE = """float p = saturate(P);
-float landed = step(0.995, p);
-float k = 1.0 - pow(1.0 - p, 2.2);                       // ralentit en arrivant
+float pa = saturate(p / 0.95);                            // 0.95 : contact avec le plat-bord
+float k = 1.0 - pow(1.0 - pa, 1.8);                       // ralentit en arrivant
 float3 a = float3(3200.0, -1600.0, 900.0);               // départ, repère de la barque (cm) : loin devant à gauche, haut
 float3 m = float3(900.0, -700.0, 380.0);
 float3 b = float3(20.0, -64.0, 47.0);                    // plat-bord gauche (demi-largeur ~70 cm, haut à ~47 cm), devant le spectateur
 float3 pl = lerp(lerp(a, m, k), lerp(m, b, k), k);        // courbe de Bézier : plane en descendant
-pl.z += (1.0 - landed) * 30.0 * sin(T * 2.6) * (1.0 - k);
 float3 dl = lerp(m - a, b - m, k);
+float fold = smoothstep(0.95, 0.98, p);                   // ailes repliées, passage à l'image « posé »
+float env = max(saturate(1.0 - pa * 2.5), smoothstep(0.6, 0.85, pa)) * (1.0 - fold);   // battements : envol, freinage
+float fl = sin(T * 8.5);                                  // ~1,35 battement par seconde
+pl.z -= fl * env * 9.0;                                   // le corps monte quand les ailes s'abaissent
+pl.z -= fold * (1.0 - fold) * 16.0;                       // se tasse en se posant (4 cm)
 float3 pw = AX.xyz * pl.x + AY.xyz * pl.y + AZ.xyz * pl.z;
 float3 dw = AX.xyz * dl.x + AY.xyz * dl.y;
-float which = UV1.x;                                     // 0 : en vol, 1 : posé
-float show = (which < 0.5 ? 1.0 - landed : landed) * step(0.002, p);
-float size = which < 0.5 ? 170.0 : 100.0;
 float flip = dot(dw, VR.xyz) > 0.0 ? -1.0 : 1.0;         // les images regardent vers la gauche
-float qx = (UV0.x - 0.5) * size * flip;
-float qy = (1.0 - UV0.y) * size - (which < 0.5 ? size * 0.5 : 0.0);
+float u = UV0.x, v = UV0.y;                               // v = 0 en haut de l'image
+float qx, qy, show;
+if (UV1.x < 0.5)
+{
+    // ailes : bande du haut (au-dessus de la tête) et haut de l'image derrière le cou ; tête et pattes ne bougent pas
+    float wing = max(smoothstep(0.36, 0.26, v), smoothstep(0.36, 0.46, u) * smoothstep(0.56, 0.46, v));
+    float s = lerp(0.3, lerp(-0.35, 1.0, 0.5 + 0.5 * fl), env);   // 1 : levées (l'image), 0,3 : plané, < 0 : abaissées
+    s = lerp(s, 0.1, fold);
+    float vv = v + (0.48 - v) * (1.0 - s) * wing;
+    float x0 = (u - 0.5) * 170.0, y0 = (0.5 - vv) * 170.0;
+    float desc = saturate(-dl.z / max(length(dl), 1.0));
+    float ang = desc * 0.5 - 0.4 * smoothstep(0.8, 0.95, pa) * (1.0 - fold);   // pique en descendant, se cabre en freinant
+    float ca = cos(ang), sa = sin(ang);
+    qx = (x0 * ca - y0 * sa) * flip;
+    qy = x0 * sa + y0 * ca;
+    show = step(0.002, p) * step(fold, 0.999);
+}
+else
+{
+    qx = (u - 0.5) * 100.0 * flip;
+    qy = (1.0 - v) * 100.0 * (1.0 + 0.012 * sin(T * 1.7));   // respiration
+    show = step(0.001, fold);
+}
 return pw + (VR.xyz * qx + VU.xyz * qy) * show;"""
+# fondu de l'image « en vol » vers l'image « posé » : dissolution par cellules (matériau masqué, pas de transparence)
+HERON_MASK_CODE = """float fold = smoothstep(0.95, 0.98, saturate(P));
+float h = frac(sin(dot(floor(UV0 * 48.0), float2(12.9898, 78.233))) * 43758.5453);
+return A * (UV1.x < 0.5 ? step(h, 1.0 - fold) : step(h, fold));"""
 HERON_UV_CODE = """return float2((UV1.x + UV0.x) * 0.5, UV0.y);"""
 
 
 def heron_material():
     path = f"{GB}/M_GB_Heron"
     atlas = look_texture("sprite_heron")
-    digest = spec_digest("heron-v2", HERON_WPO_CODE, HERON_UV_CODE, SPRITE_COLOR_CODE, MPC_DIGEST, eal.get_metadata_tag(atlas, "source_sha1"))
+    digest = spec_digest("heron-v3", HERON_WPO_CODE, HERON_UV_CODE, HERON_MASK_CODE, SPRITE_COLOR_CODE, MPC_DIGEST, eal.get_metadata_tag(atlas, "source_sha1"))
     mat = eal.load_asset(path) if eal.does_asset_exist(path) else None
     if up_to_date(mat, digest):
         return mat
@@ -1664,7 +1713,12 @@ def heron_material():
         cp.set_editor_property("parameter_name", {"Ciel": "CielAppoint", "Day": "VieJour"}.get(nm, nm))
         mel.connect_material_expressions(cp, "", col, nm)
     mel.connect_material_property(col, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
-    mel.connect_material_property(tex, "A", unreal.MaterialProperty.MP_OPACITY_MASK)
+    mk = custom_node(mat, HERON_MASK_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT1, ["A", "UV0", "UV1", "P"], -400, -150)
+    mel.connect_material_expressions(tex, "A", mk, "A")
+    mel.connect_material_expressions(uv0, "", mk, "UV0")
+    mel.connect_material_expressions(uv1, "", mk, "UV1")
+    mel.connect_material_expressions(pp, "", mk, "P")
+    mel.connect_material_property(mk, "", unreal.MaterialProperty.MP_OPACITY_MASK)
     mel.recompile_material(mat)
     if mel.get_statistics(mat).num_pixel_shader_instructions <= 0:
         raise RuntimeError("M_GB_Heron ne compile pas")
@@ -1675,13 +1729,20 @@ def heron_material():
 if os.path.exists(os.path.join(ROOT, "assets", "textures", "sprite_heron.png")):
     MATS["Heron"] = heron_material()
     hv, ht, huv, huv1 = [], [], [], []
-    for which in (0, 1):                 # deux plans, sommets à l'origine (écartés de 5 mm : triangles non dégénérés)
+    # deux plans, sommets à l'origine (écartés de 5 mm : triangles non dégénérés) ; « en vol » en grille 12 × 12 (les ailes
+    # se plient), « posé » en un seul quad
+    for which, n in ((0, 12), (1, 1)):
         base = len(hv)
-        for u, v in ((0, 1), (1, 1), (1, 0), (0, 0)):
-            hv.append([(u - 0.5) * 0.005, 0.0, (1 - v) * 0.005])
-            huv.append([u, v])
-            huv1.append([which, 0])
-        ht += [[base, base + 1, base + 2], [base, base + 2, base + 3]]
+        for j in range(n + 1):
+            for i in range(n + 1):
+                u, v = i / n, j / n
+                hv.append([(u - 0.5) * 0.005, 0.0, (1 - v) * 0.005])
+                huv.append([u, v])
+                huv1.append([which, 0])
+        for j in range(n):
+            for i in range(n):
+                a_, b_ = base + j * (n + 1) + i, base + (j + 1) * (n + 1) + i
+                ht += [[a_, a_ + 1, b_ + 1], [a_, b_ + 1, b_]]
     heron_mesh = build_mesh("HeronFinal", {"vertices": hv, "triangles": ht, "normals": [[0, -1, 0]] * len(hv), "uv": huv, "uv1": huv1,
                                            "color": [1, 1, 1, 1]})
     heron = place_mesh(heron_mesh, "GB_HeronFinal", "Heron", boat.get_actor_location())
@@ -1786,7 +1847,7 @@ if os.path.exists(SKY_PNG):
         sky_tex = eal.load_asset(f"{GB}/ciel")
         eal.set_metadata_tag(sky_tex, "source_sha1", sky_digest)
         eal.save_loaded_asset(sky_tex)
-    SKY_WATER_VERSION = "ciel-eau-v19"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
+    SKY_WATER_VERSION = "ciel-eau-v21"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
     sky_mat_path = f"{GB}/M_GB_CielPeint"
     sky_mat = eal.load_asset(sky_mat_path) if eal.does_asset_exist(sky_mat_path) else None
     rebuild_sky_water = not up_to_date(sky_mat, spec_digest(SKY_WATER_VERSION, sky_digest, MPC_DIGEST, WATER_CODE,
@@ -1880,10 +1941,10 @@ if os.path.exists(SKY_PNG):
 # Échelles D4 : abysses 15 m de long (épaisseur ramenée à 2,5 m), troupeau 2,5 m au garrot, volante 40 m d'envergure.
 CREATURES = {
     # bloc : (modèle, matériau du bloc, échelle du bloc de repli, échelle du modèle (x, y, z), décalage z cm, triangles max)
-    "GB_Abysses": ("abysses/trellis2-s42", "Creature", (15, 7, 1.2), (15, 15, 4.5), 0.0, 20000),
+    "GB_Abysses": (model_dir("abysses"), "Creature", (15, 7, 1.2), (15, 15, 4.5), 0.0, 20000),
     # eau au poitrail (séquencier) : à -60 cm, seuls les dos moussus sortaient de l'eau, lus comme des rochers (19/10)
-    "GB_Troupeau": ("troupeau/trellis2-s42", "Troupeau", (3.0, 2.2, 2.5), (4.1, 4.1, 4.1), 0.0, 12000),   # pieds au sol sur la berge
-    "GB_Volante": ("fly/trellis2-s42", "Volante", (40, 12, 4), (56, 56, 56), 0.0, 20000),
+    "GB_Troupeau": (model_dir("troupeau"), "Troupeau", (3.0, 2.2, 2.5), (4.1, 4.1, 4.1), 0.0, 12000),   # pieds au sol sur la berge
+    "GB_Volante": (model_dir("fly"), "Volante", (40, 12, 4), (56, 56, 56), 0.0, 20000),
 }
 
 
@@ -2158,7 +2219,7 @@ for i in range(5):
     creature(f"GB_Troupeau{i}", "GB_Troupeau", ue(0, -60 - i * 4, 0.6))
 creature("GB_Volante", "GB_Volante", ue(*moon_xy, 150))
 if model is not None:      # la barque et la lanterne prennent aussi le look peint
-    for i, pm in enumerate(painted_model(model, "Barque", tint=(0.78, 0.66, 0.54))):   # bois brun patiné (image d'Olivier)
+    for i, pm in enumerate(painted_model(model, "Barque", tint=(0.70, 0.58, 0.46))):   # bois brun patiné (image d'Olivier ; un peu plus sombre le 20/10)
         if pm is not None:
             hull.static_mesh_component.set_material(i, pm)
     if lantern_model is not None:
@@ -2189,7 +2250,7 @@ def place_model(model, label, loc, yaw, size_cm, z_base_cm, painted_name, tint=N
 pm = MARKS["ponton"]
 pose_p = pose_at(pm["t"])
 across_yaw = -pose_p["heading_deg"] - 90.0               # axe X du modèle en travers de la rivière
-ponton = import_glb("ponton/trellis2-s42", "/Game/Assets/Ponton", 15000)
+ponton = import_glb(model_dir("ponton"), "/Game/Assets/Ponton", 15000, max_tex=4096)
 if ponton is not None:
     # trois travées de 2,2 m depuis la berge droite vers la trajectoire, tablier à 0,9 m, pieds dans l'eau
     for i, side in enumerate((-7.7, -5.5, -3.3)):
@@ -2232,7 +2293,9 @@ def projection(pid, flip=0.0):
 # TRELLIS) puis assemblées ; décalage en travers et rotation propre à chaque figure (TRELLIS les a remises de face)
 ARCH_FIGURES = {"gauche": (0.24, float(os.environ.get("BARQUE_ROT_G", "180"))), "droite": (-0.26, float(os.environ.get("BARQUE_ROT_D", "270")))}   # trouvés par essais (19/10)
 statues = None if ARCH_VARIANT == "deux" else import_glb(f"arche-statues/{ARCH_VARIANT}-s42", f"/Game/Assets/ArcheStatues_{ARCH_VARIANT}", 300000, smooth=True,
-                     lods=((0.33, 0.6), (0.1, 0.25)))   # 300 k dessous, 100 k à l'approche, 30 k de loin (gué : 63 i/s à 300 k)   # TRELLIS : forme remaillée à 1536 (image_to_3d --remesh 1536 --smooth 5)   # forme remaillée à 1536 (image_to_3d --remesh 1536 --smooth 5)   # vu de près : détail (retour du 19/10)
+                     lods=((0.33, 0.6), (0.1, 0.25)), max_tex=4096)
+# TRELLIS : forme remaillée à 1536 (image_to_3d --remesh 1536 --smooth 5) ; vu de près, le détail compte (retour du 19/10) ;
+# niveaux de détail : 300 k dessous, 100 k à l'approche, 30 k de loin (gué : 63 i/s avec 300 k partout)
 racine = None if (statues is not None or ARCH_VARIANT == "deux") else import_glb("racine/trellis2-s42", "/Game/Assets/Racine", 30000)
 if ARCH_VARIANT == "deux":
     loc, _ = oriented(am["t"], 0.0, 0.0, 0.0)
@@ -2279,7 +2342,7 @@ if racine is not None:
 # HEAD_SIDE : 1 = gauche, -1 = droite
 HEAD_T, HEAD_SIDE, HEAD_SIDE_M, HEAD_H_CM = 165.0, -1, 1.0, 1250.0
 HEAD_TOWARD_DEG = 35.0       # visage tourné vers l'amont : il regarde la barque qui arrive (on le découvre en approchant)
-tete = import_glb("tete-couchee/trellis2-s42", "/Game/Assets/TeteCouchee", 50000, smooth=True)
+tete = import_glb(model_dir("tete-couchee"), "/Game/Assets/TeteCouchee", 50000, smooth=True, max_tex=4096)
 if tete is not None:
     ph_ = pose_at(HEAD_T)
     loc, _ = oriented(HEAD_T, 0.0, HEAD_SIDE * (ph_["width_m"] / 2 + HEAD_SIDE_M), 0.8)

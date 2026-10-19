@@ -1,6 +1,7 @@
 """Animatic vidéo (J2) : rendu Movie Render Queue de LS_Animatic, puis montage avec la musique.
 
     python pipeline/review/animatic.py --iter 1     # → review/iter-001/animatic.mp4
+    python pipeline/review/animatic.py --extrait 125 133 --sortie eau.mp4     # extrait muet (vérifier un mouvement)
 
 Nécessite l'éditeur ouvert. Images intermédiaires dans builds/animatic/frames/ (hors dépôt). La musique
 est posée à offset_s (pipeline/sequencer.yaml) ; S1 (0:00-0:20) est en noir, comme dans la séquence.
@@ -28,13 +29,21 @@ FPS = 30
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--iter", type=int, required=True)
+    ap.add_argument("--iter", type=int)
+    ap.add_argument("--extrait", nargs=2, type=float, metavar=("DEBUT", "FIN"), help="secondes : extrait muet")
+    ap.add_argument("--sortie", help="vidéo de l'extrait (défaut : builds/animatic/extrait.mp4)")
     ap.add_argument("--timeout", type=int, default=3600)
     ap.add_argument("--mux-only", action="store_true", help="monter la vidéo à partir des images déjà rendues")
     args = ap.parse_args()
     seq = yaml.safe_load((ROOT / "pipeline" / "sequencer.yaml").read_text(encoding="utf-8"))
     duration = seq["music"]["offset_s"] + seq["music"]["duration_s"]
     expected = int(round(duration * FPS))
+    rng = ""
+    if args.extrait:
+        a, b = (int(round(x * FPS)) for x in args.extrait)
+        rng, expected = f"{a},{b}", b - a
+    elif args.iter is None:
+        raise SystemExit("--iter ou --extrait requis")
     if args.mux_only:
         mux(args.iter, seq, duration, len(list(FRAMES.glob("*.jpeg"))))
         return
@@ -44,7 +53,7 @@ def main():
 
     with gpu_lock("animatic.py (rendu Movie Render Queue)"):
         wrapper = ROOT / "Unreal" / "Saved" / "barque_render.py"
-        wrapper.write_text(f"import os\nos.environ['BARQUE_FRAMES'] = r'{to_windows(FRAMES)}'\n"
+        wrapper.write_text(f"import os\nos.environ['BARQUE_FRAMES'] = r'{to_windows(FRAMES)}'\nos.environ['BARQUE_RANGE'] = '{rng}'\n"
                            f"exec(open(r'{to_windows(ROOT / 'pipeline/unreal/scripts/render_animatic.py')}', encoding='utf-8').read())\n",
                            encoding="utf-8")
         if ue_run.run_live(wrapper) is None:
@@ -62,6 +71,13 @@ def main():
                 raise SystemExit(f"\nRendu bloqué ou trop long ({n}/{expected} images)")
             time.sleep(5)
     print()
+    if args.extrait:
+        dest = Path(args.sortie) if args.sortie else ROOT / "builds" / "animatic" / "extrait.mp4"
+        first = min(int(p.stem) for p in FRAMES.glob("*.jpeg"))
+        subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-framerate", str(FPS), "-start_number", str(first),
+                        "-i", str(FRAMES / "%05d.jpeg"), "-c:v", "libx264", "-crf", "20", "-pix_fmt", "yuv420p", str(dest)], check=True)
+        print(dest)
+        return
     mux(args.iter, seq, duration, last)
 
 

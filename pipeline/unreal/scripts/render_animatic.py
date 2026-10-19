@@ -25,6 +25,10 @@ out.output_directory = unreal.DirectoryPath(frames_dir)
 out.output_resolution = res
 out.file_name_format = "{frame_number}"
 out.zero_pad_frame_numbers = 5
+if os.environ.get("BARQUE_RANGE"):         # extrait : "début,fin" en images (animatic.py --extrait)
+    a, b = (int(x) for x in os.environ["BARQUE_RANGE"].split(","))
+    out.use_custom_playback_range = True
+    out.custom_start_frame, out.custom_end_frame = a, b
 cfg.find_or_add_setting_by_class(unreal.MoviePipelineDeferredPassBase)
 cfg.find_or_add_setting_by_class(unreal.MoviePipelineImageSequenceOutput_JPG)
 executor = unreal.MoviePipelineNewProcessExecutor()

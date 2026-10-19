@@ -1,23 +1,32 @@
 # Suivi — La barque des lucioles
 
 **Fichier unique de suivi.** Tenu par l'agent, lu par Olivier. Classé par criticité.
-Mis à jour : 2026-10-19
+Mis à jour : 2026-10-20
 
 Légende : 🔴 bloque un jalon, aucun contournement · 🟠 j'avance avec un contournement · 🟢 mineur
 
 ---
 
-## ⏸ Pause du 19/10 au soir — chantier « reprise 3D et eau » en cours (rien de construit ni vérifié)
+## ▶ Session autonome du 20/10 (20 h, casque et 3D rendus par Olivier) — en cours
 
-- ✅ **Blender 5.2.2 LTS portable** installé dans `G:\blender` (accord D9), déclaré dans `pipeline/tools.yaml`.
-- ✅ **Modèles 3D régénérés** avec les réglages fins (forme 1536, 5 passes de lissage, texture 4096, nettoyage VRAM avant
-  le remaillage : ~3 min par modèle au lieu de 27) : barque, ponton, tête, lanterne, abysses, créature volante.
-  **Troupeau** : échec mémoire au remaillage, ancien modèle gardé (à relancer seul).
-- ✍ **Écrit, pas encore construit** dans `greybox.py` : eau (sillage de Kelvin, vague d'étrave, écume des flancs, rides,
-  texture d'eau sans saut, reflets qui ondoient, écume qui lèche les berges), vent uniforme (rafale), niveaux de détail de
-  l'arche (300 k / 100 k / 30 k).
-- **À faire à la reprise** : retirer les deux planches de la barque dans Blender ; réimporter tous les modèles ; construire ;
-  animatic vérifié image par image (eau surtout) ; APK + mesure ; reprendre l'animation du héron.
+- ✅ **Blender autonome** : lancé en arrière-plan depuis WSL (`pipeline/blender/run.py`), étape `blender-3d` de build.py.
+- ✅ **Bancs flottants de la barque retirés** (`pipeline/blender/nettoyage_3d.py`) : c'étaient deux morceaux séparés du
+  maillage, larges de 26 cm dans une coque de 52 (d'où le vide de chaque côté) ; retirés avec la boucle de corde sous
+  l'étrave. Débris retirés des autres modèles (ponton, tête, lanterne, troupeau).
+- ✅ **Tous les modèles réimportés** depuis leur version nettoyée : barque **80 k triangles** (30 k avant), texture 4096 pour
+  ce qui se voit de près (barque, ponton, tête, arche), 2048 pour les créatures, 1024 pour la lanterne.
+- ✅ **Arche adaptative** : 3 niveaux de détail (300 k dessous, 100 k à l'approche, 30 k de loin) au lieu de 150 k partout.
+- ✅ **Lanterne posée sur le plancher**, sur le côté avant (le banc qui la portait a disparu) ; de jour, sa lumière compte
+  moins sur la barque (elle la délavait en rose pâle).
+- ✅ **Eau refaite** (vérifiée en captures et sur un extrait rendu) :
+  - rides en réseau sans direction (`assets/textures/rides-iso.png`) : les traits orientés en travers de la rivière
+    devenaient des rayons qui convergent dès qu'on tournait la tête (l'effet « pluie » des captures casque) ;
+  - les reflets ondulent selon la pente des rides ;
+  - sillage de Kelvin né à l'étrave (deux bras qui longent les flancs puis s'ouvrent derrière), vague d'étrave, bourrelet
+    et écume le long des flancs ; la texture d'eau ne saute plus (deux phases fondues).
+- ✅ **Héron v3** : battements d'ailes (grille déformée dans le shader), plané, piqué en descente, cabré au freinage,
+  ailes repliées et fondu vers l'image « posé », qui se tasse puis respire.
+- ✅ **Vent** : phase quasi uniforme (une rafale), construit.
 
 ## ▶ Retours au casque du 19/10, 4e essai (mesure faite, casque porté)
 

@@ -42,6 +42,8 @@ STAGES = [
     ("glow-map", "carte des lueurs (reflets de nuit dans l'eau)", [PY, "pipeline/layout/glow_map.py"], None),
     ("relief", "cartes de relief des sprites proches (volume en stéréo)", [PY, "pipeline/comfy/relief.py", "arbres", "arbres2",
                                                                           "arbres3", "arbres4", "buissons", "fourres", "heros", "faune"], None),
+    ("blender-3d", "reprises des modèles 3D (bancs flottants de la barque, débris)", [PY, "pipeline/blender/run.py",
+                                                                                     "pipeline/blender/nettoyage_3d.py"], "blender"),
     ("unreal-greybox", "niveau greybox", [PY, "pipeline/unreal/run.py", "pipeline/unreal/scripts/greybox.py"], "unreal"),
     ("unreal-animatic", "séquence de l'animatic", [PY, "pipeline/unreal/run.py", "pipeline/unreal/scripts/animatic.py"], "unreal"),
     ("unreal-j1", "scène de test J1 (sphère 360 stéréo)", [PY, "pipeline/unreal/run.py", "pipeline/unreal/scripts/j1_spike.py"], "unreal"),
