@@ -97,11 +97,12 @@ def main():
     hc = math.radians(pc["heading_deg"])
     alt = cl["ahead_m"] * math.tan(math.radians(22))
     fx, fy, lx, ly = math.cos(hc), math.sin(hc), -math.sin(hc), math.cos(hc)
+    k = cl["ahead_m"] / 300.0                                    # vitesses réglées pour 300 m : même vitesse apparente
     for t in np.arange(cl["t"] - 34, cl["t"] + 60, 1.0):
         u = (t - cl["t"]) / 20.0                                # passage lent devant la lune (retour : trop rapide)
-        side = cl["side_m"] - 150.0 * u
-        ahead = cl["ahead_m"] + 45.0 * max(u - 1, 0) ** 1.2     # après le passage : s'éloigne
-        zz = alt + 6.0 * math.sin(u * 1.3) + 20.0 * max(u - 1, 0)
+        side = cl["side_m"] - 150.0 * k * u
+        ahead = cl["ahead_m"] + 45.0 * k * max(u - 1, 0) ** 1.2  # après le passage : s'éloigne
+        zz = alt + 6.0 * k * math.sin(u * 1.3) + 20.0 * k * max(u - 1, 0)
         x, y = pc["x"] + fx * ahead + lx * side, pc["y"] + fy * ahead + ly * side
         yaw = math.degrees(math.atan2(-ly * 150 + fy * (45 if u > 1 else 0), -lx * 150 + fx * (45 if u > 1 else 0)))
         out["volante"].append([round(float(t), 2), round(x, 2), round(y, 2), round(zz, 2), round(yaw, 2)])

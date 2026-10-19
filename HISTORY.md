@@ -372,4 +372,7 @@ autonome. `SUIVI.md` dit où en est le projet ; ce fichier raconte comment on y 
 - **Statues géantes, en recherche** : l'idée d'Olivier du 18/10 (« à débattre ensemble ») est reprise en trois images
   générées en local, avec des designs originaux : deux gardiens moussus, une tête couchée dans la rivière, une arche
   sculptée en deux figures agenouillées. Envoyées pour décision (D18), rien d'intégré.
+- **La créature devant la lune** : à 300 m, elle ne couvrait qu'une fois et demie la lune et la brume la bleuissait ;
+  « géante » ne se lisait pas. Rapprochée à 200 m dans la même direction, avec des déplacements réduits d'autant pour
+  garder la même lenteur apparente.
 

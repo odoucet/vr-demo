@@ -39,6 +39,8 @@ session. Revue par l'animatic rendu par Unreal (lumière de chaque beat, musique
   mousse, dans l'eau jusqu'au poitrail).
 - 🔧 **Arche des racines habillée** : lianes dispersées sous la voûte (trouée au-dessus du chenal) ; le modèle 3D,
   lisse, paraissait nu vu de dessous.
+- 🔧 **Créature volante plus présente** : passe à 200 m au lieu de 300 (même direction, devant la lune, même vitesse
+  apparente) : 1,5 fois plus grande à l'œil, moins voilée par la brume (D4 : envergure inchangée).
 - 🔧 **Vent** : arbres, buissons, touffes et lianes se balancent doucement (pied fixe, ~1 % de la hauteur à la cime) ;
   les plans restent orientés, ils ne tournent pas avec la tête.
 - 🔧 **Lac final moins vide** : nénuphars en fleurs le long du passage de la barque ; leurs fleurs s'allument la nuit.

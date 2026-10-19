@@ -98,11 +98,11 @@
   {
    "id": "creature-lune",
    "t": 180.8,
-   "ahead_m": 300,
-   "side_m": 80,
-   "note": "la lune et la créature au sommet, ~15° à gauche du cap pour ne pas être masquées par la lanterne de proue (D11)",
-   "x": 425.31,
-   "y": 215.21
+   "ahead_m": 200,
+   "side_m": 54,
+   "note": "la lune et la créature au sommet, ~15° à gauche du cap ; à 200 m (300 avant le 19/10 : petite et voilée par la brume, peu « géante »)",
+   "x": 342.38,
+   "y": 153.59
   },
   {
    "id": "ile-lanternes",
