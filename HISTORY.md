@@ -464,3 +464,9 @@ autonome. `SUIVI.md` dit où en est le projet ; ce fichier raconte comment on y 
   carrés : trajectoire par la gauche, taille réduite, fondu fin. Vu de la place assise, il semble debout dans l'eau ;
   une vue de dessus montre qu'il est bien sur le plat-bord — la perspective d'un sprite plat trompe, la stéréo tranchera.
 - **Troupeau** régénéré (remaillage à 1024 : la mémoire ne suffit pas à 1536 pour ce modèle).
+- **Sons du héron** : la règle du projet veut un repère sonore avant chaque créature. Cri d'aigrette (Freesound, CC0) au
+  loin 2,5 s avant qu'il n'apparaisse, battements d'ailes quand il freine ; l'émetteur suit la même courbe que le shader,
+  le son vient donc de l'oiseau. Choisis sans pouvoir les écouter : enveloppe et spectre analysés (cris bien au-dessus du
+  fond, pas de grave parasite — la leçon du « bruit de voiture »), validation à l'oreille laissée à Olivier.
+- **Animatic complet** relu (iter-054) : l'eau tient sur tout le parcours, de jour comme de nuit. APK installé ; le
+  casque, posé, attend d'être porté pour la mesure de fluidité.

@@ -50,12 +50,13 @@ Légende : 🔴 bloque un jalon, aucun contournement · 🟠 j'avance avec un co
 ## ▶ Retours au casque du 19/10, 4e essai (mesure faite, casque porté)
 
 - 📊 **Fluidité** (`review/perf/greybox-20261019-2100.png`) : 72 i/s presque partout, mais GPU à 96-97 % de 0:20 à 2:30 et
-  **le gué décroche (69 en moyenne, creux à 63)** : arche à 300 k triangles en vue + troupeau. → Arche ramenée à 150 k.
-- 🔧 **Vent** visible, mais non uniforme : des arbres voisins s'entrechoquent → phase quasi uniforme (une rafale).
-- 🔧 **Héron** : « presque pas mal », animation à revoir.
-- 🔴 **L'eau** : « le truc le plus moche » — aucune animation, la texture saute ; « c'est clairement ce qui fait pas
-  fini ». Saut : erreur de ma part (texture d'eau avancée sur un cycle sans fondu) → corrigé. Animation : à reprendre en
-  profondeur (prochain chantier).
+  **le gué décroche (69 en moyenne, creux à 63)** : arche à 300 k triangles en vue + troupeau. → 20/10 : arche à niveaux
+  de détail (300 / 100 / 30 k) plutôt qu'allégée ; à remesurer.
+- ✅ **Vent** visible, mais non uniforme : des arbres voisins s'entrechoquent → phase quasi uniforme (une rafale), 20/10.
+- ✅ **Héron** : « presque pas mal », animation à revoir → v3 le 20/10 (battements, plané, posé, sons).
+- ✅ **L'eau** : « le truc le plus moche » — aucune animation, la texture saute ; « c'est clairement ce qui fait pas
+  fini ». Saut : erreur de ma part (texture d'eau avancée sur un cycle sans fondu) → corrigé. **Refaite le 20/10** (rides
+  sans direction, reflets ondulés, sillage de Kelvin) : voir la session du 20/10.
 
 ## ▶ Retours au casque du 19/10, 3e essai du soir
 
