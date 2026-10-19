@@ -369,4 +369,7 @@ autonome. `SUIVI.md` dit où en est le projet ; ce fichier raconte comment on y 
   tourner avec la tête. Les touffes de mousse ajoutées sur l'arche faisaient un chapelet de boules vu de loin : retirées.
 - **Prévisualisation mobile dans l'éditeur** : la plateforme de prévisualisation n'est pas exposée à Python ; l'animatic
   rendu reste la référence hors casque.
+- **Statues géantes, en recherche** : l'idée d'Olivier du 18/10 (« à débattre ensemble ») est reprise en trois images
+  générées en local, avec des designs originaux : deux gardiens moussus, une tête couchée dans la rivière, une arche
+  sculptée en deux figures agenouillées. Envoyées pour décision (D18), rien d'intégré.
 

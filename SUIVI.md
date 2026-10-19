@@ -127,6 +127,7 @@ Chaque décision a un **défaut réversible déjà appliqué** : je n'attends pa
 | D15 | Élément visuel du final à la place des lanternes | nuée de lucioles autour de la barque et dans l'arbre de l'île | autre élément : fleurs lumineuses, lanternes flottantes près de la barque, reflet de lune… (`lake_fireflies` dans `greybox_geometry.py`) | |
 | D16 | Arbres (« le plus moche ») ou autre décor (statues géantes ?) | arbres et décor en images peintes (sprites) | — | **sprites peints**, « c'est la bonne idée à creuser » (19/10) |
 | D17 | Animatics vidéo déjà poussés dans l'historique Git (~925 Mo en LFS, quota GitHub limité) | désormais hors dépôt (`.gitignore`), planches seules versionnées ; l'historique n'est pas réécrit | les retirer de l'historique (réécriture, à autoriser) ou acheter du quota LFS | |
+| D18 | Statues géantes (ton idée « à débattre ») : 3 pistes en image de recherche, `review/explorations/statues/planche.jpg` (gardiens, tête couchée, arche sculptée) | rien d'intégré | choisir une piste et un moment de la balade : je la peins en sprite (comme l'arbre colossal) | |
 
 **Nettoyage LFS (dans la todo d'Olivier, à lancer sur son accord écrit)** — ~2,2 Go en LFS sur tout l'historique, dont
 ~1,3 Go d'animatics vidéo (`review/iter-*/animatic.mp4`), ≥ 460 Mo d'assets Unreal (versions successives), ~150 Mo de
@@ -251,6 +252,17 @@ Dis-moi laquelle garder (ou un mélange : par exemple B au loin et C près de l'
 - Clé Freesound collée dans la conversation : risque faible, à régénérer si tu préfères.
 
 ## À vérifier au casque
+
+- **Prochain essai (version du 19/10 après-midi, APK installé)** — tout n'a été vu qu'en rendu PC :
+  - **perf** : relief des sujets proches (≤ 24 k triangles de sprites par vue, estimés), vent (shader de sommets),
+    reflets dans l'eau ; mesurer S2-S3 en premier (les plus justes) ;
+  - **arbres immobiles** : plus de rotation avec la tête ? plans qui s'effacent vus par la tranche : discrets ?
+  - **relief** des arbres et buissons proches en stéréo : volume perçu, ou défauts (étirements, bords) ?
+  - **nouvelle barque** : échelle (3,5 × 1,56 m), hauteur des yeux, franc-bord ; lanterne sur l'avant droit : gêne-t-elle
+    encore ? assez visible la nuit ?
+  - eau : reflets des lueurs, chemin de lune, eau de jour moins terne ;
+  - canards qui nagent, sons de faune (canards, grenouilles, chouettes) et leur portée ; libellules ;
+  - fondu d'ouverture de 10 s ; arche habillée de lianes ; lac final avec nénuphars lumineux.
 
 - **Scène en images peintes (19/10)** : les arbres et buissons peints restent-ils crédibles de près, au bord de l'eau
   (relief plat, léger pivotement quand on tourne la tête) ? Densité des berges (trop de fleurs ?), hérons et
