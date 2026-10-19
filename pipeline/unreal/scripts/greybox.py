@@ -1100,8 +1100,8 @@ def sprite_set(key, mode, instances, cull_cm):
     elif mode == "touffe":     # vertical, centré
         verts = [[-hw, 0, -0.5], [hw, 0, -0.5], [hw, 0, 0.5], [-hw, 0, 0.5]]
         nrm = [[0, -1, 0]] * 4
-    elif mode == "relief":     # vertical, pied au sol, grille creusée par le matériau (arbres 8 × 16, petits sujets 8 × 8)
-        rows = 8 if name in ("buissons", "fourres", "faune") else 16
+    elif mode == "relief":     # vertical, pied au sol, grille creusée par le matériau (arbres 6 × 12, petits sujets 6 × 6)
+        rows = 6 if name in ("buissons", "fourres", "faune") else 12
         nz = rows + 1
         nx = max(5, round(rows * aspect) + 1)
         verts = [[-hw + 2 * hw * i / (nx - 1), 0, j / (nz - 1)] for j in range(nz) for i in range(nx)]

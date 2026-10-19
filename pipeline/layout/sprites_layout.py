@@ -36,7 +36,9 @@ from vegetation import Field  # noqa: E402
 
 OUT = LAYOUT / "sprites.json"
 EYE = 1.1                     # hauteur des yeux au-dessus de l'eau (m)
-RELIEF_M = {"arbres": 25, "arbres2": 25, "arbres3": 25, "arbres4": 25, "buissons": 12, "fourres": 12, "heros": 999,
+# (le relief compte surtout de près : au-delà de ~15 m, l'écart stéréo d'un mètre de profondeur devient faible ; coût
+# estimé par pipeline/review/charge.py)
+RELIEF_M = {"arbres": 18, "arbres2": 18, "arbres3": 18, "arbres4": 18, "buissons": 10, "fourres": 10, "heros": 999,
             "faune": 999}
 SPRITES = ROOT / "assets" / "textures" / "sprites"
 
@@ -223,7 +225,8 @@ def main():
     # le houppier ; rochers géants moussus au bord de l'eau, souches géantes en lisière -------------------------
     gz = F.at(*colossal_xy)[0] or 0.0
     add("heros", "debout", [colossal_xy[0], colossal_xy[1], gz - 2.0, 42.0, 1, 0, 0.95])
-    for t in (31, 57, 88, 101, 121, 158, 176, 195):
+    # pas au gué (S4, 98-128 s) : moussus, on les confondait avec les bêtes du troupeau
+    for t in (31, 57, 88, 136, 158, 176, 195):
         p = min(s, key=lambda q: abs(q["t"] - t))
         h0 = math.radians(p["heading_deg"])
         o = rng.choice([-1, 1]) * (p["width_m"] / 2 + rng.uniform(-1.2, 0.5))
@@ -298,6 +301,26 @@ def main():
             continue
         pads.append((x, y, r))
         add("eau", "sol", [x, y, 0.02 + 0.006 * (len(pads) % 5), size, cell, rng.uniform(0, 360), rng.uniform(0.85, 1.05)])
+    # Lac (S7, 200-240 s) : il paraissait vide jusqu'à la nuée finale ; nénuphars en fleurs le long du passage de la
+    # barque, dont les fleurs s'allument la nuit (éclat > 1,5, comme la famille « nuit »)
+    lake_path = [q for q in s if q["t"] >= 196]
+    for _ in range(260):
+        q = lake_path[rng.integers(len(lake_path))]
+        h0 = math.radians(q["heading_deg"])
+        off = rng.choice([-1, 1]) * rng.uniform(2.5, 16.0)
+        x, y = q["x"] - math.sin(h0) * off + rng.uniform(-2, 2), q["y"] + math.cos(h0) * off + rng.uniform(-2, 2)
+        z, _d = F.at(x, y)
+        if z is None or z > -0.15:
+            continue
+        cell = int(rng.choice([0, 2, 5, 0, 2, 1, 6]))         # surtout des touffes fleuries (blanches, roses, jaunes)
+        size = rng.uniform(0.9, 1.7)
+        r = size * 0.45
+        if any(math.hypot(x - px, y - py) < r + pr for px, py, pr in pads):
+            continue
+        pads.append((x, y, r))
+        glow = cell in (0, 2, 5) and rng.uniform() < 0.7
+        add("eau", "sol", [x, y, 0.02 + 0.006 * (len(pads) % 5), size, cell, rng.uniform(0, 360),
+                           rng.uniform(1.9, 2.3) if glow else rng.uniform(0.85, 1.0)])
 
     # --- Faune des berges (sujets posés, aux moments du parcours où on les voit bien) ----------------------------
     def bank_spot(t, side, off):

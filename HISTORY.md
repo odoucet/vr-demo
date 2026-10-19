@@ -352,4 +352,13 @@ autonome. `SUIVI.md` dit où en est le projet ; ce fichier raconte comment on y 
 - **Nouvelle barque** : l'image envoyée dans la conversation n'existait pas sur le disque ; elle a été retrouvée en base64
   dans la transcription de la session, écrite à la place de refs/barque.png à la demande d'Olivier, puis passée en 3D
   (TRELLIS.2 et Pixal3D).
+- **Chiffrer sans casque** : un estimateur compte, pour chaque caméra de revue, les sprites dans le champ et en deçà de
+  leur distance de culling, et leurs triangles. Le premier réglage du relief ajoutait jusqu'à 67 000 triangles par vue
+  en S2-S3, là où le Quest était le plus juste. Le relief comptant surtout de près, il est resserré (arbres < 18 m,
+  grilles plus légères) : 24 000 triangles au pire.
+- **Passe de contrôle** sur l'animatic, une image toutes les 6 s : le troupeau semblait avoir disparu du gué. Il était
+  là : ses bêtes couvertes de mousse, dans l'eau jusqu'au poitrail, se lisaient comme des rochers, d'autant que deux
+  rochers géants moussus posés la nuit précédente se trouvaient au gué. Rochers déplacés. Le lac final paraissait vide
+  jusqu'à la nuée : nénuphars en fleurs le long du passage, fleurs lumineuses la nuit. Voûte au-dessus de l'eau en
+  résolution double (floue de près).
 

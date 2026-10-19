@@ -139,7 +139,7 @@ sets:
       - [foret-sombre, "dark deep forest edge with tall tree trunks and heavy shadowed foliage"]
   feuillages:
     type: foliage
-    cell: [512, 512]
+    cell: [1024, 1024]   # vues de près au-dessus de la barque (voûte) : floues en 512
     grid: [4, 2]
     size: [1024, 1024]
     seed: 1500

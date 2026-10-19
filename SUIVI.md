@@ -18,10 +18,11 @@ session. Revue par l'animatic rendu par Unreal (lumière de chaque beat, musique
   arbres avaient tous une plaque d'herbe peinte sous le tronc : retirée, pied estompé.
 - ✅ **Lumière cohérente** : une image retournée était éclairée du mauvais côté ; le miroir est désormais choisi au
   placement pour que le côté éclairé regarde le soleil du beat où l'on voit le sujet.
-- 🔧 **Relief des sujets proches** (à juger au casque, en stéréo) : arbres à moins de 25 m du parcours, buissons et
-  fourrés à moins de 12 m, faune, arbre colossal : grille creusée selon une carte de relief tirée de la silhouette
-  peinte (`pipeline/comfy/relief.py`), au lieu du plan plat. ~110 k triangles de plus au total (une partie visible à la
-  fois) : **coût à mesurer**. Retour arrière : `RELIEF_M = {}` dans `sprites_layout.py`.
+- 🔧 **Relief des sujets proches** (à juger au casque, en stéréo) : arbres à moins de 18 m du parcours, buissons et
+  fourrés à moins de 10 m, faune, arbre colossal : grille creusée selon une carte de relief tirée de la silhouette
+  peinte (`pipeline/comfy/relief.py`), au lieu du plan plat. Charge estimée hors casque (`pipeline/review/charge.py`,
+  `review/charge.txt`) : ≤ 24 k triangles de sprites par vue (contre ~5 k sans relief, 72 k avec le premier réglage).
+  **Coût à mesurer au casque.** Retour arrière : `RELIEF_M = {}` dans `sprites_layout.py`.
 - ✅ **Libellules qui reculaient en vol** (retour d'Olivier) : leurs à-coups inversaient la vitesse ; à-coups gardés,
   sans marche arrière, image tournée dans le sens réel du vol.
 - ✅ **Fondu d'ouverture 4 fois plus long** (retour d'Olivier) : 10 s au lieu de 2,5, même fin (22,5 s) ; l'image
@@ -33,6 +34,10 @@ session. Revue par l'animatic rendu par Unreal (lumière de chaque beat, musique
   tangue. Si tu préfères : sans lanterne, ou ailleurs (`LANTERN_LOCAL` dans `greybox.py`).
 - 🔧 **Reflets des lueurs dans l'eau la nuit** : plantes lumineuses, lucioles des berges et nuée finale se reflètent en
   traînées près de la ligne d'eau (`pipeline/layout/glow_map.py`, une lecture de texture de plus).
+- 🔧 **Voûte au-dessus de l'eau** plus nette de près : cases de l'atlas des touffes passées de 512 à 1 024 px.
+- 🔧 **Rochers géants retirés du gué** : moussus, ils se confondaient avec les bêtes du troupeau (créatures couvertes de
+  mousse, dans l'eau jusqu'au poitrail).
+- 🔧 **Lac final moins vide** : nénuphars en fleurs le long du passage de la barque ; leurs fleurs s'allument la nuit.
 - 🔧 **Chemin de lune** sur l'eau la nuit : reflet de la lune peinte, étiré à la verticale par les rides, en éclats.
 - 🔧 **Sons de la faune** (choisis sans écoute, sans parole détectée par Whisper ; **à valider à l'écoute**, D7) :
   canards (3 groupes), chœurs de grenouilles en S3, hululements des chouettes en S6, spatialisés à leur place et
