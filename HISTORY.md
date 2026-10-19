@@ -375,4 +375,6 @@ autonome. `SUIVI.md` dit où en est le projet ; ce fichier raconte comment on y 
 - **La créature devant la lune** : à 300 m, elle ne couvrait qu'une fois et demie la lune et la brume la bleuissait ;
   « géante » ne se lisait pas. Rapprochée à 200 m dans la même direction, avec des déplacements réduits d'autant pour
   garder la même lenteur apparente.
+- **Reconstruction complète** (`python pipeline/build.py`, toutes les étapes) : passe. Elle a montré que les instances de
+  matériau des sprites étaient réécrites à chaque build ; elles ont maintenant une empreinte, comme le reste.
 

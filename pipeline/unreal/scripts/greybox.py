@@ -1107,18 +1107,26 @@ def sprite_set(key, mode, instances, cull_cm):
         atlas.set_editor_property("alpha_coverage_thresholds", unreal.Vector4(0, 0, 0, 0.5))
         eal.save_loaded_asset(atlas)
     mi_path = f"{GB}/MI_GB_Sprite_{tag_}"
-    mi = eal.load_asset(mi_path) if eal.does_asset_exist(mi_path) else tools.create_asset(
-        f"MI_GB_Sprite_{tag_}", GB, unreal.MaterialInstanceConstant, unreal.MaterialInstanceConstantFactoryNew())
-    mi.set_editor_property("parent", MATS["SpriteRelief" if mode == "relief" else "Sprite"])
-    mel.set_material_instance_texture_parameter_value(mi, "Atlas", atlas)
-    if mode == "relief":
-        mel.set_material_instance_texture_parameter_value(mi, "Relief", relief_texture(name))
-        mel.set_material_instance_scalar_parameter_value(mi, "Creux", RELIEF_CREUX.get(name, 0.12))
-    for k, v in (("Cols", float(cols)), ("Rows", float(rows)), ("Tranche", 0.0 if mode == "sol" else 1.0),
-                 ("Vent", 0.0 if mode in ("sol", "fixe") else 1.0), ("Centre", 1.0 if mode == "touffe" else 0.0)):
-        mel.set_material_instance_scalar_parameter_value(mi, k, v)
-    mel.update_material_instance(mi)
-    eal.save_loaded_asset(mi)
+    parent = MATS["SpriteRelief" if mode == "relief" else "Sprite"]
+    rtex = relief_texture(name) if mode == "relief" else None
+    params = (("Cols", float(cols)), ("Rows", float(rows)), ("Tranche", 0.0 if mode == "sol" else 1.0),
+              ("Vent", 0.0 if mode in ("sol", "fixe") else 1.0), ("Centre", 1.0 if mode == "touffe" else 0.0),
+              ("Creux", RELIEF_CREUX.get(name, 0.12) if mode == "relief" else 0.0))
+    mi_digest = spec_digest("mi-sprite-v1", parent.get_path_name(), eal.get_metadata_tag(parent, "source_sha1"),
+                            atlas.get_path_name(), eal.get_metadata_tag(atlas, "source_sha1"),
+                            rtex.get_path_name() if rtex else "", eal.get_metadata_tag(rtex, "source_sha1") if rtex else "", params)
+    mi = eal.load_asset(mi_path) if eal.does_asset_exist(mi_path) else None
+    if not up_to_date(mi, mi_digest):    # réécrite seulement si elle change (sinon chaque build regonfle le dépôt LFS)
+        mi = mi or tools.create_asset(f"MI_GB_Sprite_{tag_}", GB, unreal.MaterialInstanceConstant, unreal.MaterialInstanceConstantFactoryNew())
+        mi.set_editor_property("parent", parent)
+        mel.set_material_instance_texture_parameter_value(mi, "Atlas", atlas)
+        if rtex is not None:
+            mel.set_material_instance_texture_parameter_value(mi, "Relief", rtex)
+        for k, v in params:
+            if k != "Creux" or mode == "relief":
+                mel.set_material_instance_scalar_parameter_value(mi, k, v)
+        mel.update_material_instance(mi)
+        mark_saved(mi, mi_digest)
     hw = aspect / 2
     if mode == "sol":          # à plat, centré
         verts = [[-hw, -0.5, 0], [hw, -0.5, 0], [hw, 0.5, 0], [-hw, 0.5, 0]]
