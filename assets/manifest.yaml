@@ -381,15 +381,12 @@ assets:
   generated: '2026-10-18'
 - id: texture/tex-roche
   type: texture
-  placeholder: true
+  placeholder: false
   file: assets/textures/tex-roche.png
-  source: génération locale, repeinte depuis refs/tex-mousse.png (référence de style), rendue raccordable
-  workflow: pipeline/comfy/workflows/qwen_edit_2509_angle.json (LoRA d'angles à 0)
-  script: pipeline/comfy/textures.py tex-roche --seed 2
-  seed: 2
-  prompt: PROMPTS.md, section Textures (tex-roche)
-  licence: généré localement
-  generated: '2026-10-18'
+  source: refs/tex-roche.png (Olivier, Midjourney, 19/10), copiée par pipeline/comfy/textures.py (remplace la génération locale du 18/10)
+  script: pipeline/comfy/textures.py tex-roche
+  licence: image d'Olivier (Midjourney)
+  generated: '2026-10-19'
 - id: texture/tex-terre
   type: texture
   placeholder: true
