@@ -204,23 +204,28 @@ assets:
   type: mesh
   placeholder: true
   file: assets/3d/arche-statues/trellis2-s42/model.glb (hors dépôt, régénérable)
-  source: image → 3D TRELLIS.2 (bf16, seed 42) depuis refs/inbox/arche-statues.png (Olivier, Midjourney, prompt `arche-statues` de PROMPTS.md, une seule vue) ; substitut local d'abord (assets/concepts/arche-statues.png, pipeline/comfy/substituts.py)
+  source: image → 3D TRELLIS.2 (bf16, seed 42) depuis refs/inbox/arche-statues.png (Olivier, Midjourney, prompt
+    `arche-statues` de PROMPTS.md, une seule vue) ; substitut local d'abord (assets/concepts/arche-statues.png,
+    pipeline/comfy/substituts.py)
   workflow: pipeline/comfy/workflows/3d_pixal3d_trellis2_image_to_model.ui.json
   script: pipeline/comfy/image_to_3d.py refs/inbox/arche-statues.png --models trellis2
   seed: 42
   licence: généré localement depuis les images d'Olivier (Midjourney)
-  note: 'arche de pierre aux deux figures agenouillées (remplace l''arche des racines, D18) ; sans végétation, habillé dans Unreal (mousse dans le matériau, lianes et plantes peintes)'
+  note: arche de pierre aux deux figures agenouillées (remplace l'arche des racines, D18) ; sans végétation, habillé
+    dans Unreal (mousse dans le matériau, lianes et plantes peintes)
   generated: '2026-10-19'
 - id: 3d/tete-couchee
   type: mesh
   placeholder: true
   file: assets/3d/tete-couchee/trellis2-s42/model.glb (hors dépôt, régénérable)
-  source: image → 3D TRELLIS.2 (bf16, seed 42) depuis refs/inbox/tete-couchee.png (Olivier, Midjourney, prompt `tete-couchee` de PROMPTS.md, une seule vue) ; substitut local d'abord (assets/concepts/tete-couchee.png, pipeline/comfy/substituts.py)
+  source: image → 3D TRELLIS.2 (bf16, seed 42) depuis refs/inbox/tete-couchee.png (Olivier, Midjourney, prompt `tete-couchee`
+    de PROMPTS.md, une seule vue) ; substitut local d'abord (assets/concepts/tete-couchee.png, pipeline/comfy/substituts.py)
   workflow: pipeline/comfy/workflows/3d_pixal3d_trellis2_image_to_model.ui.json
   script: pipeline/comfy/image_to_3d.py refs/inbox/tete-couchee.png --models trellis2
   seed: 42
   licence: généré localement depuis les images d'Olivier (Midjourney)
-  note: 'tête de pierre couchée sur la berge gauche au début de S6 (D18) ; sans végétation, habillé dans Unreal (mousse dans le matériau, lianes et plantes peintes)'
+  note: tête de pierre couchée sur la berge gauche au début de S6 (D18) ; sans végétation, habillé dans Unreal (mousse
+    dans le matériau, lianes et plantes peintes)
   generated: '2026-10-19'
 - id: 3d/barque
   type: mesh
@@ -231,7 +236,8 @@ assets:
   script: pipeline/comfy/image_to_3d.py refs/barque.png --models trellis2
   seed: 42
   licence: généré localement depuis les images d'Olivier (Midjourney)
-  note: 'nouvelle image d''Olivier (19/10, barque sans lanterne, corde à la proue) ; import Unreal : 3,5 × 1,56 m, franc-bord ~45 cm, proue +X ; lanterne : modèle 3d/lanterne posé sur l''avant droit par greybox.py'
+  note: 'nouvelle image d''Olivier (19/10, barque sans lanterne, corde à la proue) ; import Unreal : 3,5 × 1,56
+    m, franc-bord ~45 cm, proue +X ; lanterne : modèle 3d/lanterne posé sur l''avant droit par greybox.py'
   generated: '2026-10-19'
 - id: 3d/abysses
   type: mesh
@@ -383,7 +389,8 @@ assets:
   type: texture
   placeholder: false
   file: assets/textures/tex-roche.png
-  source: refs/tex-roche.png (Olivier, Midjourney, 19/10), copiée par pipeline/comfy/textures.py (remplace la génération locale du 18/10)
+  source: refs/tex-roche.png (Olivier, Midjourney, 19/10), copiée par pipeline/comfy/textures.py (remplace la génération
+    locale du 18/10)
   script: pipeline/comfy/textures.py tex-roche
   licence: image d'Olivier (Midjourney)
   generated: '2026-10-19'
@@ -583,4 +590,25 @@ assets:
   source: refs/tex-eau.png (Olivier, Midjourney), copiée par pipeline/comfy/textures.py
   licence: image d'Olivier (Midjourney)
   generated: '2026-10-19'
-
+- id: sfx/cue-heron
+  type: sound
+  file: audio/sfx/cue-heron.ogg
+  source: 'Freesound #541377 « Great egret.WAV » par joericortens'
+  url: https://freesound.org/people/joericortens/sounds/541377/
+  licence: http://creativecommons.org/publicdomain/zero/1.0/
+  credit: Great egret.WAV by joericortens (freesound.org)
+  format: aperçu OGG ~192 kb/s (original à récupérer via OAuth pour le master)
+  beats:
+  - S7-LAC
+  script: pipeline/audio/freesound.py pick cue-heron 541377
+- id: sfx/sfx-heron-ailes
+  type: sound
+  file: audio/sfx/sfx-heron-ailes.ogg
+  source: 'Freesound #753219 « 1. Wings Flapping » par Lsoundaccount'
+  url: https://freesound.org/people/Lsoundaccount/sounds/753219/
+  licence: http://creativecommons.org/publicdomain/zero/1.0/
+  credit: 1. Wings Flapping by Lsoundaccount (freesound.org)
+  format: aperçu OGG ~192 kb/s (original à récupérer via OAuth pour le master)
+  beats:
+  - S7-LAC
+  script: pipeline/audio/freesound.py pick sfx-heron-ailes 753219

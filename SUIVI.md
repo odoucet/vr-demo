@@ -27,6 +27,8 @@ Légende : 🔴 bloque un jalon, aucun contournement · 🟠 j'avance avec un co
 - ✅ **Héron v3** : battements d'ailes (grille déformée dans le shader), plané, piqué en descente, cabré au freinage,
   ailes repliées et fondu vers l'image « posé », qui se tasse puis respire.
 - ✅ **Vent** : phase quasi uniforme (une rafale), construit.
+- ✅ **Sons du héron** (Freesound CC0, choisis sur analyse, **pas écoutés**) : cri d'aigrette au loin 2,5 s avant son
+  apparition, battements d'ailes quand il freine ; émetteur qui suit sa trajectoire (le son vient de lui).
 
 - 📦 **APK installé au Quest** (20/10, ~23 h 30, `builds/android_greybox/`, 713 Mo) avec tout ce qui précède. Casque
   posé et en veille : **fluidité non mesurée** (il faut le porter).
@@ -40,7 +42,8 @@ Légende : 🔴 bloque un jalon, aucun contournement · 🟠 j'avance avec un co
 4. **Eau** : rides vivantes, plus d'effet « pluie » en tournant la tête ? reflets qui ondulent ? sillage visible sur les
    côtés et derrière ? vague d'étrave ? texture qui ne saute plus ?
 5. **Vent** : les arbres bougent ensemble, sans s'entrechoquer ?
-6. **Héron** : battements, plané, posé sur le plat-bord (en perspective il semble debout dans l'eau ; vue de dessus il est
+6. **Héron** : battements, plané, posé sur le plat-bord ; son cri et ses ailes (choisis sans les écouter) te conviennent-ils ?
+   Posé sur le plat-bord (en perspective il semble debout dans l'eau ; vue de dessus il est
    bien sur le rebord : la stéréo dira).
 7. **Troupeau** régénéré (plus net) ; tête, ponton, créatures : plus de détail qu'avant ?
 
@@ -622,5 +625,5 @@ binning : un triangle qui couvre plusieurs tuiles est traité plusieurs fois, [M
 |---|---|
 | J0 Bible de style | prompts prêts ; **palette par beat** (`review/bible/palettes.png`, `pipeline/style/palettes.yaml`) à partir de tes essais S2/S5/S6/S7 et de concepts provisoires S1/S3/S4 ; ciel peint provisoire ; attend tes images d'assets (I1) et le choix de l'image maîtresse (D1) |
 | J1 Spike vidéo 360 + Quest | scène J1_Spike construite par script (sphère 360 stéréo + séquence + témoin de synchro), matériau validé dans l'éditeur ; **APK prêt : `builds/android/Barque-arm64.apk`** (485 Mo) ; attend le test au casque (go / no-go) |
-| J2 Greybox + animatic | greybox construit par script (terrain, eau translucide, arche, forêt, lac, lune, blocs des créatures) ; séquence LS_Animatic calée sur la musique ; 18 captures et animatic vidéo avec musique ; **itérations 9-10 : textures peintes, ciel HD, ~530 k triangles de décor, eau peinte avec sillage, lanterne-bougie** ; look peint, lumière par beat, créatures corrigées (itération 8) ; lucioles animées (itération 7) ; brume par beat, roseaux, nénuphars (itération 6) ; eau qui reflète le ciel peint (itération 5), ciel peint (itération 4) (crépuscule → nuit) après les créatures 3D (itération 3) (abysses lumineuse, troupeau, créature volante) après la barque 3D en itération 2 (modèle TRELLIS.2 de ta vue 3/4, lanterne lumineuse, place assise sur le banc arrière) — `review/iter-011/planche-animatic.jpg` et `review/iter-011/animatic.mp4` ; à valider : timing et confort au casque |
+| J2 Greybox + animatic | **jouable au Quest, essais au casque quotidiens depuis le 18/10** : décor en images peintes, modèles 3D TRELLIS repris dans Blender (barque, ponton, pont-statues à niveaux de détail, tête, créatures), eau peinte animée avec sillage, lucioles, faune, sons spatialisés, héron du final ; tout en temps réel (D19). Reste : mesure de fluidité de la version du 20/10, validation timing et confort |
 | J3 à J6 | non commencés |

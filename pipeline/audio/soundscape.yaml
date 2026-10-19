@@ -29,3 +29,7 @@ sounds:
   - {id: sfx-chouette,    start: 151, end: 156, volume: 0.9, fade_in: 0.2, fade_out: 0.5, attach: GB_Son_chouette-150, portee: proche}
   - {id: sfx-chouette,    start: 162, end: 167, volume: 0.9, fade_in: 0.2, fade_out: 0.5, attach: GB_Son_chouette-172, portee: proche}
   - {id: sfx-canards,     start: 186, end: 214, volume: 0.6, fade_in: 4, fade_out: 5, attach: GB_Son_canards-198, portee: proche}
+  # Héron du final (20/10) : émetteur qui suit sa trajectoire (animatic.py). Cri au loin 2,5 s avant qu'il n'apparaisse
+  # (arrivée de 212,7 à 228,7 s, avant-gauche, à 36 m), battements d'ailes pendant qu'il freine pour se poser.
+  - {id: cue-heron,       start: 210.2, end: 214.5, volume: 1.0, fade_in: 0.1, fade_out: 1, attach: GB_Son_Heron}
+  - {id: sfx-heron-ailes, start: 222.0, end: 227.6, volume: 0.9, fade_in: 1, fade_out: 0.8, attach: GB_Son_Heron, portee: proche}

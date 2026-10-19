@@ -1751,6 +1751,10 @@ if os.path.exists(os.path.join(ROOT, "assets", "textures", "sprite_heron.png")):
     heron.root_component.set_editor_property("relative_location", unreal.Vector(0, 0, 0))
     heron.root_component.set_editor_property("relative_rotation", unreal.Rotator(0, 0, 0))
     heron.static_mesh_component.set_editor_property("bounds_scale", 4000.0)   # il vient de 36 m : jamais exclu du rendu
+    # émetteur de ses sons (cri, battements d'ailes), déplacé par la séquence le long de la même courbe (animatic.py)
+    hs_ = tag(actors.spawn_actor_from_class(unreal.TargetPoint, boat.get_actor_location()), "GB_Son_Heron")
+    hs_.root_component.set_mobility(unreal.ComponentMobility.MOVABLE)
+    hs_.attach_to_actor(boat, "", unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, False)
 # Caméra du spectateur, sur le banc arrière (-1,20 m du centre), yeux à 1,10 m de l'eau. Reculée de 0,80 m
 # à 1,20 m pour réduire la place de la lanterne de proue dans le champ (SUIVI.md, D11).
 # place assise à l'arrière (avancer sur le banc ne cachait pas les lisses qui flottaient : le plancher les recouvre, FLOOR_Z)

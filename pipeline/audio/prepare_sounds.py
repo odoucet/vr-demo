@@ -26,7 +26,7 @@ for ogg in sorted(SRC.glob("*.ogg")):
     stamp = wav.with_suffix(f".v2s{skip}" if skip else ".v2")
     if wav.exists() and stamp.exists() and wav.stat().st_mtime >= ogg.stat().st_mtime:
         continue
-    cue = ogg.stem.startswith(("cue-", "sfx-gue"))
+    cue = ogg.stem.startswith(("cue-", "sfx-gue", "sfx-heron"))
     loud = "loudnorm=I=-18:TP=-2:LRA=11" if cue else "loudnorm=I=-24:TP=-2:LRA=11"
     subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-ss", str(skip), "-i", str(ogg), "-af", loud, "-ar", "48000",
                     "-ac", "1" if cue else "2", "-c:a", "pcm_s16le", str(wav)], check=True)

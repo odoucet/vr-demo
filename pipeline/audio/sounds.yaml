@@ -70,3 +70,13 @@ sounds:
     beats: [S6-LUNE]
     query: owl hooting
     min_duration: 4
+  # Héron du final (20/10) : cri au loin pour guider le regard, puis battements d'ailes en se posant sur le rebord.
+  - id: cue-heron
+    beats: [S7-LAC]
+    query: egret  # 541377 « Great egret » : cris rauques de 0 à 8 s (analysés, non écoutés)
+    min_duration: 1
+  - id: sfx-heron-ailes
+    beats: [S7-LAC]
+    query: bird wings flapping
+    min_duration: 1
+    debut_s: 13.4      # 753219 : battements réguliers (~0,6 s) de 13,6 à 25 s, avant : silence et un choc

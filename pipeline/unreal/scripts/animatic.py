@@ -422,6 +422,30 @@ for snd in SOUNDSCAPE:
     vol.add_key(frame(snd["end"] - snd["fade_out"]), snd["volume"], interpolation=LIN)
     vol.add_key(frame(snd["end"]), 0.0, interpolation=LIN)
 
+# Émetteur des sons du héron : même courbe que HERON_WPO_CODE (greybox.py), dans le repère de la barque (cm, y Unreal).
+# L'avancement suit la courbe de HeronFinal (deux clés, approchée par un smoothstep : à l'oreille, l'écart ne s'entend pas).
+_hb = next((b for b in seq.get_bindings() if b.get_display_name() == "GB_Son_Heron"), None)
+if _hb is None and "GB_Son_Heron" in by_label:
+    _hb = seq.add_possessable(by_label["GB_Son_Heron"])
+if _hb is not None:
+    _ha, _hm, _hbz = (3200.0, -1600.0, 900.0), (700.0, -1000.0, 300.0), (90.0, -58.0, 50.0)
+    _sec = _hb.add_track(unreal.MovieScene3DTransformTrack).add_section()
+    _sec.set_range(0, end)
+    _ch = _sec.get_all_channels()  # Location XYZ, Rotation XYZ, Scale XYZ (comme transform_track)
+    for _i, _v in ((3, 0.0), (4, 0.0), (5, 0.0), (6, 1.0), (7, 1.0), (8, 1.0)):
+        _ch[_i].set_default(_v)
+    _t0, _t1 = T_FADE_OUT - 24.0, T_FADE_OUT - 8.0
+    _t = 0.0
+    while _t <= DURATION:
+        _u = min(max((_t - _t0) / (_t1 - _t0), 0.0), 1.0)
+        _p = _u * _u * (3.0 - 2.0 * _u)
+        _pa = min(_p / 0.95, 1.0)
+        _k = 1.0 - (1.0 - _pa) ** 1.8
+        _pos = [(1 - _k) ** 2 * _ha[i] + 2 * (1 - _k) * _k * _hm[i] + _k * _k * _hbz[i] for i in range(3)]
+        for i in range(3):
+            _ch[i].add_key(frame(_t), _pos[i], interpolation=LIN)
+        _t += 0.5 if _t0 - 3.0 <= _t <= _t1 + 1.0 else 10.0
+
 # Stems spatialisés : chaque piste joue sur sa source attachée à la barque (atténuation douce : volume quasi
 # constant, seule la direction compte) ; les pistes sans position restent en 2D.
 if STEMS:
