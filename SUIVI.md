@@ -283,6 +283,12 @@ Dis-moi laquelle garder (ou un mélange : par exemple B au loin et C près de l'
 
 ## Fait récemment
 
+- **19/10 après-midi, sans casque** (détail : section « Chantier sans casque » en tête) : filtre PC retiré, bas des
+  touffes festonnés, troncs sans plaque d'herbe, miroir selon le soleil, relief des sujets proches, vent, voûte en
+  haute résolution, reflets des lueurs et chemin de lune, sons de faune, libellules, fondu d'ouverture de 10 s, nouvelle
+  barque et lanterne basse, arche habillée, troupeau lisible, créature volante plus présente, lac fleuri ; build complet
+  vérifié ; APK final installé (632 Mo) ; dernier animatic `review/iter-045/planche-animatic.jpg`.
+
 - **19/10 matin** : casque revenu (redémarré et mis à jour par Olivier), dernier APK installé à 9 h 04 (arbre colossal
   peint, rochers) ; pas encore mesuré par adb. WSL est passé en réseau NAT : ComfyUI et le MCP Unreal sont joints sur
   `172.19.32.1` (adresses centralisées dans `pipeline/tools.yaml`). Journal de création ouvert : `HISTORY.md`.
