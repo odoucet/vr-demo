@@ -145,6 +145,7 @@ def main():
                normal_center=c - [0, 0, r * 0.3], ao=(c[2] - r, c[2] + r, 0.45))
         P.cylinder(edge, [px, py, (z or 0) - 0.5], [px, py, c[2] - r * 0.5], 0.5, 0.35, COL["tronc"], sides=4)
 
+    rocks = []                                   # rochers 3D [x, y, taille] (écrits dans vegetation.json)
     # --- Berges : herbe, buissons fleuris, rochers -------------------------------------------------------------
     for p in s:
         if p["t"] < 14:
@@ -201,7 +202,9 @@ def main():
                 px, py = p["x"] + nx * off, p["y"] + ny * off
                 z, d = F.at(px, py)
                 if z is not None and not excluded(px, py):
-                    P.rock(chunk(px, py), px, py, max(z, -0.3), rng.uniform(0.4, 1.3), rng, COL["rocher"])
+                    rs = rng.uniform(0.4, 1.3)
+                    rocks.append([round(px, 2), round(py, 2), round(rs, 2)])     # les sprites les évitent (sprites_layout.py)
+                    P.rock(chunk(px, py), px, py, max(z, -0.3), rs, rng, COL["rocher"])
 
     # --- Fleurs de nénuphar (S3) et roseaux du lac (S7) -----------------------------------------------------------
     for p in s:
@@ -236,7 +239,9 @@ def main():
             continue
         off = k * ford["width_m"] / 13
         px, py = ford["x"] + 18 * math.cos(h0) - math.sin(h0) * off, ford["y"] + 18 * math.sin(h0) + math.cos(h0) * off
-        P.rock(chunk(px, py), px, py, -0.25, rng.uniform(0.5, 0.9), rng, COL["rocher"])
+        rs = rng.uniform(0.5, 0.9)
+        rocks.append([round(px, 2), round(py, 2), round(rs, 2)])
+        P.rock(chunk(px, py), px, py, -0.25, rs, rng, COL["rocher"])
 
     # --- Arbre colossal (S5) : tronc évasé sur la berge gauche, contreforts de racines, houppier immense ----------
     colossal = P.Bundle()
@@ -338,7 +343,7 @@ def main():
     out = {k: ({"lods": [m.to_dict(f) for f in DETAIL_KEEP]} if m.has_detail else m.to_dict()) for k, m in meshes.items()}
     OUT.write_text(json.dumps({"units": "m", "meshes": out,
                                "lanternes": lanterns, "prototypes": prototypes, "instances": instances,
-                               "forest": forest, "crowns": crowns}),
+                               "forest": forest, "crowns": crowns, "rochers": rocks}),
                    encoding="utf-8")
     print(f"→ {OUT.relative_to(ROOT)} ({OUT.stat().st_size / 1e6:.1f} Mo)")
 

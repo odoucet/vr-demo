@@ -266,9 +266,9 @@ swarm.append((DURATION, swarm[-1][1][:2] + (12000.0,), swarm[-1][2]))
 transform_track(by_label["GB_Lucioles"], swarm, scale=(1.0, 1.0, 1.0), interp=SMOOTH)
 # nuée du lac : affichée seulement pour le final, monte lentement de 4 m
 if "GB_LuciolesLac" in by_label:
-    transform_track(by_label["GB_LuciolesLac"], [(0.0, (0.0, 0.0, 0.0), 0.0), (T_REVEAL - 4.0, (0.0, 0.0, 0.0), 0.0),
-                                                 (DURATION, (0.0, 0.0, 400.0), 0.0)], interp=SMOOTH)
-    visible_between("GB_LuciolesLac", T_REVEAL - 4.5, DURATION + 1)
+    transform_track(by_label["GB_LuciolesLac"], [(0.0, (0.0, 0.0, 0.0), 0.0), (T_REVEAL - 12.0, (0.0, 0.0, 0.0), 0.0),
+                                                 (DURATION, (0.0, 0.0, 150.0), 0.0)], interp=SMOOTH)   # 4 m → 1,5 m (19/10 : trop vite)
+    visible_between("GB_LuciolesLac", T_REVEAL - 12.5, DURATION + 1)
 # sphère de fondu : affichée seulement pendant les fondus (une surface translucide plein écran coûte même transparente)
 visible_windows("GB_Fondu", [(0.0, FADE_IN_END + 0.1), (T_FADE_OUT - 0.1, DURATION + 1)])
 visible_between("GB_Lucioles", t_env - 0.5, DURATION + 1)
@@ -303,8 +303,8 @@ if mpc is not None:
         msec.add_scalar_parameter_key("LucioleFade", frame(t), v)
     for t, v in ((0.0, 0.0), (t_env_fade - 0.5, 0.0), (t_env_fade + 6.0, 1.0)):
         msec.add_scalar_parameter_key("EnvolFade", frame(t), v)
-    # final : la nuée du lac s'allume en 10 s sur la dernière montée de la musique (événement lanternes-reveal)
-    for t, v in ((0.0, 0.0), (T_REVEAL - 4.0, 0.0), (T_REVEAL + 6.0, 1.0)):
+    # final : la nuée du lac s'allume une à une en 18 s, jusqu'à la dernière montée de la musique (lanternes-reveal)
+    for t, v in ((0.0, 0.0), (T_REVEAL - 12.0, 0.0), (T_REVEAL + 6.0, 1.0)):
         msec.add_scalar_parameter_key("FinaleFade", frame(t), v)
     for t, v in FADE_KEYS:
         msec.add_scalar_parameter_key("Fondu", frame(t), v)

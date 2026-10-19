@@ -416,4 +416,12 @@ autonome. `SUIVI.md` dit où en est le projet ; ce fichier raconte comment on y 
   venaient de la mémoire du GPU partagée avec l'éditeur Unreal ; le nœud de nettoyage d'Olivier est branché.
 - **Fin de journée** : APK complet empaqueté et installé, liste de 22 points de validation au casque rédigée dans SUIVI.md
   (tout ce qui n'a été vu qu'en rendu PC depuis le matin).
+- **Test au casque du soir** (Olivier, enregistrement audio commenté en direct) : fondu, arbres fixes, lanterne basse,
+  canards, feuilles volantes, arbre géant validés ; le pont aux statues est le moment fort (« waouh »). À reprendre : la
+  lanterne traverse la coque en tanguant, les canards se croisent, une fougère traverse un rocher 3D, les nénuphars
+  manquent de résolution (saut de mipmap visible), des planches de la barque flottent, les lucioles finales montent trop
+  vite et devraient s'allumer une à une. Et une remarque de mise en scène : le troupeau détourne l'attention de l'arche.
+- **Corrections du soir** : lanterne recentrée, canards en cercles concentriques, rochers 3D évités par les sprites,
+  nénuphars en résolution double, lucioles finales qui s'allument vraiment une à une et montent moins. Nouvel APK
+  installé (19 h 07).
 

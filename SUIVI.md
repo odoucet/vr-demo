@@ -7,6 +7,25 @@ Légende : 🔴 bloque un jalon, aucun contournement · 🟠 j'avance avec un co
 
 ---
 
+## ▶ Retours au casque du 19/10 au soir (enregistrement audio d'Olivier)
+
+- ✅ Fondu d'ouverture, lanterne (« ne gêne pas du tout »), arbres fixes (« ça rend très bien »), canards, feuilles dans
+  les airs (« super beau »), bête des abysses bien visible à droite, arbre géant (« magnifique »), troupeau, **pont**
+  (« superbe », « waouh, elle rend vraiment super bien de passer dessous »), lucioles autour du joueur.
+- ✅ **Lanterne** décalée vers le centre (36 → 22 cm de l'axe) : ne doit plus traverser la coque en tanguant.
+- ✅ **Canards** : chaque groupe nage sur des cercles concentriques, même sens, même vitesse : ils ne se croisent plus.
+- ✅ **Fougère dans un rocher 3D** : les rochers 3D sont maintenant connus du placement, aucun sprite debout dedans.
+- 🔧 **Nénuphars** : atlas passé de 512 à 1024 px par case (images sources ~800 px : gain réel mais limité ; le saut de
+  mipmap devrait se voir moins). Si ça reste flou : les régénérer en plus grand.
+- ❓ **Barque** : des planches flottent dans le vide. Rien de visible sur les vues extérieures : **où exactement ?**
+  (avant, banc, bord)
+- ✅ **Lucioles du final** : s'allument une à une sur 18 s (chacune en ~1,5 s au lieu de 5) et ne montent plus que de
+  1,5 m (4 m avant).
+- ✅ Fluidité : pas de gros défaut au casque. Pas de son parasite. Plus de triangles noirs sur la pierre.
+- ⏳ Vent dans les arbres : « ça m'a pas choqué, ou alors imperceptible » → à revalider au prochain essai.
+- 💬 Le troupeau attire l'attention juste avant l'arche : « on se concentre moins sur la magnifique arche » (à discuter :
+  décaler le troupeau, ou l'arche plus tard).
+
 ## ▶ Test au casque du 19/10 au soir — liste de validation
 
 APK `builds/android_greybox/Barque-arm64.apk` installé (paquet `com.odoucet.barque.greybox`, volume à 1). Note chaque point

@@ -189,7 +189,7 @@ BOAT_BOTTOM, BOAT_DRAFT = -15.2, 22.0
 # Lanterne : modèle à part (assets/3d/lanterne, papier à nervures), haute de 32 cm, posée bas sur l'avant droit (sur
 # le banc avant) : elle éclaire la nuit sans masquer le décor. Centre dans le repère de la barque (cm).
 LANTERN_H = 32.0
-LANTERN_LOCAL = (125.0, 36.0, 40.0 + LANTERN_H / 2)
+LANTERN_LOCAL = (125.0, 22.0, 40.0 + LANTERN_H / 2)   # 36 → 22 cm du milieu (19/10 : en tanguant, elle traversait la coque)
 # Lanterne qui tangue (retour d'Olivier : « trop figée ») : même balancement, calculé dans le shader, pour le modèle de
 # la lanterne et son halo. Pivot au pied de la lanterne, roulis ~3° autour de l'axe de la barque, tangage ~2°.
 SWAY_CODE = """float ar = 0.055 * sin(T * 1.25) + 0.025 * sin(T * 0.73 + 1.7);   // roulis (rad)
@@ -656,7 +656,7 @@ float b = 0.5 + 0.5 * sin(T * (1.1 + UV.y) + UV.x * 40.0);
 float blink = 0.2 + 0.8 * b * b;
 float core = exp(-d2 * 18.0);
 float halo = exp(-d2 * 3.5) * 0.35 * saturate(1.0 - d2);   // nul au bord du carré (sinon on voit le carré)
-return Col.rgb * (core + halo) * blink * saturate(Fade * 2.0 - UV.y);   // s'allument une à une"""
+return Col.rgb * (core + halo) * blink * saturate((Fade * 1.05 - UV.y) * 12.0);   // une à une, chacune en ~1/12 du fondu"""
 
 
 def firefly_material(color=(4.0, 5.0, 1.2), amp_cm=30.0, name="Luciole", size_cm=14.0, fade="LucioleFade"):

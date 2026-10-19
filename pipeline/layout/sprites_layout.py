@@ -91,7 +91,15 @@ def main():
     rng = np.random.default_rng(31)
     sets = {}
 
+    rocks = np.array(veg.get("rochers", []) or [[1e9, 1e9, 0]], float)
+
+    def in_rock(x, y, r=0.0):
+        """Dans un rocher 3D de vegetation.py (retour du 19/10 : une fougère traversait un gros rocher)."""
+        return bool((np.hypot(rocks[:, 0] - x, rocks[:, 1] - y) < rocks[:, 2] * 1.1 + r).any())
+
     def add(name, mode, inst):
+        if mode in ("debout", "touffe") and name.split("@")[0] not in ("feuillages", "lisieres") and in_rock(inst[0], inst[1], inst[3] * 0.25):
+            return
         if name == "faune" and in_herd_path(inst[0], inst[1], 6.0):   # le troupeau passerait au travers
             return
         if name == "faune" and math.hypot(inst[0] - head_xy[0], inst[1] - head_xy[1]) < 9.0:   # devant la tête de pierre
@@ -374,8 +382,7 @@ def main():
         if in_herd_path(x0, y0, 9.0):
             continue
         sounds[f"canards-{t}"] = [x0, y0, 0.3]
-        for _ in range(n):
-            ducks.append((x0 + rng.uniform(-1.5, 1.5), y0 + rng.uniform(-1.5, 1.5)))
+        ducks.append((x0, y0, n, rng.choice([-1, 1])))
     for k in range(8):                                               # grenouilles près des nénuphars (S3)
         x, y, _z = bank_spot(rng.uniform(50, 88), rng.choice([-1, 1]), -rng.uniform(1.0, 3.0))
         add("faune", "debout", [x, y, 0.02, 0.16, 4, 0, 0.95])
@@ -450,8 +457,12 @@ def main():
     along(20, 230, 260, (3, 14), (7.0, 12.0), 4, (0.25, 0.5), (0.5, 1.0))       # feuilles qui tombent
     along(40, 120, 90, (3, 12), (6.0, 10.0), 5, (0.25, 0.45), (0.5, 1.0))       # pétales (cerisiers)
     along(120, 230, 120, (3, 14), (7.0, 12.0), 6, (0.25, 0.5), (0.5, 1.0))      # feuilles mortes
-    for x, y in ducks:                                                         # canards : petits cercles, dans les deux sens
-        vie.append([x, y, 0.0, 7, rng.choice([-1, 1]) * rng.uniform(0.12, 0.25), rng.uniform(0.6, 1.8), rng.uniform()])
+    # canards : un groupe = des cercles concentriques parcourus dans le même sens à la même vitesse angulaire, phases
+    # réparties (retour du 19/10 : ils se croisaient)
+    for x, y, n, sens in ducks:
+        speed = sens * rng.uniform(0.12, 0.2)
+        for k in range(n):
+            vie.append([x, y, 0.0, 7, speed, 0.7 + 0.75 * k, (k / n + rng.uniform(-0.05, 0.05)) % 1.0])
 
     # --- Orientation des plans immobiles ------------------------------------------------------------------------
     st = np.array([p["t"] for p in s])

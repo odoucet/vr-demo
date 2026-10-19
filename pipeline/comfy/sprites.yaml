@@ -169,7 +169,7 @@ sets:
       - [feuille-morte, "close-up of one single orange maple leaf filling the frame, isolated on an empty plain grey background", {seed: 1677}]
   eau:
     type: top
-    cell: [512, 512]
+    cell: [1024, 1024]   # vus de près sous la barque : flous en 512, saut de mipmap visible (19/10)
     grid: [4, 2]
     size: [1024, 1024]
     seed: 1700
