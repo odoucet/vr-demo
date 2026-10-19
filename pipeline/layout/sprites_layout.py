@@ -36,6 +36,7 @@ from vegetation import Field  # noqa: E402
 
 OUT = LAYOUT / "sprites.json"
 EYE = 1.1                     # hauteur des yeux au-dessus de l'eau (m)
+ARCHE_STATUES = (ROOT / "assets" / "3d" / "arche-statues" / "trellis2-s42" / "model.glb").exists()   # D18, greybox.py
 # (le relief compte surtout de près : au-delà de ~15 m, l'écart stéréo d'un mètre de profondeur devient faible ; coût
 # estimé par pipeline/review/charge.py)
 RELIEF_M = {"arbres": 18, "arbres2": 18, "arbres3": 18, "arbres4": 18, "buissons": 10, "fourres": 10, "heros": 999,
@@ -81,12 +82,19 @@ def main():
     isl = marks["ile-lanternes"]
     lake = river["lake"]
     hx, hy, hux, huy = herd_crossing(river)
+    # tête de pierre couchée (greybox.py, HEAD_T / HEAD_SIDE_M) : rive gauche à 165 s, dégagée des buissons
+    hp_ = min(s, key=lambda q: abs(q["t"] - 165.0))
+    hh_ = math.radians(hp_["heading_deg"])
+    head_xy = (hp_["x"] - math.sin(hh_) * (hp_["width_m"] / 2 + 1.0),
+               hp_["y"] + math.cos(hh_) * (hp_["width_m"] / 2 + 1.0))
     pm = marks["ponton"]
     rng = np.random.default_rng(31)
     sets = {}
 
     def add(name, mode, inst):
         if name == "faune" and in_herd_path(inst[0], inst[1], 6.0):   # le troupeau passerait au travers
+            return
+        if name == "faune" and math.hypot(inst[0] - head_xy[0], inst[1] - head_xy[1]) < 9.0:   # devant la tête de pierre
             return
         sets.setdefault(name, {"mode": mode, "instances": []})["instances"].append([round(float(v), 3) for v in inst] + [0.0, 0.0])
 
@@ -110,7 +118,8 @@ def main():
                 or math.hypot(x - arch["x"], y - arch["y"]) < 12
                 or math.hypot(x - isl["x"], y - isl["y"]) < 12
                 or math.hypot(x - pm["x"], y - pm["y"]) < 6
-                or in_herd_path(x, y))
+                or math.hypot(x - head_xy[0], y - head_xy[1]) < (9.0 if big else 6.5)
+        or in_herd_path(x, y))
 
     def in_herd_path(x, y, margin=4.0):              # couloir du troupeau au gué (S4)
         return abs((x - hx) * huy - (y - hy) * hux) < margin and abs((x - hx) * hux + (y - hy) * huy) < 60
@@ -264,7 +273,9 @@ def main():
     # portée largeur + 18 m, sommet ~12 m, passage libre ~9-11 m au centre
     an = (-math.sin(ah), math.cos(ah))
     half = arch_pose["width_m"] / 2
-    for k in range(8):                                           # dispersés : alignés, ils faisaient une haie suspendue
+    # D18 (19/10) : l'arche de statues remplace l'arche des racines ; ces lianes, calées sur l'ancien anneau, flotteraient
+    # dans l'ouverture du pont : coupées jusqu'à un habillage calé sur la nouvelle géométrie.
+    for k in range(8 if not ARCHE_STATUES else 0):              # dispersés : alignés, ils faisaient une haie suspendue
         off = -(half + 3.0) + (2 * half + 6.0) * (k + rng.uniform(0.1, 0.9)) / 8
         if abs(off) < 1.6:                                       # trouée au-dessus du chenal : la barque passe entre eux
             off = math.copysign(rng.uniform(1.6, 2.6), off or 1.0)
@@ -404,6 +415,16 @@ def main():
             continue
         cell, h1, h2, _w = NIGHT[rng.choice(len(NIGHT), p=nw / nw.sum())]
         add("nuit", "debout", [x, y, z - 0.03, rng.uniform(h1, h2), cell, 0, rng.uniform(2.1, 2.6)])
+
+    # champignons et mousses lumineux au pied de la tête et dans ses creux (ils s'allument à la tombée de la nuit, S6)
+    for _ in range(28):
+        a, r = rng.uniform(0, 2 * math.pi), rng.uniform(4.0, 7.5)
+        x, y = head_xy[0] + math.cos(a) * r, head_xy[1] + math.sin(a) * r
+        z, d = F.at(x, y)
+        if z is None or d < 0.2:
+            continue
+        cell, h1, h2, _w = NIGHT[int(rng.choice([0, 4, 3, 7, 0, 4]))]
+        add("nuit", "debout", [x, y, z - 0.03, rng.uniform(h1, h2), cell, 0, rng.uniform(2.2, 2.6)])
 
     # --- Vie animée dans le shader (greybox.py, VIE_WPO_CODE) : [x, y, z, type, vitesse, rayon, phase] ----------
     # types : 0 héron (grand cercle lent, haut), 1 hirondelle (rase l'eau), 2 papillon, 3 libellule, 4-6 feuille, pétale,

@@ -200,6 +200,28 @@ assets:
   beats:
   - S6-LUNE
   script: pipeline/audio/freesound.py pick cue-volante 171945
+- id: 3d/arche-statues
+  type: mesh
+  placeholder: true
+  file: assets/3d/arche-statues/trellis2-s42/model.glb (hors dépôt, régénérable)
+  source: image → 3D TRELLIS.2 (bf16, seed 42) depuis refs/inbox/arche-statues.png (Olivier, Midjourney, prompt `arche-statues` de PROMPTS.md, une seule vue) ; substitut local d'abord (assets/concepts/arche-statues.png, pipeline/comfy/substituts.py)
+  workflow: pipeline/comfy/workflows/3d_pixal3d_trellis2_image_to_model.ui.json
+  script: pipeline/comfy/image_to_3d.py refs/inbox/arche-statues.png --models trellis2
+  seed: 42
+  licence: généré localement depuis les images d'Olivier (Midjourney)
+  note: 'arche de pierre aux deux figures agenouillées (remplace l''arche des racines, D18) ; sans végétation, habillé dans Unreal (mousse dans le matériau, lianes et plantes peintes)'
+  generated: '2026-10-19'
+- id: 3d/tete-couchee
+  type: mesh
+  placeholder: true
+  file: assets/3d/tete-couchee/trellis2-s42/model.glb (hors dépôt, régénérable)
+  source: image → 3D TRELLIS.2 (bf16, seed 42) depuis refs/inbox/tete-couchee.png (Olivier, Midjourney, prompt `tete-couchee` de PROMPTS.md, une seule vue) ; substitut local d'abord (assets/concepts/tete-couchee.png, pipeline/comfy/substituts.py)
+  workflow: pipeline/comfy/workflows/3d_pixal3d_trellis2_image_to_model.ui.json
+  script: pipeline/comfy/image_to_3d.py refs/inbox/tete-couchee.png --models trellis2
+  seed: 42
+  licence: généré localement depuis les images d'Olivier (Midjourney)
+  note: 'tête de pierre couchée sur la berge gauche au début de S6 (D18) ; sans végétation, habillé dans Unreal (mousse dans le matériau, lianes et plantes peintes)'
+  generated: '2026-10-19'
 - id: 3d/barque
   type: mesh
   placeholder: true

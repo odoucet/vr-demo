@@ -69,6 +69,13 @@ Déjà générés : S2, S5, S6, S7. **Manquent : S1, S3, S4.**
 - `racine` : `single massive arched tree root, smooth stylized bark, moss patches, three-quarter view, [peint-3d]`
 - `arbre-colossal` — `--ar 16:9` (concept de référence, l'arbre sera construit dans le pipeline) : `a colossal ancient tree on a riverbank, its enormous arched roots spanning over the river like a gateway a small boat can pass under, moss and ferns, fireflies, [style]`
 
+### Statues de pierre (19/10, D18) — à passer en 3D **sans végétation** : la mousse, les lianes et les fleurs sont
+ajoutées dans Unreal (images peintes et teinte de mousse), sinon l'image → 3D en fait des blocs informes.
+
+- `arche-statues` : `a monumental ancient stone arch formed by two identical kneeling stone figures in simple long robes facing each other, each with a simple rounded serene face and closed eyes, their arms raised high so that their palms meet overhead, forming a wide tall opening between them, smooth weathered grey stone with soft cracks and worn carved details, each figure kneeling on a rough rock base, no moss, no plants, no water, three-quarter view, [peint-3d]`
+- `arche-statues-face` (facultatif, aide la 3D) : même prompt avec `strict front view, orthographic, symmetrical` à la place de `three-quarter view`.
+- `tete-couchee` : `an enormous ancient carved stone head lying on its side, a simple rounded serene face with closed eyes and a calm mouth, smooth weathered grey stone with soft cracks and chipped edges, the whole head visible including the back, no moss, no plants, no water, three-quarter view, [peint-3d]`
+
 ## Créatures (originales) — `--ar 1:1 --style raw`
 
 Silhouettes simples et lisibles : elles passent en image → 3D puis sont animées par ondulation procédurale.

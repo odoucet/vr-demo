@@ -1379,7 +1379,7 @@ BOAT_DIR, BOAT_MESH = "/Game/Assets/Barque", "/Game/Assets/Barque/model/StaticMe
 BOAT_Z = -BOAT_BOTTOM * BOAT_SCALE_Z - BOAT_DRAFT
 
 
-def import_glb(rel_glb, dest_dir, max_tris=None):
+def import_glb(rel_glb, dest_dir, max_tris=None, smooth=False):
     """Importe assets/3d/<rel_glb>/model.glb dans dest_dir (une fois par empreinte du fichier et par budget de
     triangles) ; None si absent. max_tris : simplification à l'import (budget Quest : ≤ 500 k triangles visibles)."""
     import hashlib
@@ -1388,7 +1388,7 @@ def import_glb(rel_glb, dest_dir, max_tris=None):
         return None
     mesh_path = f"{dest_dir}/model/StaticMeshes/model"
     with open(glb, "rb") as f:
-        digest = hashlib.sha1(f.read()).hexdigest()[:12] + (f"-{max_tris}" if max_tris else "")
+        digest = hashlib.sha1(f.read()).hexdigest()[:12] + (f"-{max_tris}" if max_tris else "") + ("-lisse" if smooth else "")
     if eal.does_asset_exist(mesh_path) and eal.get_metadata_tag(eal.load_asset(mesh_path), "source_sha1") == digest:
         return eal.load_asset(mesh_path)
     task = unreal.AssetImportTask()
@@ -1400,6 +1400,8 @@ def import_glb(rel_glb, dest_dir, max_tris=None):
         dm = unreal.DynamicMesh()
         unreal.GeometryScript_AssetUtils.copy_mesh_from_static_mesh_v2(mesh, dm, unreal.GeometryScriptCopyMeshFromAssetOptions(), unreal.GeometryScriptMeshReadLOD())
         dm.apply_editor_simplify_to_triangle_count(max_tris)
+        if smooth:                 # normales lissées par sommet : sculptures (le visage disparaissait dans les facettes)
+            unreal.GeometryScript_Normals.set_per_vertex_normals(dm)
         unreal.GeometryScript_AssetUtils.copy_mesh_to_static_mesh(dm, mesh, unreal.GeometryScriptCopyMeshToAssetOptions(), unreal.GeometryScriptMeshWriteLOD())
         unreal.log(f"{rel_glb} : simplifié à {mesh.get_num_triangles(0)} triangles")
     eal.set_metadata_tag(mesh, "source_sha1", digest)
@@ -1735,11 +1737,17 @@ return float3(wave * W * 0.04 * (1.0 - a), 0, wave * W * 0.09 * lat + sin(T * 0.
 }
 
 
+# Mousse sur les statues de pierre (D18, modèles 3D sans végétation) : les faces tournées vers le haut verdissent,
+# en taches irrégulières ; la teinte suit l'ombrage déjà calculé (C).
+MOSS_CODE = """float n = 0.5 + 0.25 * sin(WP.x * 0.011 + sin(WP.y * 0.017) * 2.0) + 0.25 * sin(WP.y * 0.023 - WP.x * 0.007 + WP.z * 0.013);
+float m = smoothstep(0.25, 0.7, normalize(N).z) * smoothstep(0.35, 0.65, n);
+float l = dot(C, float3(0.3, 0.6, 0.1));
+return lerp(C, l * float3(0.62, 1.05, 0.42) * 1.15, m * 0.85);"""
 LAMP_CODE = (f"float lum = dot(Tex, float3(0.3, 0.6, 0.1));\n"
              f"return C * 0.4 + Tex * float3({CANDLE_RGB[0]}, {CANDLE_RGB[1]}, {CANDLE_RGB[2]}) * smoothstep(0.25, 0.6, lum) * 2.6 * {FLICKER};")
 
 
-def peint_tex_material(name, texture, anim=None, box=None, glow=None, tint=None):
+def peint_tex_material(name, texture, anim=None, box=None, glow=None, tint=None, moss=False):
     """Look peint pour un modèle texturé (créatures, barque) : couleur de la texture, même ombrage deux tons
     que M_Peint. anim : animation procédurale (ANIM_CODES) ; glow : teinte de bioluminescence (abysses)."""
     path = f"/Game/Look/{name}"
@@ -1748,7 +1756,7 @@ def peint_tex_material(name, texture, anim=None, box=None, glow=None, tint=None)
         box_def = "".join(f"#define {k} {v:.3f}\n" for k, v in zip(("BXN", "BXX", "BYN", "BYX", "BZN", "BZX"), box))
     anim_code = box_def + ANIM_CODES[anim] if anim and anim != "bougie" else None
     digest = spec_digest("peint-tex-v9", PEINT_CODE, SWAY_CANDLE_CODE if anim == "bougie" else None, LAMP_CODE if anim == "bougie" else None,
-                         MPC_DIGEST, texture.get_path_name(), anim_code, glow, tint)
+                         MPC_DIGEST, texture.get_path_name(), anim_code, glow, tint, MOSS_CODE if moss else None)
     existing = eal.load_asset(path) if eal.does_asset_exist(path) else None
     if up_to_date(existing, digest):
         return existing
@@ -1795,6 +1803,12 @@ def peint_tex_material(name, texture, anim=None, box=None, glow=None, tint=None)
         fd.set_editor_property("parameter_name", "AbyssFade")
         mel.connect_material_expressions(fd, "", gl, "F")
         out = gl
+    if moss:
+        mo = custom_node(mat, MOSS_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["C", "N", "WP"], -250, -150)
+        mel.connect_material_expressions(out, "", mo, "C")
+        mel.connect_material_expressions(nrm, "", mo, "N")
+        mel.connect_material_expressions(mel.create_material_expression(mat, unreal.MaterialExpressionWorldPosition, -500, -250), "", mo, "WP")
+        out = mo
     if anim == "bougie":          # lanterne : le papier (clair) s'allume à la bougie, les nervures restent sombres
         lmp = custom_node(mat, LAMP_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["C", "Tex", "T"], -250, 0)
         mel.connect_material_expressions(out, "", lmp, "C")
@@ -1826,7 +1840,7 @@ def peint_tex_material(name, texture, anim=None, box=None, glow=None, tint=None)
     return mat
 
 
-def painted_model(model, name, anim=None, glow=None, tint=None):
+def painted_model(model, name, anim=None, glow=None, tint=None, moss=False):
     """Remplace les matériaux glTF du modèle par le look peint (texture de couleur conservée)."""
     b = model.get_bounding_box()
     box = (b.min.x, b.max.x, b.min.y, b.max.y, b.min.z, b.max.z)
@@ -1839,7 +1853,7 @@ def painted_model(model, name, anim=None, glow=None, tint=None):
         if tex is None:
             mats.append(None)
             continue
-        mats.append(peint_tex_material(f"M_Peint_{name}{i}", tex, anim, box, glow, tint))
+        mats.append(peint_tex_material(f"M_Peint_{name}{i}", tex, anim, box, glow, tint, moss))
     return mats
 
 
@@ -1885,7 +1899,7 @@ if model is not None:      # la barque et la lanterne prennent aussi le look pei
                 paper.static_mesh_component.set_material(i, pm)
 
 # --- Ponton et arche des racines (modèles 3D, look peint) -------------------------------------------------------
-def place_model(model, label, loc, yaw, size_cm, z_base_cm, painted_name, tint=None):
+def place_model(model, label, loc, yaw, size_cm, z_base_cm, painted_name, tint=None, moss=False):
     """Pose un modèle importé : mis à l'échelle sur sa boîte (size_cm = (x, y, z), None = proportionnel),
     base posée à z_base_cm, tourné de yaw ; look peint (texture conservée)."""
     b = model.get_bounding_box()
@@ -1897,7 +1911,7 @@ def place_model(model, label, loc, yaw, size_cm, z_base_cm, painted_name, tint=N
     tag(a, label)
     a.set_actor_scale3d(unreal.Vector(*sc))
     a.static_mesh_component.set_collision_enabled(unreal.CollisionEnabled.NO_COLLISION)
-    for i, pm_ in enumerate(painted_model(model, painted_name, tint=tint)):
+    for i, pm_ in enumerate(painted_model(model, painted_name, tint=tint, moss=moss)):
         if pm_ is not None:
             a.static_mesh_component.set_material(i, pm_)
     return a
@@ -1922,7 +1936,22 @@ else:                                                   # repli : pilotis et tab
 
 am = MARKS["arche-racines"]
 pose_a = pose_at(am["t"])
-racine = import_glb("racine/trellis2-s42", "/Game/Assets/Racine", 30000)
+# Arche de statues (une seule vue : la 3D a deviné des socles très épais, 16 m dans le sens du courant, qui se rejoignent
+# au ras de l'eau) : largeur de la rivière + 28 m, hauteur proportionnelle, épaisseur ramenée à 7 m, enfoncée de 5,5 m
+# pour que la rivière passe dans la partie large de l'ouverture.
+ARCH_EXTRA_M, ARCH_DEPTH_CM, ARCH_SINK_CM = 28.0, 700.0, -550.0
+# D18 (19/10) : l'arche de pierre aux deux figures agenouillées remplace l'arche des racines (redondante avec l'arbre
+# colossal, selon Olivier). Modèle sans végétation (assets/3d/arche-statues : image d'Olivier refs/inbox/arche-statues.png,
+# substitut local en attendant), habillé de mousse (matériau) et de lianes peintes (sprites_layout.py).
+statues = import_glb("arche-statues/trellis2-s42", "/Game/Assets/ArcheStatues", 60000, smooth=True)
+racine = None if statues is not None else import_glb("racine/trellis2-s42", "/Game/Assets/Racine", 30000)
+if statues is not None:
+    loc, _ = oriented(am["t"], 0.0, 0.0, 0.0)
+    place_model(statues, "GB_ArcheStatues", loc, -pose_a["heading_deg"] - 90.0,
+                ((pose_a["width_m"] + ARCH_EXTRA_M) * 100.0, ARCH_DEPTH_CM, None), ARCH_SINK_CM, "ArcheStatues", tint=(0.8, 0.76, 0.72), moss=True)
+    for a_ in actors.get_all_level_actors():
+        if a_.get_actor_label() == "GB_ArcheRacines":      # l'ancien tube du greybox
+            actors.destroy_actor(a_)
 if racine is not None:
     # l'anneau de racines (le modèle est fermé en bas) enjambe la rivière : base enfouie à -4,8 m, le bas de l'anneau
     # devient des racines immergées vues à travers l'eau ; ~11 m de passage au-dessus de la barque
@@ -1932,6 +1961,30 @@ if racine is not None:
     for a in actors.get_all_level_actors():
         if a.get_actor_label() == "GB_ArcheRacines":       # l'ancien tube
             actors.destroy_actor(a)
+
+# Tête de pierre couchée (D18) : sur la berge gauche au début de S6 (tombée de la nuit : champignons lumineux dans ses
+# traits, sprites_layout.py), couchée sur le côté, le visage vers la rivière, l'arrière (creux) dans la berge ; à moitié
+# enfoncée dans la berge et dans l'eau. Modèle : assets/3d/tete-couchee (image d'Olivier, substitut local en attendant).
+HEAD_T, HEAD_SIDE_M, HEAD_H_CM = 165.0, 1.0, 1000.0
+HEAD_TOWARD_DEG = 35.0       # visage tourné vers l'amont : il regarde la barque qui arrive (on le découvre en approchant)
+tete = import_glb("tete-couchee/trellis2-s42", "/Game/Assets/TeteCouchee", 50000, smooth=True)
+if tete is not None:
+    ph_ = pose_at(HEAD_T)
+    loc, _ = oriented(HEAD_T, 0.0, ph_["width_m"] / 2 + HEAD_SIDE_M, 0.8)
+    hb = tete.get_bounding_box()
+    hs = HEAD_H_CM / max(hb.max.x - hb.min.x, hb.max.y - hb.min.y, hb.max.z - hb.min.z)
+    # le modèle importé a le visage vers le haut (+Z) : roulis 90° → visage vers +Y (la rivière, vue de la rive gauche),
+    # tangage 90° → axe menton-front horizontal (tête couchée sur la joue) ; puis le cap de la rivière. Trouvé en
+    # comparant les orientations depuis la barque (19/10).
+    hrot = unreal.Rotator(90.0, -90.0, ue_yaw(ph_["heading_deg"]) + HEAD_TOWARD_DEG)   # crâne vers l'amont, cou (creux) vers l'aval
+    hc = unreal.Vector((hb.min.x + hb.max.x) / 2 * hs, (hb.min.y + hb.max.y) / 2 * hs, (hb.min.z + hb.max.z) / 2 * hs)
+    head = actors.spawn_actor_from_object(tete, loc - unreal.MathLibrary.greater_greater_vector_rotator(hc, hrot), hrot)
+    tag(head, "GB_TeteCouchee")
+    head.set_actor_scale3d(unreal.Vector(hs, hs, hs))
+    head.static_mesh_component.set_collision_enabled(unreal.CollisionEnabled.NO_COLLISION)
+    for i, pm_ in enumerate(painted_model(tete, "TeteCouchee", tint=(0.78, 0.78, 0.74), moss=True)):
+        if pm_ is not None:
+            head.static_mesh_component.set_material(i, pm_)
 
 # Stems de la musique (pipeline/audio/prepare_stems.py) : une source par stem, attachée à la barque autour du
 # spectateur ; la séquence y joue la piste (animatic.py). Sans stems déposés : rien.

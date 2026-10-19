@@ -379,4 +379,12 @@ autonome. `SUIVI.md` dit où en est le projet ; ce fichier raconte comment on y 
   matériau des sprites étaient réécrites à chaque build ; elles ont maintenant une empreinte, comme le reste.
 - **Le troupeau se lit enfin** : même sans les rochers, ses bêtes ne montraient que leur dos moussu, plus enfoncées que
   « l'eau au poitrail » du séquencier. Remontées de 60 cm : têtes claires et oreilles tombantes visibles.
+- **Les statues** : Olivier « adore le pont » (l'arche sculptée) et veut qu'il remplace l'arche des racines, redondante
+  avec l'arbre colossal ; la tête couchée « est trop belle » et ira sur une berge. Sa méthode : un objet 3D sans
+  végétation, habillé ensuite. Prompts Midjourney écrits (pierre nue, pas de mousse : l'image → 3D en ferait des blocs) ;
+  premiers substituts locaux à figures dévêtues, d'où des robes ajoutées au prompt. Olivier livre ses deux images,
+  une seule vue du pont. Intégration : mousse calculée dans le matériau sur les faces tournées vers le haut ; tête
+  orientée par essais successifs depuis la barque (le modèle sortait couché sur le dos), maillage simplifié à facettes
+  qui effaçait le visage (normales lissées, plus de triangles), buissons et cerf écartés de devant. La tête reste peu
+  lisible à distance : point remonté à Olivier.
 
