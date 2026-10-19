@@ -271,6 +271,8 @@ return col;""" % {"mx": MOON_DIR[0], "my": MOON_DIR[1], "mz": MOON_DIR[2], "mr":
 
 with open(os.path.join(ROOT, "pipeline", "layout", "water_map.json"), encoding="utf-8") as f:
     WATER_MAP = json.load(f)
+with open(os.path.join(ROOT, "assets", "textures", "stats.json"), encoding="utf-8") as _f:
+    TEX_MEAN_EAU = json.load(_f).get("tex-eau", 0.25)     # luminance moyenne de l'eau peinte d'Olivier (textures.py)
 WATER_CODE = """float3 v = -normalize(Dir.xyz);                       // de la caméra vers le point d'eau
 float2 rp = float2(WP.x, -WP.y) / 100.0;                   // repère du tracé, mètres
 float4 m = Texture2DSample(Map, MapSampler, (rp - float2(%(x0)f, %(y0)f)) / %(size)f);
@@ -339,6 +341,12 @@ float nsky = saturate(1.0 - dot(Teinte.rgb, float3(0.3, 0.5, 0.2)) * 3.0);
 float3 rdm = normalize(rd + float3((r2 - 0.5) * 0.04, (r1 - 0.5) * 0.04, (rip - 0.45) * 0.5));
 float mg = smoothstep(0.990, 0.9985, dot(rdm, float3(%(mx).5f, %(my).5f, %(mz).5f)));
 col += float3(1.0, 0.95, 0.82) * mg * (0.4 + 1.6 * rip) * nsky * (1.0 - trees * 0.8) * 1.8;   // lumière vive : visible même hors incidence rasante
+// eau peinte d'Olivier (refs/tex-eau.png), entraînée par le courant avec les rides : vue plongeante, on voit la
+// matière peinte de l'eau ; partout, elle module la valeur (touches claires et creux sombres)
+float3 we = Texture2DSample(EauTex, EauTexSampler, (q - adv * ph0) * 1.3).rgb;
+float wl = dot(we, float3(0.3, 0.6, 0.1));
+col = lerp(col, we * (Lumiere.rgb * 0.6 + 0.12) + sky * 0.08, (1.0 - fr) * 0.5 * (1.0 - trees * 0.4));
+col *= 0.82 + 0.36 * saturate(wl / %(eaumean).4f);
 // écume le long des berges
 float foam = (1.0 - smoothstep(0.0, 0.05, shore)) * (0.55 + 0.45 * r2);
 col = lerp(col, Lumiere.rgb * 0.5 + sky * 0.35, foam * 0.75);
@@ -364,7 +372,7 @@ col += float3(0.15, 1.6, 2.0) * 0.18 * halo * (0.6 + 0.4 * rip);
 float op = max(lerp(0.68, 0.97, fr) * (1.0 - 0.55 * halo), max(foam, boatfoam * 0.8));   // eau plus claire au-dessus de la créature
 op *= smoothstep(0.9, 1.02, hull);
 return float4(col, op);""" % {"lantx": LANTERN_LOCAL[0], "lanty": LANTERN_LOCAL[1], "cr": CANDLE_RGB[0], "cg": CANDLE_RGB[1], "cb": CANDLE_RGB[2], "x0": WATER_MAP["x0"], "y0": WATER_MAP["y0"], "size": WATER_MAP["size_m"], "drift": SKY_DRIFT,
-   "mx": MOON_DIR[0], "my": MOON_DIR[1], "mz": MOON_DIR[2], "lkx": RIVER["lake"]["x"] * 100, "lky": -RIVER["lake"]["y"] * 100, "lkr2": (RIVER["lake"]["radius_m"] * 100) ** 2}
+   "mx": MOON_DIR[0], "my": MOON_DIR[1], "mz": MOON_DIR[2], "eaumean": TEX_MEAN_EAU, "lkx": RIVER["lake"]["x"] * 100, "lky": -RIVER["lake"]["y"] * 100, "lkr2": (RIVER["lake"]["radius_m"] * 100) ** 2}
 
 
 BRUSH_PNG = os.path.join(ROOT, "assets", "textures", "pinceau.png")
@@ -500,6 +508,7 @@ with open(os.path.join(ROOT, "assets", "textures", "stats.json"), encoding="utf-
     TEX_MEAN = json.load(f)
 WATER_MAP_TEX = look_texture("eau_carte", srgb=False)
 RIDES_TEX = look_texture("rides", srgb=False)
+EAU_TEX = look_texture("tex-eau")       # eau peinte d'Olivier (refs/tex-eau.png → textures.py)
 GLOW_TEX = look_texture("eau_lueurs", srgb=False, compression=unreal.TextureCompressionSettings.TC_DEFAULT)   # glow_map.py
 
 
@@ -1607,12 +1616,12 @@ if os.path.exists(SKY_PNG):
         sky_tex = eal.load_asset(f"{GB}/ciel")
         eal.set_metadata_tag(sky_tex, "source_sha1", sky_digest)
         eal.save_loaded_asset(sky_tex)
-    SKY_WATER_VERSION = "ciel-eau-v16"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
+    SKY_WATER_VERSION = "ciel-eau-v17"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
     sky_mat_path = f"{GB}/M_GB_CielPeint"
     sky_mat = eal.load_asset(sky_mat_path) if eal.does_asset_exist(sky_mat_path) else None
     rebuild_sky_water = not up_to_date(sky_mat, spec_digest(SKY_WATER_VERSION, sky_digest, MPC_DIGEST, WATER_CODE,
                                                             eal.get_metadata_tag(WATER_MAP_TEX, "source_sha1"),
-                                                            eal.get_metadata_tag(RIDES_TEX, "source_sha1"), eal.get_metadata_tag(GLOW_TEX, "source_sha1")))
+                                                            eal.get_metadata_tag(RIDES_TEX, "source_sha1"), eal.get_metadata_tag(GLOW_TEX, "source_sha1"), eal.get_metadata_tag(EAU_TEX, "source_sha1")))
     sky_mat = sky_mat or tools.create_asset("M_GB_CielPeint", GB, unreal.Material, unreal.MaterialFactoryNew())
 if os.path.exists(SKY_PNG) and rebuild_sky_water:
     mel.delete_all_material_expressions(sky_mat)
@@ -1641,7 +1650,7 @@ if os.path.exists(SKY_PNG) and rebuild_sky_water:
     mel.recompile_material(sky_mat)
     mark_saved(sky_mat, spec_digest(SKY_WATER_VERSION, sky_digest, MPC_DIGEST, WATER_CODE,
                                     eal.get_metadata_tag(WATER_MAP_TEX, "source_sha1"),
-                                    eal.get_metadata_tag(RIDES_TEX, "source_sha1"), eal.get_metadata_tag(GLOW_TEX, "source_sha1")))
+                                    eal.get_metadata_tag(RIDES_TEX, "source_sha1"), eal.get_metadata_tag(GLOW_TEX, "source_sha1"), eal.get_metadata_tag(EAU_TEX, "source_sha1")))
     # Eau peinte (voir WATER_CODE) : rides qui suivent le courant, reflet du ciel déformé, reflets de crêtes,
     # bande sombre du reflet des arbres près des berges, écume le long des rives, fond profond ; translucide
     # pour voir la créature des abysses. Sans réflexions temps réel (coût Quest faible).
@@ -1655,11 +1664,11 @@ if os.path.exists(SKY_PNG) and rebuild_sky_water:
     wpos = mel.create_material_expression(water, unreal.MaterialExpressionWorldPosition, -1000, 100)
     wt = mel.create_material_expression(water, unreal.MaterialExpressionTime, -1000, 200)
     wnode = custom_node(water, WATER_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT4,
-                        ["Dir", "WP", "T", "Map", "Rides", "Sky", "Teinte", "Lumiere", "B", "Ab", "Af", "Glow", "Day", "Lf", "Ff"], -600, 0)
+                        ["Dir", "WP", "T", "Map", "Rides", "Sky", "Teinte", "Lumiere", "B", "Ab", "Af", "Glow", "Day", "Lf", "Ff", "EauTex"], -600, 0)
     mel.connect_material_expressions(wcam, "", wnode, "Dir")
     mel.connect_material_expressions(wpos, "", wnode, "WP")
     mel.connect_material_expressions(wt, "", wnode, "T")
-    for i, (pin, tex) in enumerate((("Map", WATER_MAP_TEX), ("Rides", RIDES_TEX), ("Sky", sky_tex), ("Glow", GLOW_TEX))):
+    for i, (pin, tex) in enumerate((("Map", WATER_MAP_TEX), ("Rides", RIDES_TEX), ("Sky", sky_tex), ("Glow", GLOW_TEX), ("EauTex", EAU_TEX))):
         to = mel.create_material_expression(water, unreal.MaterialExpressionTextureObject, -1000, 300 + 100 * i)
         to.set_editor_property("texture", tex)
         mel.connect_material_expressions(to, "", wnode, pin)
@@ -1739,6 +1748,12 @@ return float3(wave * W * 0.04 * (1.0 - a), 0, wave * W * 0.09 * lat + sin(T * 0.
 
 # Mousse sur les statues de pierre (D18, modèles 3D sans végétation) : les faces tournées vers le haut verdissent,
 # en taches irrégulières ; la teinte suit l'ombrage déjà calculé (C).
+# Roche d'Olivier (refs/tex-roche.png) en détail fin sur les statues (côtés et dos, là où la projection ne porte pas) :
+# projection selon l'axe dominant de la normale, 3 m, module la couleur autour de sa moyenne.
+ROCK_DETAIL_CODE = """float3 an = abs(normalize(N));
+float2 uv = an.z > max(an.x, an.y) ? WP.xy : (an.x > an.y ? WP.yz : WP.xz);
+float3 d = Texture2DSample(Tex, TexSampler, uv / 300.0).rgb;
+return C * lerp(1.0, dot(d, float3(0.3, 0.6, 0.1)) / MEAN, 0.6);"""
 MOSS_CODE = """// contraste rendu à la pierre (les fissures et les blocs peints de la texture se perdaient dans l'ombrage peint)
 float l0 = dot(C, float3(0.3, 0.6, 0.1));
 C = max(lerp(float3(l0, l0, l0), C, 1.15) * pow(saturate(l0 * 2.2), 0.35) / max(pow(saturate(l0 * 2.2), 0.35), 1e-3) * 1.0, 0.0);
@@ -1747,11 +1762,22 @@ float n = 0.5 + 0.25 * sin(WP.x * 0.011 + sin(WP.y * 0.017) * 2.0) + 0.25 * sin(
 float m = smoothstep(0.25, 0.7, normalize(N).z) * smoothstep(0.35, 0.65, n);
 float l = dot(C, float3(0.3, 0.6, 0.1));
 return lerp(C, l * float3(0.62, 1.05, 0.42) * 1.15, m * 0.85);"""
+# Image d'Olivier projetée sur la face avant de sa statue (pipeline/style/projection.py) : la 3D d'une seule vue perd
+# le détail peint (blocs, fissures, visages) ; la barque voit le pont sous le même angle que l'image. Projection le
+# long de l'axe Y du modèle (son épaisseur), cadre de la silhouette calé sur la boîte du modèle ; faces de côté : la
+# texture reconstruite. Éclairée par la lumière du moment (l'image a déjà son modelé).
+PROJ_CODE = """float u = lerp(PU0, PU1, saturate((LP.x - BXN) / (BXX - BXN)));
+if (PFLIP > 0.5) u = PU0 + PU1 - u;
+float v = lerp(PV1, PV0, saturate((LP.z - BZN) / (BZX - BZN)));
+float3 P = pow(max(Texture2DSample(Tex, TexSampler, float2(u, v)).rgb, 0.0), 1.0);
+float w = smoothstep(0.25, 0.65, abs(normalize(NL).y));
+float3 lit = P * (lerp(Ombre.rgb, Lumiere.rgb, 0.7) * 1.1 + Ciel.rgb * 0.3);
+return lerp(C, lit, w * PSTR);"""
 LAMP_CODE = (f"float lum = dot(Tex, float3(0.3, 0.6, 0.1));\n"
              f"return C * 0.4 + Tex * float3({CANDLE_RGB[0]}, {CANDLE_RGB[1]}, {CANDLE_RGB[2]}) * smoothstep(0.25, 0.6, lum) * 2.6 * {FLICKER};")
 
 
-def peint_tex_material(name, texture, anim=None, box=None, glow=None, tint=None, moss=False):
+def peint_tex_material(name, texture, anim=None, box=None, glow=None, tint=None, moss=False, proj=None):
     """Look peint pour un modèle texturé (créatures, barque) : couleur de la texture, même ombrage deux tons
     que M_Peint. anim : animation procédurale (ANIM_CODES) ; glow : teinte de bioluminescence (abysses)."""
     path = f"/Game/Look/{name}"
@@ -1760,7 +1786,9 @@ def peint_tex_material(name, texture, anim=None, box=None, glow=None, tint=None,
         box_def = "".join(f"#define {k} {v:.3f}\n" for k, v in zip(("BXN", "BXX", "BYN", "BYX", "BZN", "BZX"), box))
     anim_code = box_def + ANIM_CODES[anim] if anim and anim != "bougie" else None
     digest = spec_digest("peint-tex-v9", PEINT_CODE, SWAY_CANDLE_CODE if anim == "bougie" else None, LAMP_CODE if anim == "bougie" else None,
-                         MPC_DIGEST, texture.get_path_name(), anim_code, glow, tint, MOSS_CODE if moss else None)
+                         MPC_DIGEST, texture.get_path_name(), anim_code, glow, tint,
+                         (MOSS_CODE, ROCK_DETAIL_CODE, eal.get_metadata_tag(look_texture("tex-roche"), "source_sha1")) if moss else None,
+                         (PROJ_CODE, proj[0].get_path_name(), eal.get_metadata_tag(proj[0], "source_sha1"), sorted(proj[1].items())) if proj else None)
     existing = eal.load_asset(path) if eal.does_asset_exist(path) else None
     if up_to_date(existing, digest):
         return existing
@@ -1808,11 +1836,45 @@ def peint_tex_material(name, texture, anim=None, box=None, glow=None, tint=None,
         mel.connect_material_expressions(fd, "", gl, "F")
         out = gl
     if moss:
+        rk = custom_node(mat, f"#define MEAN {TEX_MEAN['tex-roche']:.4f}\n" + ROCK_DETAIL_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT3,
+                         ["C", "N", "WP", "Tex"], -300, -250)
+        mel.connect_material_expressions(out, "", rk, "C")
+        mel.connect_material_expressions(nrm, "", rk, "N")
+        mel.connect_material_expressions(mel.create_material_expression(mat, unreal.MaterialExpressionWorldPosition, -550, -300), "", rk, "WP")
+        rto = mel.create_material_expression(mat, unreal.MaterialExpressionTextureObject, -550, -350)
+        rto.set_editor_property("texture", look_texture("tex-roche"))
+        mel.connect_material_expressions(rto, "", rk, "Tex")
+        out = rk
         mo = custom_node(mat, MOSS_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["C", "N", "WP"], -250, -150)
         mel.connect_material_expressions(out, "", mo, "C")
         mel.connect_material_expressions(nrm, "", mo, "N")
         mel.connect_material_expressions(mel.create_material_expression(mat, unreal.MaterialExpressionWorldPosition, -500, -250), "", mo, "WP")
         out = mo
+    if proj is not None:
+        ptex, pbox = proj
+        defs = box_def + "".join(f"#define {k} {v:.4f}\n" for k, v in (("PU0", pbox["u0"]), ("PU1", pbox["u1"]), ("PV0", pbox["v0"]),
+                                                                      ("PV1", pbox["v1"]), ("PFLIP", pbox.get("flip", 0.0)), ("PSTR", pbox.get("force", 0.9))))
+        pj = custom_node(mat, defs + PROJ_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["C", "LP", "NL", "Tex", "Lumiere", "Ombre", "Ciel"], -150, -150)
+        mel.connect_material_expressions(out, "", pj, "C")
+        mel.connect_material_expressions(mel.create_material_expression(mat, unreal.MaterialExpressionLocalPosition, -500, -400), "", pj, "LP")
+        nl = mel.create_material_expression(mat, unreal.MaterialExpressionTransform, -500, -350)
+        nl.set_editor_property("transform_source_type", unreal.MaterialVectorCoordTransformSource.TRANSFORMSOURCE_WORLD)
+        nl.set_editor_property("transform_type", unreal.MaterialVectorCoordTransform.TRANSFORM_LOCAL)
+        mel.connect_material_expressions(nrm, "", nl, "")
+        mel.connect_material_expressions(nl, "", pj, "NL")
+        to = mel.create_material_expression(mat, unreal.MaterialExpressionTextureObject, -500, -300)
+        to.set_editor_property("texture", ptex)
+        mel.connect_material_expressions(to, "", pj, "Tex")
+        for i, nm in enumerate(("Lumiere", "Ombre")):
+            cp = mel.create_material_expression(mat, unreal.MaterialExpressionCollectionParameter, -500, -250 + 50 * i)
+            cp.set_editor_property("collection", MPC)
+            cp.set_editor_property("parameter_name", nm)
+            mel.connect_material_expressions(cp, "", pj, nm)
+        cpc = mel.create_material_expression(mat, unreal.MaterialExpressionCollectionParameter, -500, -150)
+        cpc.set_editor_property("collection", MPC)
+        cpc.set_editor_property("parameter_name", "CielAppoint")
+        mel.connect_material_expressions(cpc, "", pj, "Ciel")
+        out = pj
     if anim == "bougie":          # lanterne : le papier (clair) s'allume à la bougie, les nervures restent sombres
         lmp = custom_node(mat, LAMP_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["C", "Tex", "T"], -250, 0)
         mel.connect_material_expressions(out, "", lmp, "C")
@@ -1844,7 +1906,7 @@ def peint_tex_material(name, texture, anim=None, box=None, glow=None, tint=None,
     return mat
 
 
-def painted_model(model, name, anim=None, glow=None, tint=None, moss=False):
+def painted_model(model, name, anim=None, glow=None, tint=None, moss=False, proj=None):
     """Remplace les matériaux glTF du modèle par le look peint (texture de couleur conservée)."""
     b = model.get_bounding_box()
     box = (b.min.x, b.max.x, b.min.y, b.max.y, b.min.z, b.max.z)
@@ -1857,7 +1919,7 @@ def painted_model(model, name, anim=None, glow=None, tint=None, moss=False):
         if tex is None:
             mats.append(None)
             continue
-        mats.append(peint_tex_material(f"M_Peint_{name}{i}", tex, anim, box, glow, tint, moss))
+        mats.append(peint_tex_material(f"M_Peint_{name}{i}", tex, anim, box, glow, tint, moss, proj))
     return mats
 
 
@@ -1903,7 +1965,7 @@ if model is not None:      # la barque et la lanterne prennent aussi le look pei
                 paper.static_mesh_component.set_material(i, pm)
 
 # --- Ponton et arche des racines (modèles 3D, look peint) -------------------------------------------------------
-def place_model(model, label, loc, yaw, size_cm, z_base_cm, painted_name, tint=None, moss=False):
+def place_model(model, label, loc, yaw, size_cm, z_base_cm, painted_name, tint=None, moss=False, proj=None):
     """Pose un modèle importé : mis à l'échelle sur sa boîte (size_cm = (x, y, z), None = proportionnel),
     base posée à z_base_cm, tourné de yaw ; look peint (texture conservée)."""
     b = model.get_bounding_box()
@@ -1915,7 +1977,7 @@ def place_model(model, label, loc, yaw, size_cm, z_base_cm, painted_name, tint=N
     tag(a, label)
     a.set_actor_scale3d(unreal.Vector(*sc))
     a.static_mesh_component.set_collision_enabled(unreal.CollisionEnabled.NO_COLLISION)
-    for i, pm_ in enumerate(painted_model(model, painted_name, tint=tint, moss=moss)):
+    for i, pm_ in enumerate(painted_model(model, painted_name, tint=tint, moss=moss, proj=proj)):
         if pm_ is not None:
             a.static_mesh_component.set_material(i, pm_)
     return a
@@ -1944,6 +2006,17 @@ pose_a = pose_at(am["t"])
 # au ras de l'eau) : largeur de la rivière + 28 m, hauteur proportionnelle, épaisseur ramenée à 7 m, enfoncée de 5,5 m
 # pour que la rivière passe dans la partie large de l'ouverture.
 ARCH_EXTRA_M, ARCH_DEPTH_CM, ARCH_SINK_CM = 28.0, 700.0, -550.0
+def projection(pid, flip=0.0):
+    """Image projetée (PROJ_CODE) : texture et cadre écrits par pipeline/style/projection.py ; None s'ils manquent."""
+    png = os.path.join(ROOT, "assets", "textures", f"proj-{pid}.png")
+    if not os.path.exists(png):
+        return None
+    with open(os.path.join(ROOT, "assets", "textures", f"proj-{pid}.json"), encoding="utf-8") as f:
+        box = json.load(f)
+    box["flip"] = flip
+    return look_texture(f"proj-{pid}"), box
+
+
 # D18 (19/10) : l'arche de pierre aux deux figures agenouillées remplace l'arche des racines (redondante avec l'arbre
 # colossal, selon Olivier). Modèle sans végétation (assets/3d/arche-statues : image d'Olivier refs/inbox/arche-statues.png,
 # substitut local en attendant), habillé de mousse (matériau) et de lianes peintes (sprites_layout.py).
@@ -1952,7 +2025,8 @@ racine = None if statues is not None else import_glb("racine/trellis2-s42", "/Ga
 if statues is not None:
     loc, _ = oriented(am["t"], 0.0, 0.0, 0.0)
     place_model(statues, "GB_ArcheStatues", loc, -pose_a["heading_deg"] - 90.0,
-                ((pose_a["width_m"] + ARCH_EXTRA_M) * 100.0, ARCH_DEPTH_CM, None), ARCH_SINK_CM, "ArcheStatues", moss=True)
+                ((pose_a["width_m"] + ARCH_EXTRA_M) * 100.0, ARCH_DEPTH_CM, None), ARCH_SINK_CM, "ArcheStatues", moss=True,
+                proj=projection("arche-statues"))
     for a_ in actors.get_all_level_actors():
         if a_.get_actor_label() == "GB_ArcheRacines":      # l'ancien tube du greybox
             actors.destroy_actor(a_)

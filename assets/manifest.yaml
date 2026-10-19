@@ -570,3 +570,20 @@ assets:
   beats:
   - S6-LUNE
   script: pipeline/audio/freesound.py pick sfx-chouette 465697
+- id: texture/proj-arche-statues
+  type: texture
+  placeholder: false
+  file: assets/textures/proj-arche-statues.png (+ proj-arche-statues.json, cadre de la silhouette)
+  source: refs/inbox/arche-statues.png (Olivier), détouré (BiRefNet, ComfyUI local), couleur prolongée sur le fond
+  script: pipeline/style/projection.py
+  licence: image d'Olivier (Midjourney)
+  note: projetée sur la face avant du pont (greybox.py, PROJ_CODE)
+  generated: '2026-10-19'
+- id: texture/tex-eau
+  type: texture
+  placeholder: false
+  file: assets/textures/tex-eau.png
+  source: refs/tex-eau.png (Olivier, Midjourney), copiée par pipeline/comfy/textures.py
+  licence: image d'Olivier (Midjourney)
+  generated: '2026-10-19'
+

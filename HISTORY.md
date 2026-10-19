@@ -392,4 +392,10 @@ autonome. `SUIVI.md` dit où en est le projet ; ce fichier raconte comment on y 
   pour le pont). Essais : 400 000 faces et texture 4096 côté ComfyUI, puis 150 000 et sans simplification côté Unreal :
   rendu identique. Le manque de détail vient de la reconstruction d'une seule image, qui lisse les formes. Le fondu
   d'ouverture est avancé de 5 s ; la tête, validée sur l'aperçu, est gelée jusqu'au casque.
+- **La projection, ou « l'aplat »** : la barque voit le pont sous le même angle que l'image d'Olivier ; l'image est donc
+  projetée telle quelle sur sa face avant, le volume deviné par la 3D ne servant plus que de support. Silhouette
+  détourée (BiRefNet ; un premier masque « ciel bleu » échouait sur le bas lavande de l'image), cadre calé sur la boîte
+  du modèle. Résultat immédiat : les visages des deux figures se lisent quand on passe dessous. Olivier livre au passage
+  deux textures peintes, roche et eau : la roche habille les rochers et le détail des statues, l'eau entre dans le
+  shader de la rivière.
 

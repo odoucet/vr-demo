@@ -38,6 +38,7 @@ STAGES = [
     ("sprites-layout", "placement des sprites peints (forêt, berges, lisières, houppiers, eau)", [PY, "pipeline/layout/sprites_layout.py"], None),
     ("creatures", "trajectoires des créatures (chenal, gué, vol)", [PY, "pipeline/layout/creatures.py"], None),
     ("water-map", "carte de l'eau (courant, distance aux berges)", [PY, "pipeline/layout/water_map.py"], None),
+    ("projection", "images d'Olivier projetées sur ses statues (détourage)", [PY, "pipeline/style/projection.py"], None),
     ("glow-map", "carte des lueurs (reflets de nuit dans l'eau)", [PY, "pipeline/layout/glow_map.py"], None),
     ("relief", "cartes de relief des sprites proches (volume en stéréo)", [PY, "pipeline/comfy/relief.py", "arbres", "arbres2",
                                                                           "arbres3", "arbres4", "buissons", "fourres", "heros", "faune"], None),

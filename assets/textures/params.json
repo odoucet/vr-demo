@@ -7,21 +7,13 @@
     "workflow": "pipeline/comfy/workflows/qwen_edit_2509_angle.json (LoRA d'angles à 0)"
   },
   "tex-roche": {
-    "seed": 2,
-    "prompt": "Repaint this image as a close-up of one large weathered rock surface, broad flat planes, fine cracks and lichen spots, soft gouache, grey. Keep exactly the same painting style: soft gouache, the same brush strokes, the same level of detail and texture density. Seamless tileable texture, top-down, evenly lit, no cast shadows, filling the whole frame.",
-    "style_reference": "refs/tex-mousse.png",
-    "model": "qwen_image_edit_2509_fp8 + Lightning 4 pas",
-    "workflow": "pipeline/comfy/workflows/qwen_edit_2509_angle.json (LoRA d'angles à 0)"
+    "source": "refs/tex-roche.png (Olivier)"
   },
   "tex-mousse": {
     "source": "refs/tex-mousse.png (Olivier)"
   },
   "tex-eau": {
-    "seed": 2,
-    "prompt": "Repaint this image as a river water texture, painted ripples, flat blue-green tones. Keep exactly the same painting style: soft gouache, the same brush strokes, the same level of detail and texture density. Seamless tileable texture, top-down, evenly lit, no cast shadows, filling the whole frame.",
-    "style_reference": "refs/tex-mousse.png",
-    "model": "qwen_image_edit_2509_fp8 + Lightning 4 pas",
-    "workflow": "pipeline/comfy/workflows/qwen_edit_2509_angle.json (LoRA d'angles à 0)"
+    "source": "refs/tex-eau.png (Olivier)"
   },
   "tex-planches": {
     "seed": 2,

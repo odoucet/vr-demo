@@ -27,9 +27,13 @@ session. Revue par l'animatic rendu par Unreal (lumière de chaque beat, musique
   sans marche arrière, image tournée dans le sens réel du vol.
 - ✅ **Fondu d'ouverture** (retours d'Olivier) : 10 s au lieu de 2,5, puis avancé de 5 s : de 7,5 à 17,5 s.
 - ✅ **Tête couchée** : Olivier la trouve bien sur l'aperçu ; **on n'y touche plus avant la validation au casque**.
-- 🔍 **Pont peu détaillé** : ni le nombre de triangles (essais à 150 k et 400 k, sans simplification : identique) ni la
-  texture 4096 n'y changent rien ; la limite est la reconstruction 3D depuis une seule vue (formes lissées, texture
-  floue). Piste : projeter ton image d'origine sur la face avant du pont (celle que voit la barque).
+- 🔧 **Pont détaillé par projection** : ni le nombre de triangles ni la texture 4096 n'y changeaient rien (limite : la
+  3D d'une seule vue). Ton image d'origine est projetée sur ses faces avant et arrière (détourage BiRefNet, cadre calé
+  sur la boîte du modèle, `pipeline/style/projection.py`) : blocs, fissures et visages reviennent ; côtés en texture
+  reconstruite + ta roche en détail fin.
+- 🔧 **Tes textures** : `refs/tex-roche.png` (rochers, pierres du décor, détail des statues) et `refs/tex-eau.png` (eau :
+  matière peinte visible en vue plongeante, entraînée par le courant). Une lecture de texture de plus sur l'eau : à
+  mesurer au casque.
 - 🔧 **Nouvelle barque** (retour d'Olivier : « la lanterne masque tout le décor ») : image retrouvée dans la transcription
   et écrite à la place de `refs/barque.png` (l'ancienne reste dans l'historique Git) ; TRELLIS.2 retenu (Pixal3D garde la
   perspective de l'image : barque penchée). 3,5 × 1,56 m, franc-bord ~45 cm. **Lanterne** (défaut, D11) : le modèle de
