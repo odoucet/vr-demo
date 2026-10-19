@@ -308,6 +308,9 @@ if mpc is not None:
         msec.add_scalar_parameter_key("FinaleFade", frame(t), v)
     for t, v in FADE_KEYS:
         msec.add_scalar_parameter_key("Fondu", frame(t), v)
+    # héron du final : arrive de loin pendant que la nuée s'allume, se pose sur le rebord 8 s avant le fondu au noir
+    for t, v in ((0.0, 0.0), (T_FADE_OUT - 24.0, 0.0), (T_FADE_OUT - 8.0, 1.0)):
+        msec.add_scalar_parameter_key("HeronFinal", frame(t), v)
     # oiseaux, papillons, libellules : partent pendant la tombée de la nuit (S6), les lucioles prennent le relais
     t_nuit = _event_s("lucioles-envol", 137.8)
     for t, v in ((0.0, 1.0), (t_nuit - 8.0, 1.0), (t_nuit + 12.0, 0.0), (DURATION, 0.0)):

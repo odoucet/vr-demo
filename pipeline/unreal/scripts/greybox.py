@@ -110,7 +110,8 @@ MPC_VECTORS = {"SoleilDir": (0.9, -0.4, 0.2), "Lumiere": (1.0, 0.95, 0.85), "Omb
 MPC_SCALARS = {"CielLuminosite": 1.0, "LucioleFade": 1.0, "EnvolFade": 0.0, "AbyssFade": 1.0,
                "FinaleFade": 0.0,    # nuée de lucioles du lac (S7)
                "Fondu": 0.0,         # fondu au noir (1 = noir), sphère devant les yeux : pas de post-traitement sur Quest
-               "VieJour": 1.0}       # oiseaux, papillons, libellules : présents le jour, partis la nuit (lucioles)
+               "VieJour": 1.0,       # oiseaux, papillons, libellules : présents le jour, partis la nuit (lucioles)
+               "HeronFinal": 0.0}    # héron du final : 0 loin devant, 1 posé sur le rebord de la barque
 MPC_DIGEST = spec_digest("mpc-v8", sorted(MPC_VECTORS), sorted(MPC_SCALARS))
 
 
@@ -979,12 +980,13 @@ return c + lerp(Tex.rgb, float3(0.6, 0.9, 1.0) * mx, 0.3) * m * glow * 2.2;"""
 # Relief des sujets proches : la grille avance vers l'œil (D = -Y local, à l'échelle de l'instance) selon la carte de
 # relief de la case (pipeline/comfy/relief.py), lue dans le shader de sommets.
 SPRITE_RELIEF_CODE = """return D * (Texture2DSampleLevel(R, RSampler, UV, 0).r * A);"""
-# Vent : balancement lent, pied fixe, amplitude croissante vers la cime (~3,5 % de la hauteur), phase selon le lieu.
+# Vent : balancement lent, pied fixe, amplitude croissante vers la cime (~2 % de la hauteur), phase selon le lieu.
 # Le plan ne tourne pas avec la tête (retour d'Olivier du 19/10) : il oscille autour de sa position fixe.
-SPRITE_WIND_CODE = """float hs = length(U);                                  // hauteur du sujet (cm) : échelle de l'instance
+SPRITE_WIND_CODE = """float hs = length(U) * 100.0;                          // hauteur du sujet (cm) : plan de 100 unités × échelle
+// (19/10 : sans le × 100, le balancement faisait ~5 mm à la cime, invisible au casque)
 float z = saturate(LP.z / 100.0 + 0.5 * C);                 // pied (0) à cime (1) (plan de 100 unités ; touffes centrées)
 float s = sin(T * 0.8 + dot(WP.xy, float2(0.0011, 0.0017))) + 0.35 * sin(T * 2.1 + dot(WP.xy, float2(0.003, -0.002)));
-return float3(0.8, 0.6, 0.0) * s * 0.035 * hs * z * z * E;   // 1,2 % → 3,5 % (19/10 : invisible au casque)"""
+return float3(0.8, 0.6, 0.0) * s * 0.018 * hs * z * z * E;   // ~2 % de la hauteur à la cime (30 cm pour 15 m)"""
 SPRITE_TINT_CODE = """return Tex * (1.0 + Tint * float3(0.08, 0.015, -0.1));"""
 SPRITE_EDGE_CODE = """return A * lerp(1.0, smoothstep(0.12, 0.3, abs(dot(normalize(N), normalize(V)))), E);"""
 
@@ -1439,6 +1441,9 @@ def import_glb(rel_glb, dest_dir, max_tris=None, smooth=False, cut=()):
     return mesh
 
 
+FLOOR_Z = 0.14
+
+
 def hull_floor(model):
     """Plancher à la forme exacte de la coque à la ligne de flottaison : sommets du maillage de la barque entre
     -10 et +15 cm autour de l'eau, ramenés dans le repère de la barque, enveloppe convexe réduite de 4 %, posée
@@ -1453,7 +1458,7 @@ def hull_floor(model):
         x, y, z = v.x * BOAT_SCALE, v.y * BOAT_SCALE_Y, v.z * BOAT_SCALE_Z + BOAT_Z
         ca, sa = math.cos(math.radians(BOAT_YAW)), math.sin(math.radians(BOAT_YAW))
         bx, by = x * ca - y * sa, x * sa + y * ca        # rotation du modèle (relative_rotation)
-        if -10.0 <= z <= 15.0:
+        if FLOOR_Z * 100 - 12.0 <= z <= FLOOR_Z * 100 + 12.0:
             pts.append((round(bx, 1), round(by, 1)))
     pts = sorted(set(pts))
     if len(pts) < 3:
@@ -1472,8 +1477,10 @@ def hull_floor(model):
         upper.append(p_)
     hull = lower[:-1] + upper[:-1]
     cx, cy = sum(p_[0] for p_ in hull) / len(hull), sum(p_[1] for p_ in hull) / len(hull)
-    ring = [[(cx + (x - cx) * 0.96) / 100.0, -(cy + (y - cy) * 0.96) / 100.0, 0.03] for x, y in hull]
-    verts = [[cx / 100.0, -cy / 100.0, 0.03]] + ring
+    # plancher à 14 cm (3 cm avant le 19/10) : il recouvre les lisses intérieures du modèle de la nouvelle barque, qui
+    # flottaient au-dessus de lui vues depuis la place assise
+    ring = [[(cx + (x - cx) * 0.96) / 100.0, -(cy + (y - cy) * 0.96) / 100.0, FLOOR_Z] for x, y in hull]
+    verts = [[cx / 100.0, -cy / 100.0, FLOOR_Z]] + ring
     n = len(ring)
     data = {"vertices": verts, "triangles": [[0, 1 + k, 1 + (k + 1) % n] for k in range(n)],
             "normals": [[0, 0, 1]] * len(verts), "color": [0.46, 0.33, 0.21, 0.95]}
@@ -1542,11 +1549,114 @@ if model is not None:
     lc.set_editor_property("cast_shadows", False)   # la lumière est dans le maillage de la lanterne
 else:
     boat.set_actor_scale3d(unreal.Vector(3.5, 1.3, 0.5))
+
+# Héron du final (idée d'Olivier du 19/10 : la fin était un peu morne) : il arrive de loin devant à gauche, plane en
+# descendant et se pose sur le rebord gauche de la barque, ailes levées (image « atterrissage »), puis reste posé
+# (image « pose »). Deux plans attachés à la barque, face à l'œil comme la petite vie ; progression HeronFinal (MPC).
+HERON_WPO_CODE = """float p = saturate(P);
+float landed = step(0.995, p);
+float k = 1.0 - pow(1.0 - p, 2.2);                       // ralentit en arrivant
+float3 a = float3(3200.0, -1600.0, 900.0);               // départ, repère de la barque (cm) : loin devant à gauche, haut
+float3 m = float3(900.0, -700.0, 380.0);
+float3 b = float3(20.0, -64.0, 47.0);                    // plat-bord gauche (demi-largeur ~70 cm, haut à ~47 cm), devant le spectateur
+float3 pl = lerp(lerp(a, m, k), lerp(m, b, k), k);        // courbe de Bézier : plane en descendant
+pl.z += (1.0 - landed) * 30.0 * sin(T * 2.6) * (1.0 - k);
+float3 dl = lerp(m - a, b - m, k);
+float3 pw = AX.xyz * pl.x + AY.xyz * pl.y + AZ.xyz * pl.z;
+float3 dw = AX.xyz * dl.x + AY.xyz * dl.y;
+float which = UV1.x;                                     // 0 : en vol, 1 : posé
+float show = (which < 0.5 ? 1.0 - landed : landed) * step(0.002, p);
+float size = which < 0.5 ? 170.0 : 100.0;
+float flip = dot(dw, VR.xyz) > 0.0 ? -1.0 : 1.0;         // les images regardent vers la gauche
+float qx = (UV0.x - 0.5) * size * flip;
+float qy = (1.0 - UV0.y) * size - (which < 0.5 ? size * 0.5 : 0.0);
+return pw + (VR.xyz * qx + VU.xyz * qy) * show;"""
+HERON_UV_CODE = """return float2((UV1.x + UV0.x) * 0.5, UV0.y);"""
+
+
+def heron_material():
+    path = f"{GB}/M_GB_Heron"
+    atlas = look_texture("sprite_heron")
+    digest = spec_digest("heron-v2", HERON_WPO_CODE, HERON_UV_CODE, SPRITE_COLOR_CODE, MPC_DIGEST, eal.get_metadata_tag(atlas, "source_sha1"))
+    mat = eal.load_asset(path) if eal.does_asset_exist(path) else None
+    if up_to_date(mat, digest):
+        return mat
+    mat = mat or tools.create_asset("M_GB_Heron", GB, unreal.Material, unreal.MaterialFactoryNew())
+    mel.delete_all_material_expressions(mat)
+    mat.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_UNLIT)
+    mat.set_editor_property("float_precision_mode", unreal.MaterialFloatPrecisionMode.MFPM_FULL)
+    mat.set_editor_property("blend_mode", unreal.BlendMode.BLEND_MASKED)
+    mat.set_editor_property("two_sided", True)
+    def vec(src, v, y):
+        c = mel.create_material_expression(mat, unreal.MaterialExpressionConstant3Vector, -1700, y)
+        c.set_editor_property("constant", unreal.LinearColor(*v, 0))
+        t = mel.create_material_expression(mat, unreal.MaterialExpressionTransform, -1500, y)
+        t.set_editor_property("transform_source_type", src)
+        t.set_editor_property("transform_type", unreal.MaterialVectorCoordTransform.TRANSFORM_WORLD)
+        mel.connect_material_expressions(c, "", t, "")
+        return t
+    LOCAL = unreal.MaterialVectorCoordTransformSource.TRANSFORMSOURCE_LOCAL
+    VIEW = unreal.MaterialVectorCoordTransformSource.TRANSFORMSOURCE_VIEW
+    uv0 = mel.create_material_expression(mat, unreal.MaterialExpressionTextureCoordinate, -1700, -400)
+    uv1 = mel.create_material_expression(mat, unreal.MaterialExpressionTextureCoordinate, -1700, -300)
+    uv1.set_editor_property("coordinate_index", 1)
+    pp = mel.create_material_expression(mat, unreal.MaterialExpressionCollectionParameter, -1700, 0)
+    pp.set_editor_property("collection", MPC)
+    pp.set_editor_property("parameter_name", "HeronFinal")
+    wpo = custom_node(mat, HERON_WPO_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["P", "T", "UV0", "UV1", "AX", "AY", "AZ", "VR", "VU"], -1000, 200)
+    srcs = {"P": pp, "T": mel.create_material_expression(mat, unreal.MaterialExpressionTime, -1700, 100), "UV0": uv0, "UV1": uv1,
+            "AX": vec(LOCAL, (1, 0, 0), 300), "AY": vec(LOCAL, (0, 1, 0), 400), "AZ": vec(LOCAL, (0, 0, 1), 500),
+            "VR": vec(VIEW, (1, 0, 0), 600), "VU": vec(VIEW, (0, 1, 0), 700)}
+    for k, v in srcs.items():
+        mel.connect_material_expressions(v, "", wpo, k)
+    mel.connect_material_property(wpo, "", unreal.MaterialProperty.MP_WORLD_POSITION_OFFSET)
+    uvn = custom_node(mat, HERON_UV_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT2, ["UV0", "UV1"], -1100, -350)
+    mel.connect_material_expressions(uv0, "", uvn, "UV0")
+    mel.connect_material_expressions(uv1, "", uvn, "UV1")
+    tex = mel.create_material_expression(mat, unreal.MaterialExpressionTextureSample, -800, -350)
+    tex.set_editor_property("texture", atlas)
+    mel.connect_material_expressions(uvn, "", tex, "UVs")
+    one = mel.create_material_expression(mat, unreal.MaterialExpressionConstant, -800, -150)
+    one.set_editor_property("r", 1.2)
+    col = custom_node(mat, SPRITE_COLOR_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["Tex", "Lumiere", "Ombre", "Ciel", "Bright", "Day"], -400, -350)
+    mel.connect_material_expressions(tex, "RGB", col, "Tex")
+    mel.connect_material_expressions(one, "", col, "Bright")
+    for i, nm in enumerate(("Lumiere", "Ombre", "Ciel", "Day")):
+        cp = mel.create_material_expression(mat, unreal.MaterialExpressionCollectionParameter, -800, -50 + 80 * i)
+        cp.set_editor_property("collection", MPC)
+        cp.set_editor_property("parameter_name", {"Ciel": "CielAppoint", "Day": "VieJour"}.get(nm, nm))
+        mel.connect_material_expressions(cp, "", col, nm)
+    mel.connect_material_property(col, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
+    mel.connect_material_property(tex, "A", unreal.MaterialProperty.MP_OPACITY_MASK)
+    mel.recompile_material(mat)
+    if mel.get_statistics(mat).num_pixel_shader_instructions <= 0:
+        raise RuntimeError("M_GB_Heron ne compile pas")
+    mark_saved(mat, digest)
+    return mat
+
+
+if os.path.exists(os.path.join(ROOT, "assets", "textures", "sprite_heron.png")):
+    MATS["Heron"] = heron_material()
+    hv, ht, huv, huv1 = [], [], [], []
+    for which in (0, 1):                 # deux plans, sommets à l'origine (écartés de 5 mm : triangles non dégénérés)
+        base = len(hv)
+        for u, v in ((0, 1), (1, 1), (1, 0), (0, 0)):
+            hv.append([(u - 0.5) * 0.005, 0.0, (1 - v) * 0.005])
+            huv.append([u, v])
+            huv1.append([which, 0])
+        ht += [[base, base + 1, base + 2], [base, base + 2, base + 3]]
+    heron_mesh = build_mesh("HeronFinal", {"vertices": hv, "triangles": ht, "normals": [[0, -1, 0]] * len(hv), "uv": huv, "uv1": huv1,
+                                           "color": [1, 1, 1, 1]})
+    heron = place_mesh(heron_mesh, "GB_HeronFinal", "Heron", boat.get_actor_location())
+    heron.static_mesh_component.set_mobility(unreal.ComponentMobility.MOVABLE)
+    heron.attach_to_actor(boat, "", unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, False)
+    heron.root_component.set_editor_property("relative_location", unreal.Vector(0, 0, 0))
+    heron.root_component.set_editor_property("relative_rotation", unreal.Rotator(0, 0, 0))
+    heron.static_mesh_component.set_editor_property("bounds_scale", 4000.0)   # il vient de 36 m : jamais exclu du rendu
 # Caméra du spectateur, sur le banc arrière (-1,20 m du centre), yeux à 1,10 m de l'eau. Reculée de 0,80 m
 # à 1,20 m pour réduire la place de la lanterne de proue dans le champ (SUIVI.md, D11).
-# place assise sur le banc arrière de la nouvelle barque (19/10) : à -120 cm, on était derrière le banc et deux lattes
-# du modèle flottaient sous les yeux ; elles sont maintenant derrière le spectateur (les retirer du maillage abîmait la coque)
-SEAT_X_CM = -95.0
+# place assise à l'arrière (avancer sur le banc ne cachait pas les lisses qui flottaient : le plancher les recouvre, FLOOR_Z)
+SEAT_X_CM = -120.0
 h0 = math.radians(start["heading_deg"])
 cam_loc = ue(start["x"] + SEAT_X_CM / 100 * math.cos(h0), start["y"] + SEAT_X_CM / 100 * math.sin(h0), EYE_CM / 100)
 cam = tag(actors.spawn_actor_from_class(unreal.CineCameraActor, cam_loc), "CameraBarque")

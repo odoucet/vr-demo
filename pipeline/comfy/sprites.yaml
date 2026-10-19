@@ -223,3 +223,13 @@ sets:
       - [tronc-colossal-2, "massive ancient tree trunk with twisted bark, moss and small ferns growing on it, wide roots spreading at the base, the trunk continues straight out of the top of the image, no leaves"]
       - [rocher-geant, "huge mossy boulder with ferns and small flowers growing on top"]
       - [souche-geante, "enormous old hollow tree stump covered in moss and mushrooms"]
+  # Final (19/10, idée d'Olivier : « un héron qui vient se poser sur le rebord du bateau ») : approche, puis posé.
+  heron:
+    type: small
+    cell: [1024, 1024]
+    grid: [2, 1]
+    size: [1024, 1024]
+    seed: 2300
+    items:
+      - [atterrissage, "white egret about to land, wings raised high and spread wide, long legs stretched down and forward, seen from the side", {drop: green}]
+      - [pose, "white egret standing calmly on one leg, neck curved in an S, seen from the side, whole bird visible", {drop: green}]

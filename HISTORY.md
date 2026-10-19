@@ -429,4 +429,9 @@ autonome. `SUIVI.md` dit où en est le projet ; ce fichier raconte comment on y 
   au début, troupeau 15 s plus tôt pour laisser l'arche seule, arche à 300 k triangles, tête couchée déplacée sur la
   berge que regarde la barque. Le « bruit de voiture » de la fin : un grondement dans l'enregistrement de l'ambiance du
   lac, repéré à la part de basses fréquences de chaque demi-seconde.
+- **Troisième essai du soir** : les lisses de la barque restaient visibles depuis l'arrière ; plutôt que de découper un
+  maillage soudé (sans Blender), le plancher est remonté pour les couvrir. Le vent, « toujours invisible », cachait une
+  erreur d'unité (la hauteur du sujet lue en échelle, pas en centimètres : 5 mm de balancement). Et une idée d'Olivier
+  pour une fin « un peu morne » : un héron qui vient se poser sur le rebord de la barque, en deux images peintes
+  (atterrissage, posé) animées dans le shader le long d'une courbe, attaché à la barque.
 

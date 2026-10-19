@@ -7,6 +7,18 @@ Légende : 🔴 bloque un jalon, aucun contournement · 🟠 j'avance avec un co
 
 ---
 
+## ▶ Retours au casque du 19/10, 3e essai du soir
+
+- ✅ Nénuphars mieux ; troupeau « parfait » ; arche fluide et jolie ; tête « mieux à droite, on la voit bien » ; plus de bruit
+  de voiture à la fin.
+- ✅ **Lisses de la barque qui flottaient** (vues depuis l'arrière) : avancer la place ne suffisait pas ; le plancher est
+  remonté de 3 à 14 cm et les recouvre (vérifié depuis la place assise). Découper le maillage demanderait Blender (D9).
+- ✅ **Vent invisible** : erreur d'unité dans le shader (le balancement faisait ~5 mm à la cime) ; corrigé, ~2 % de la
+  hauteur (30 cm à la cime d'un arbre de 15 m). **À revoir au casque.**
+- ✅ **Fin moins morne** : un héron arrive de loin pendant que les lucioles s'allument, plane et se pose sur le plat-bord
+  gauche devant le spectateur, ailes levées, puis reste posé (deux images peintes générées en local). **À juger au casque.**
+- ⚠ Mesure de fluidité toujours impossible : le casque posé perd sa position (pièce sombre).
+
 ## ▶ Retours au casque du 19/10, 2e essai du soir (corrigés, APK installé à 20 h 30 environ)
 
 ⚠ Mesure de fluidité impossible : le casque a de nouveau perdu sa position (boîte « Trouver la position »).
