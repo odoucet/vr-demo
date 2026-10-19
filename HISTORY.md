@@ -304,4 +304,8 @@ autonome. `SUIVI.md` dit où en est le projet ; ce fichier raconte comment on y 
 - **Casque** : depuis sa mise à jour, posé sur le bureau, il perd le suivi de position et affiche une boîte de dialogue
   système qui bloque l'appli. La mesure obtenue (90 i/s, GPU 48 %) était celle du menu : jetée, et le point remonté à
   Olivier plutôt que de cliquer dans l'interface système par adb.
+- **11 h 30** : Olivier autorise à cliquer « Continuer sans le suivi ». La boîte système ne se pilote pas par l'arbre
+  d'interface Android, mais au clavier par adb (flèche bas pour sélectionner le bouton, puis validation), en contrôlant
+  chaque pas par une capture du casque. Résultat : sans suivi de position, le Quest refuse d'ouvrir une appli VR. Suivi
+  réactivé ; il faut de la lumière ou un autre point de vue pour le casque.
 

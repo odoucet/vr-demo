@@ -168,11 +168,14 @@ Dis-moi laquelle garder (ou un mélange : par exemple B au loin et C près de l'
 
 ## 🟠 Importants (contournés)
 
-- **Casque : suivi de position perdu (19/10, 10 h)**. Depuis sa mise à jour, le Quest posé affiche « Trouver la position
-  dans la pièce » (boutons « Continuer sans le suivi » / « Activer le mode Voyage ») et l'appli ne démarre pas derrière :
-  captures et mesure impossibles (la mesure lue, 90 i/s à GPU 48 %, était celle du menu ; supprimée). Il faut mettre le
-  casque dans une pièce éclairée, face à un espace dégagé, ou choisir « Continuer sans le suivi ». L'APK avec toutes les
-  corrections est prêt (`builds/android_greybox/Barque-arm64.apk`).
+- **Casque : suivi de position perdu (19/10, depuis 10 h)**. Le Quest posé sur le bureau, dans une pièce sombre et
+  face à un carton tout proche, ne retrouve pas sa position : il affiche « Trouver la position dans la pièce » et
+  l'appli ne rend rien derrière (les mesures lues, 90 i/s à GPU 30-48 %, étaient celles du menu ; jetées). Essai
+  autorisé par Olivier à 11 h 30 : « Continuer sans le suivi » (atteint par adb : flèche bas puis validation) ferme la
+  boîte, mais le casque refuse alors d'ouvrir l'appli (« Activez le suivi pour utiliser cette app ») ; une appli VR
+  exige le suivi de position. Suivi réactivé de la même façon, casque laissé dans son état normal. **Il faut éclairer
+  la pièce ou tourner le casque vers un espace dégagé et texturé**, puis me dire « go ». L'APK avec toutes les
+  corrections est installé.
 
 | # | Manque | Contournement | Ce qui le lèverait |
 |---|---|---|---|
