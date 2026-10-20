@@ -128,7 +128,7 @@ Article proposé (Still Wakes the Deep) inaccessible chez Epic (403) ; d'après 
   substituts) : jumeaux proches 74 → 8 sur 145 (rayon 5 m). **Prompts complets pour tes versions dans PROMPTS.md.**
 - ✅ **Fleurs blanches sur l'eau fixes** : elles suivent maintenant les vagues partout (et la houle de la bête).
 - ✅ **Fleurs blanches trop lumineuses sur le lac final** : lueur de la fleur blanche divisée par ~3.
-- ✅ **La barque tangue au passage de la bête** (roulis ~2°, amorti) : pivot qui porte coque, plancher, lanterne, héron ;
+- ✅ **La barque tangue** : houle douce permanente (roulis ~0,6°, « trop fixe » sinon) et roulis amorti ~3,5° au passage de la bête : pivot qui porte coque, plancher, lanterne, héron ;
   **la caméra n'y est pas** (contrainte VR : jamais de roulis caméra) — ta vue reste horizontale, la barque bouge sous toi.
   **À juger au casque (confort).** Houle autour de la bête : bosse et rides qui s'éloignent.
 - ✅ **La bête affleure** (ton hésitation, appliquée par défaut, réversible : `ABYSS_BREACH` dans `creatures.py`) : le dos

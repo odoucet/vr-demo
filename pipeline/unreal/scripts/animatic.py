@@ -276,8 +276,10 @@ if "GB_LuciolesLac" in by_label:
 visible_windows("GB_Fondu", [(0.0, FADE_IN_END + 0.1), (T_FADE_OUT - 0.1, DURATION + 1)])
 visible_between("GB_Lucioles", t_env - 0.5, DURATION + 1)
 
-# Tangage de la barque au passage de la créature des abysses (21/10) : roulis amorti ~2°, tangage ~0,8°, sur le pivot
-# GB_Tangage (coque, plancher, lanterne ; la caméra n'y est pas attachée : jamais de roulis caméra)
+# Tangage de la barque (21/10, Olivier : « la barque est vraiment trop fixe… qu'elle tangue légèrement pendant toute la
+# vidéo, mais tangue beaucoup au passage de la bête sous l'eau ») : houle douce permanente (roulis ~0,6°, tangage ~0,3°,
+# périodes de 3 à 7 s non multiples, jamais répétitive) + roulis amorti ~3,5° au passage de la créature. Sur le pivot
+# GB_Tangage (coque, plancher, lanterne, héron) ; la caméra n'y est pas attachée : jamais de roulis caméra.
 if "GB_Tangage" in by_label:
     _t1 = MARKS["abysses-passage"]["t"] - 1.0
     _ch = seq.add_possessable(by_label["GB_Tangage"]).add_track(unreal.MovieScene3DTransformTrack).add_section()
@@ -285,16 +287,17 @@ if "GB_Tangage" in by_label:
     _cs = _ch.get_all_channels()
     for _i, _v in ((0, 0.0), (1, 0.0), (2, 0.0), (3, 0.0), (4, 0.0), (5, 0.0), (6, 1.0), (7, 1.0), (8, 1.0)):
         _cs[_i].set_default(_v)
-    _t = _t1 - 3.0
-    while _t <= _t1 + 16.0:
+    _t = 0.0
+    while _t <= DURATION:
         _u = _t - _t1
-        _env = (math.exp(-max(_u, 0.0) / 4.0) if _u >= 0 else math.exp(-(_u / 1.5) ** 2)) * min(1.0, (_t - (_t1 - 3.0)) / 3.0)
-        _cs[3].add_key(frame(_t), 2.2 * _env * math.sin(2 * math.pi * _u / 3.2), interpolation=SMOOTH)          # roulis
-        _cs[4].add_key(frame(_t), 0.8 * _env * math.sin(2 * math.pi * _u / 2.6 + 1.1), interpolation=SMOOTH)    # tangage
-        _t += 0.2
-    for _i in (3, 4):
-        _cs[_i].add_key(frame(_t1 - 3.2), 0.0, interpolation=SMOOTH)
-        _cs[_i].add_key(frame(_t1 + 16.4), 0.0, interpolation=SMOOTH)
+        _env = (math.exp(-max(_u, 0.0) / 4.5) if _u >= 0 else math.exp(-(_u / 1.5) ** 2))
+        _roll = 0.45 * math.sin(2 * math.pi * _t / 5.3) + 0.2 * math.sin(2 * math.pi * _t / 3.1 + 1.3) \
+            + 3.5 * _env * math.sin(2 * math.pi * _u / 3.2)
+        _pitch = 0.22 * math.sin(2 * math.pi * _t / 6.7 + 0.7) + 0.1 * math.sin(2 * math.pi * _t / 4.3 + 2.1) \
+            + 1.2 * _env * math.sin(2 * math.pi * _u / 2.6 + 1.1)
+        _cs[3].add_key(frame(_t), _roll, interpolation=SMOOTH)
+        _cs[4].add_key(frame(_t), _pitch, interpolation=SMOOTH)
+        _t += 0.5 if abs(_u) > 20.0 else 0.2
 
 # Crépuscule → nuit : luminosité du ciel peint (MPC_Ambiance.CielLuminosite), pleine en S2-S4, baisse sous les
 # racines et pendant la trouée, nuit pour la lune (S6) et le lac (S7).
