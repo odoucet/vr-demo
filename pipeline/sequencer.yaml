@@ -4,7 +4,7 @@
 # du 17/10, même durée), d'après pipeline/audio/structure.py (review/music/structure.png).
 
 music:
-  file: audio/music/Luminous Wonder.wav
+  file: audio/music/Luminous Wonder.flac        # FLAC sans perte (20/10), même son que le WAV d'origine
   offset_s: 20          # la musique démarre à S2 ; S1 = clapotis seul
   duration_s: 219.44    # fin de la démo à 3:59.44
   tempo_bpm: 72         # détecté à 143,6 (double temps)

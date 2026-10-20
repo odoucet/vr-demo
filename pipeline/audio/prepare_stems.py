@@ -38,6 +38,13 @@ def main():
     OUT.mkdir(parents=True, exist_ok=True)
     entries = []
     files = sorted(p for p in SRC.glob("*") if p.suffix.lower() in (".wav", ".mp3", ".flac", ".ogg")) if SRC.exists() else []
+    # un seul fichier par stem (20/10 : FLAC à côté des WAV d'origine pendant la transition) : FLAC, puis WAV, puis le reste
+    order = {".flac": 0, ".wav": 1}
+    best = {}
+    for f in files:
+        if f.stem not in best or order.get(f.suffix.lower(), 2) < order.get(best[f.stem].suffix.lower(), 2):
+            best[f.stem] = f
+    files = sorted(best.values())
     for f in files:
         pk = peak_db(f)
         if pk < SILENCE_DB:
