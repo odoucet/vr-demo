@@ -2,7 +2,7 @@
 
     python pipeline/audio/prepare_music.py     # → Unreal/Saved/import/Luminous_Wonder.wav
 
-Unreal importe le WAV de façon sûre ; le MP3 d'origine (audio/music/) reste la référence. Idempotent.
+Unreal importe le WAV de façon sûre ; le FLAC d'Olivier (audio/music/, sans perte) reste la référence. Idempotent.
 """
 import subprocess
 from pathlib import Path
