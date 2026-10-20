@@ -111,8 +111,9 @@ MPC_SCALARS = {"CielLuminosite": 1.0, "LucioleFade": 1.0, "EnvolFade": 0.0, "Aby
                "FinaleFade": 0.0,    # nuée de lucioles du lac (S7)
                "Fondu": 0.0,         # fondu au noir (1 = noir), sphère devant les yeux : pas de post-traitement sur Quest
                "VieJour": 1.0,       # oiseaux, papillons, libellules : présents le jour, partis la nuit (lucioles)
-               "HeronFinal": 0.0}    # héron du final : 0 loin devant, 1 posé sur le rebord de la barque
-MPC_DIGEST = spec_digest("mpc-v8", sorted(MPC_VECTORS), sorted(MPC_SCALARS))
+               "HeronFinal": 0.0,    # héron du final : 0 loin devant, 1 posé sur le rebord de la barque
+               "CielNuit": 0.0}      # ciel de nuit d'Olivier (0 : ciel du crépuscule teinté, 1 : ciel de nuit)
+MPC_DIGEST = spec_digest("mpc-v9", sorted(MPC_VECTORS), sorted(MPC_SCALARS))
 
 
 def ambiance_mpc():
@@ -252,8 +253,12 @@ _mv = (_dx / _dl, -_dy / _dl, math.tan(math.radians(22)))
 _mn = math.sqrt(sum(c * c for c in _mv))
 MOON_DIR = tuple(c / _mn for c in _mv)
 MOON_RADIUS_DEG = 2.1
+# ciel de nuit d'Olivier (20/10, refs/inbox/ciel-nuit.png, sky.py --nuit) : affiché presque tel quel (gain), pas multiplié
+# par la teinte de nuit (~0,1), qui le noircirait ; fondu depuis le ciel du crépuscule par CielNuit (Nn)
+NIGHT_SKY_GAIN = 0.45
 SKY_STARS_CODE = """float3 d = normalize(-Dir);
-float3 sky = Tex * Teinte.rgb;
+float3 sky = lerp(Tex * Teinte.rgb, TexN * %(ng).2f, Nn);
+float3 Tc = lerp(Tex, TexN, Nn);                             // ciel peint visible (masques des nuages)
 float night = saturate(1.0 - dot(Teinte.rgb, float3(0.3, 0.5, 0.2)) * 3.0);
 float2 g = float2(atan2(d.y, d.x) * 260.0, d.z * 260.0);
 float2 c = floor(g);
@@ -261,16 +266,17 @@ float h = frac(sin(dot(c, float2(12.9898, 78.233))) * 43758.5453);
 float2 f = frac(g) - 0.5;
 float star = step(0.985, h) * saturate(1.0 - length(f) * 3.0);
 float tw = 0.55 + 0.45 * sin(T * (1.5 + h * 3.0) + h * 80.0);
-float clouds = saturate(1.0 - dot(Tex, float3(0.3, 0.5, 0.2)) * 1.6);
+float clouds = saturate(1.0 - dot(Tc, float3(0.3, 0.5, 0.2)) * 1.6);
 float3 col = sky + star * tw * night * clouds * saturate(d.z * 6.0) * 1.5;
 // lune : disque doux et halo, masqués là où le ciel peint est un nuage (zones claires et peu bleues)
 float md = dot(d, float3(%(mx).5f, %(my).5f, %(mz).5f));
 float cr = cos(radians(%(mr).2f));
 float disc = smoothstep(cr - 0.00004, cr + 0.00004, md);
 float halo = pow(saturate((md - cr) / (1.0 - cr) * 0.5 + 0.5), 60.0) * 0.25 + pow(saturate(md), 2000.0) * 0.15;
-float cloudy = saturate((Tex.r + 0.15 - Tex.b) * 3.0) * saturate(dot(Tex, float3(0.3, 0.5, 0.2)) * 2.0);
+float cloudy = lerp(saturate((Tex.r + 0.15 - Tex.b) * 3.0) * saturate(dot(Tex, float3(0.3, 0.5, 0.2)) * 2.0),
+                    saturate(dot(TexN, float3(0.3, 0.5, 0.2)) * 2.5 - 0.4), Nn);   // nuages de nuit : bleutés et clairs
 col += float3(1.0, 0.97, 0.88) * (disc * 1.1 + halo * (0.4 + night)) * (1.0 - cloudy * 0.9);
-return col;""" % {"mx": MOON_DIR[0], "my": MOON_DIR[1], "mz": MOON_DIR[2], "mr": MOON_RADIUS_DEG}
+return col;""" % {"mx": MOON_DIR[0], "my": MOON_DIR[1], "mz": MOON_DIR[2], "mr": MOON_RADIUS_DEG, "ng": NIGHT_SKY_GAIN}
 
 
 with open(os.path.join(ROOT, "pipeline", "layout", "water_map.json"), encoding="utf-8") as f:
@@ -372,7 +378,8 @@ float sw = sin(dot(WP.xy, float2(0.0021, 0.0013)) + T * 0.9) * 0.6 + sin(dot(WP.
 float su = 0.5 + atan2(rd.y, rd.x) / (2.0 * PI) + T * %(drift)f + sw * 0.004 + nr.x * 0.004;
 float se = min(asin(clamp(rd.z, 0.0, 1.0)), 0.96);   // pas au-delà de 55° : au zénith l'équirectangulaire s'étire en rayons
 float sv = clamp(0.82 - se / (0.5 * PI) * 0.82 + nr.y * 0.03 + sw * 0.012 + hw * 0.05, 0.0, 1.0);
-float3 sky = Texture2DSample(Sky, SkySampler, float2(su, sv)).rgb * Teinte.rgb;
+float3 sky = lerp(Texture2DSample(Sky, SkySampler, float2(su, sv)).rgb * Teinte.rgb,
+                  Texture2DSample(SkyN, SkyNSampler, float2(su, sv)).rgb * %(ng).2f, Nn);   // ciel de nuit (CielNuit)
 float fr = 0.06 + 0.94 * pow(1.0 - saturate(dot(wn, -v)), 4.0);
 // reflet de la lisière : le rayon réfléchi part vers le haut, vers la rive qu'il rencontre (distance aux rives
 // précalculée dans la carte ; dans le lac, intersection exacte avec le cercle de la rive) ; les arbres (~15 m,
@@ -462,7 +469,7 @@ op *= pf;
 op *= 1.0 - pf;
 #endif
 return float4(col, op);""") % (WATER_FMT := {"lantx": LANTERN_LOCAL[0], "lanty": LANTERN_LOCAL[1], "cr": CANDLE_RGB[0], "cg": CANDLE_RGB[1], "cb": CANDLE_RGB[2], "x0": WATER_MAP["x0"], "y0": WATER_MAP["y0"], "size": WATER_MAP["size_m"], "drift": SKY_DRIFT,
-   "mx": MOON_DIR[0], "my": MOON_DIR[1], "mz": MOON_DIR[2], "eaumean": TEX_MEAN_EAU, "lkx": RIVER["lake"]["x"] * 100, "lky": -RIVER["lake"]["y"] * 100, "lkr2": (RIVER["lake"]["radius_m"] * 100) ** 2, "lkr": RIVER["lake"]["radius_m"] * 100, **PATCH_RECT})
+   "mx": MOON_DIR[0], "my": MOON_DIR[1], "mz": MOON_DIR[2], "eaumean": TEX_MEAN_EAU, "lkx": RIVER["lake"]["x"] * 100, "lky": -RIVER["lake"]["y"] * 100, "lkr2": (RIVER["lake"]["radius_m"] * 100) ** 2, "lkr": RIVER["lake"]["radius_m"] * 100, "ng": NIGHT_SKY_GAIN, **PATCH_RECT})
 # déplacement de la grille fine : hauteur de l'eau, fondue au bord (raccord avec la grille plate de 5 m)
 WAVE_WPO_CODE = (WAVE_CORE + "return float3(0.0, 0.0, wh * pf);") % WATER_FMT
 
@@ -1944,7 +1951,21 @@ if os.path.exists(SKY_PNG):
         sky_tex = eal.load_asset(f"{GB}/ciel")
         eal.set_metadata_tag(sky_tex, "source_sha1", sky_digest)
         eal.save_loaded_asset(sky_tex)
-    SKY_WATER_VERSION = "ciel-eau-v32"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
+    SKY_NIGHT_PNG = os.path.join(ROOT, "assets", "sky", "ciel-nuit.png")
+    sky_night_src = SKY_NIGHT_PNG if os.path.exists(SKY_NIGHT_PNG) else SKY_PNG     # repli : ciel du crépuscule
+    with open(sky_night_src, "rb") as f:
+        sky_night_digest = hashlib.sha1(f.read()).hexdigest()[:12]
+    sky_night_tex = eal.load_asset(f"{GB}/ciel-nuit") if eal.does_asset_exist(f"{GB}/ciel-nuit") else None
+    if sky_night_tex is None or eal.get_metadata_tag(sky_night_tex, "source_sha1") != sky_night_digest:
+        task = unreal.AssetImportTask()
+        task.filename, task.destination_path, task.destination_name = sky_night_src, GB, "ciel-nuit"
+        task.automated, task.replace_existing, task.save = True, True, True
+        tools.import_asset_tasks([task])
+        sky_night_tex = eal.load_asset(f"{GB}/ciel-nuit")
+        eal.set_metadata_tag(sky_night_tex, "source_sha1", sky_night_digest)
+        eal.save_loaded_asset(sky_night_tex)
+    sky_digest = sky_digest + "-" + sky_night_digest
+    SKY_WATER_VERSION = "ciel-eau-v33"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
     sky_mat_path = f"{GB}/M_GB_CielPeint"
     sky_mat = eal.load_asset(sky_mat_path) if eal.does_asset_exist(sky_mat_path) else None
     rebuild_sky_water = not up_to_date(sky_mat, spec_digest(SKY_WATER_VERSION, sky_digest, MPC_DIGEST, WATER_CODE,
@@ -1969,11 +1990,19 @@ if os.path.exists(SKY_PNG) and rebuild_sky_water:
     mel.connect_material_expressions(cu, "", st, "UVs")
     mpc = MPC
     cp = mpc_rgb(sky_mat, "CielTeinte", -200, 250)
-    mul = custom_node(sky_mat, SKY_STARS_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["Dir", "T", "Tex", "Teinte"], 0, 100)
+    stn = mel.create_material_expression(sky_mat, unreal.MaterialExpressionTextureSample, -200, 120)
+    stn.set_editor_property("texture", sky_night_tex)
+    mel.connect_material_expressions(cu, "", stn, "UVs")
+    nn = mel.create_material_expression(sky_mat, unreal.MaterialExpressionCollectionParameter, -200, 350)
+    nn.set_editor_property("collection", MPC)
+    nn.set_editor_property("parameter_name", "CielNuit")
+    mul = custom_node(sky_mat, SKY_STARS_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["Dir", "T", "Tex", "Teinte", "TexN", "Nn"], 0, 100)
     mel.connect_material_expressions(camv, "", mul, "Dir")
     mel.connect_material_expressions(tnode, "", mul, "T")
     mel.connect_material_expressions(st, "RGB", mul, "Tex")
     mel.connect_material_expressions(cp, "", mul, "Teinte")
+    mel.connect_material_expressions(stn, "RGB", mul, "TexN")
+    mel.connect_material_expressions(nn, "", mul, "Nn")
     mel.connect_material_property(mul, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
     mel.recompile_material(sky_mat)
     mark_saved(sky_mat, spec_digest(SKY_WATER_VERSION, sky_digest, MPC_DIGEST, WATER_CODE,
@@ -2000,12 +2029,14 @@ if os.path.exists(SKY_PNG) and rebuild_sky_water:
         wt = mel.create_material_expression(water, unreal.MaterialExpressionTime, -1000, 200)
         wcp = mel.create_material_expression(water, unreal.MaterialExpressionCameraPositionWS, -1000, 250)
         wnode = custom_node(water, f"#define PATCH {int(patch)}\n" + WATER_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT4,
-                            ["Dir", "WP", "T", "Map", "Rides", "Sky", "Teinte", "Lumiere", "B", "Ab", "Af", "Glow", "Day", "Lf", "Ff", "EauTex", "Cam"], -600, 0)
+                            ["Dir", "WP", "T", "Map", "Rides", "Sky", "Teinte", "Lumiere", "B", "Ab", "Af", "Glow", "Day", "Lf", "Ff", "EauTex", "Cam",
+                             "SkyN", "Nn"], -600, 0)
         mel.connect_material_expressions(wcam, "", wnode, "Dir")
         mel.connect_material_expressions(wpos, "", wnode, "WP")
         mel.connect_material_expressions(wt, "", wnode, "T")
         mel.connect_material_expressions(wcp, "", wnode, "Cam")
-        for i, (pin, tex) in enumerate((("Map", WATER_MAP_TEX), ("Rides", RIDES_TEX), ("Sky", sky_tex), ("Glow", GLOW_TEX), ("EauTex", EAU_TEX))):
+        for i, (pin, tex) in enumerate((("Map", WATER_MAP_TEX), ("Rides", RIDES_TEX), ("Sky", sky_tex), ("Glow", GLOW_TEX), ("EauTex", EAU_TEX),
+                                        ("SkyN", sky_night_tex))):
             to = mel.create_material_expression(water, unreal.MaterialExpressionTextureObject, -1000, 300 + 100 * i)
             to.set_editor_property("texture", tex)
             mel.connect_material_expressions(to, "", wnode, pin)
@@ -2016,7 +2047,7 @@ if os.path.exists(SKY_PNG) and rebuild_sky_water:
         wb.set_editor_property("parameter_name", "Barque")
         mel.connect_material_expressions(wb, "", wnode, "B")
         for i, (pin, pname) in enumerate((("Ab", "AbyssPos"), ("Af", "AbyssFade"), ("Day", "VieJour"), ("Lf", "LucioleFade"),
-                                          ("Ff", "FinaleFade"))):
+                                          ("Ff", "FinaleFade"), ("Nn", "CielNuit"))):
             cpw = mel.create_material_expression(water, unreal.MaterialExpressionCollectionParameter, -1000, 950 + 100 * i)
             cpw.set_editor_property("collection", MPC)
             cpw.set_editor_property("parameter_name", pname)

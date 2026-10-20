@@ -7,6 +7,16 @@ Légende : 🔴 bloque un jalon, aucun contournement · 🟠 j'avance avec un co
 
 ---
 
+## ▶ Assets d'Olivier du 20/10 (intégrés, APK installé ~10 h 40)
+
+- ✅ **Ciel de nuit** (`refs/inbox/ciel-nuit.png`, `sky.py --nuit`) : deux moitiés en miroir (idée d'Olivier : retourné, ses
+  nuages tombent sur ceux du ciel de jour ; le miroir referme le tour), arbres peints ramenés à la hauteur de ceux du jour,
+  zénith prolongé, agrandi en 4096. **Fondu depuis le ciel du crépuscule de 2:25 à 2:52** (paramètre CielNuit), aussi dans
+  les reflets de l'eau ; affiché à 45 % (gain) : à juger au casque (trop clair ? trop sombre ?).
+- ✅ **Arbre de l'île** (`refs/inbox/arbre-ile.png`, `style/ile_sprite.py`) : détouré (BiRefNet, nuage retiré), un plan peint
+  de 24 m à la place de l'arbre en volume ; ses lanternes s'allument à la nuit. 🔧 L'île elle-même reste un monticule nu.
+- ✅ **Plancher de la barque** (`refs/tex-planches.png`, raccordable) : remplace ma texture générée.
+
 ## ▶ Eau en relief (20/10, 9 h ; Olivier : « ton souci c'est que l'eau reste une surface plane. Des vagues c'est pas plat »)
 
 Article proposé (Still Wakes the Deep) inaccessible chez Epic (403) ; d'après ses reprises, leur eau est une simulation

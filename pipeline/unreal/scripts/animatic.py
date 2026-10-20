@@ -308,6 +308,9 @@ if mpc is not None:
         msec.add_scalar_parameter_key("FinaleFade", frame(t), v)
     for t, v in FADE_KEYS:
         msec.add_scalar_parameter_key("Fondu", frame(t), v)
+    # ciel de nuit d'Olivier (20/10) : fondu depuis le ciel du crépuscule autour de l'arrivée de la nuit (S6 à 157,8 s)
+    for t, v in ((0.0, 0.0), (145.0, 0.0), (172.0, 1.0)):
+        msec.add_scalar_parameter_key("CielNuit", frame(t), v)
     # héron du final : arrive de loin pendant que la nuée s'allume, se pose sur le rebord 8 s avant le fondu au noir
     for t, v in ((0.0, 0.0), (T_FADE_OUT - 24.0, 0.0), (T_FADE_OUT - 8.0, 1.0)):
         msec.add_scalar_parameter_key("HeronFinal", frame(t), v)

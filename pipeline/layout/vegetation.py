@@ -329,7 +329,10 @@ def main():
     if not SPRITES:                                       # remplacées par les bandes de lisière peintes
         bundles.update(dict(sorted(edges.items())))
         bundles["Collines"] = hills
-    bundles.update({"ArbreColossalPeint": colossal, "ArbreLanternesPeint": lantern})
+    bundles["ArbreColossalPeint"] = colossal
+    # arbre de l'île : en volume seulement sans l'image d'Olivier (20/10, style/ile_sprite.py → plan peint)
+    if not (ROOT / "assets" / "textures" / "sprites" / "ile.json").exists():
+        bundles["ArbreLanternesPeint"] = lantern
     meshes, total = {}, 0
     for k, bnd in bundles.items():
         print(f"  {k:22s} {bnd.triangles:8d} triangles  " +

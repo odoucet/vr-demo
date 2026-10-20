@@ -34,6 +34,8 @@ STAGES = [
     ("stems", "stems de la musique → sources spatialisées (si déposés)", [PY, "pipeline/audio/prepare_stems.py"], None),
     ("brush", "texture de touches de pinceau (look peint)", [PY, "pipeline/style/brush_texture.py"], None),
     ("greybox-geometry", "géométrie du greybox (terrain peint, arche, roseaux)", [PY, "pipeline/layout/greybox_geometry.py"], None),
+    ("ile", "arbre de l'île du lac : image d'Olivier détourée en plan peint", [PY, "pipeline/style/ile_sprite.py"], None),
+    ("ciel-nuit", "ciel de nuit d'Olivier en panorama (sky.py --nuit, agrandi dans ComfyUI)", [PY, "pipeline/comfy/sky.py", "--nuit"], "comfyui"),
     ("vegetation", "végétation et décor peints (forêt, berges, grands arbres, collines)", [PY, "pipeline/layout/vegetation.py"], None),
     ("sprites-layout", "placement des sprites peints (forêt, berges, lisières, houppiers, eau)", [PY, "pipeline/layout/sprites_layout.py"], None),
     ("creatures", "trajectoires des créatures (chenal, gué, vol)", [PY, "pipeline/layout/creatures.py"], None),

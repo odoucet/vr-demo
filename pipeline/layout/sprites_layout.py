@@ -81,6 +81,7 @@ def main():
     colossal_xy = (arch["x"] - math.sin(ah) * 16, arch["y"] + math.cos(ah) * 16)
     isl = marks["ile-lanternes"]
     lake = river["lake"]
+    ISLAND_PAINTED = (ROOT / "assets" / "textures" / "sprites" / "ile.json").exists()
     hx, hy, hux, huy = herd_crossing(river)
     # tête de pierre couchée (greybox.py, HEAD_T / HEAD_SIDE_M) : rive gauche à 165 s, dégagée des buissons
     hp_ = min(s, key=lambda q: abs(q["t"] - 165.0))
@@ -237,12 +238,18 @@ def main():
             top = d[2] > -0.2
             cell = int(rng.choice([0, 2, 4, 6]) if top and k < n_surf else rng.choice([1, 3, 5, 7] if d[2] < -0.5 else [1, 3]))
             bright = rng.uniform(0.9, 1.08) if top else rng.uniform(0.7, 0.85)
-            add("feuillages", "touffe", [x, y, z, size, cell, 0, bright])
+            if not (tree == "ile" and ISLAND_PAINTED):    # tirages gardés : le reste du décor ne bouge pas
+                add("feuillages", "touffe", [x, y, z, size, cell, 0, bright])
 
     # --- Arbre colossal : tronc peint face à l'œil (un tronc se voit pareil sous tous les angles), sommet caché dans
     # le houppier ; rochers géants moussus au bord de l'eau, souches géantes en lisière -------------------------
     gz = F.at(*colossal_xy)[0] or 0.0
     add("heros", "debout", [colossal_xy[0], colossal_xy[1], gz - 2.0, 42.0, 1, 0, 0.95])
+    # arbre de l'île du lac (20/10) : l'image d'Olivier (style/ile_sprite.py) en un plan, à la place de l'arbre en volume ;
+    # éclat 1,9 : ses lanternes s'allument à la nuit (lueur propre au-delà de 1,5)
+    if ISLAND_PAINTED:
+        iz = F.at(isl["x"], isl["y"])[0] or 0.0
+        add("ile", "debout", [isl["x"], isl["y"], max(iz, 0.0) - 0.3, 24.0, 0, 0, 1.9])
     # pas au gué (S4, 98-128 s) : moussus, on les confondait avec les bêtes du troupeau
     for t in (31, 57, 88, 136, 158, 176, 195):
         p = min(s, key=lambda q: abs(q["t"] - t))
