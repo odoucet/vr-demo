@@ -497,3 +497,14 @@ autonome. `SUIVI.md` dit où en est le projet ; ce fichier raconte comment on y 
   sur ceux du jour donne un fondu presque sur place.
 - Le casque posé ne tient pas son suivi dans la pénombre ; l'appli se fige faute de suivi. Mesure relancée toutes les
   30 min, ne gardant que les mesures où le GPU travaille vraiment.
+
+## 20/10 soir — écume, essai Niagara
+
+- Au casque : « j'aime beaucoup », « l'eau c'est très chouette », fluide. Mais l'écume reste invisible. Trois causes
+  empilées, trouvées par diagnostics en couleur vive dans le rendu : le plat-bord cache toute l'eau à ~1,1 m de l'axe
+  depuis la place assise ; un smoothstep écrit à l'envers vaut zéro à la compilation (il effaçait aussi une partie des
+  ailes du héron) ; le motif de découpe était fait de lignes fines. Écume refaite en V qui dépasse du plat-bord, bande
+  pleine puis dentelle.
+- Essai de la simulation d'eau Niagara Fluids (piste de l'article Still Wakes the Deep), après un redémarrage de
+  l'éditeur : un premier APK vide (système posé après l'enregistrement du niveau), puis un second où Olivier la voit —
+  « c'est très moche ». Le modèle brut n'est pas exploitable ; mis en pause au profit de l'eau calculée.

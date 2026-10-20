@@ -120,11 +120,15 @@ Article proposé (Still Wakes the Deep) inaccessible chez Epic (403) ; d'après 
 11. **Héron** : arrivée par la gauche, taille, pattes sur le rebord ; son cri et ses ailes.
 12. **Plancher de la barque** (ta texture).
 
-### Ce soir, si tu redémarres l'éditeur : essai de simulation d'eau (Niagara Fluids)
+### Retours au casque du 20/10 au soir
 
-1. Fermer l'éditeur ; je passe `niagara_fluids: true` dans `pipeline/tools.yaml` et relance `create_project.py`.
-2. Rouvrir l'éditeur (le plugin se charge) ; je monte `Grid2D_SW_ParticleCollisions` attaché à la barque dans un APK séparé
-   (`--variant exp`), à comparer au casque.
+- ✅ « J'aime beaucoup », « l'eau c'est très chouette », vidéo fluide.
+- ✅ **Écume** (« je ne la vois pas, ou alors pas très jolie ») : le plat-bord masque l'eau à moins de ~1,1 m de l'axe et un
+  smoothstep inversé annulait le liseré ; refaite en V de 35 cm à l'étrave à ~2,6 m à la poupe (bande pleine + dentelle).
+  **À revoir au casque** (APK greybox installé ~20 h).
+- ⏸ **Essai Niagara Fluids** (« c'est très moche ») : modèle Shallow Water tel quel, attaché à la barque. Mis en pause :
+  le rendre joli demanderait notre propre matériau d'eau sur la simulation et une mesure de coût, sans garantie de faire
+  mieux que l'eau calculée. Script gardé (`BARQUE_ESSAI_EAU=1`, variante exp), plugin laissé activé (`tools.yaml`).
 
 ## ▶ Retours au casque du 19/10, 4e essai (mesure faite, casque porté)
 
