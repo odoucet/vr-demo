@@ -109,11 +109,12 @@ MPC_VECTORS = {"SoleilDir": (0.9, -0.4, 0.2), "Lumiere": (1.0, 0.95, 0.85), "Omb
 # CielLuminosite (ancien), apparition progressive des lucioles des berges et du nuage de l'envol
 MPC_SCALARS = {"CielLuminosite": 1.0, "LucioleFade": 1.0, "EnvolFade": 0.0, "AbyssFade": 1.0,
                "FinaleFade": 0.0,    # nuée de lucioles du lac (S7)
-               "Fondu": 0.0,         # fondu au noir (1 = noir), sphère devant les yeux : pas de post-traitement sur Quest
+               "Fondu": 1.0,         # fondu au noir (1 = noir), sphère devant les yeux : pas de post-traitement sur Quest ;
+                                     # noir par défaut (21/10 : avant que la séquence démarre, on voyait la scène se construire)
                "VieJour": 1.0,       # oiseaux, papillons, libellules : présents le jour, partis la nuit (lucioles)
                "HeronFinal": 0.0,    # héron du final : 0 loin devant, 1 posé sur le rebord de la barque
                "CielNuit": 0.0}      # ciel de nuit d'Olivier (0 : ciel du crépuscule teinté, 1 : ciel de nuit)
-MPC_DIGEST = spec_digest("mpc-v9", sorted(MPC_VECTORS), sorted(MPC_SCALARS))
+MPC_DIGEST = spec_digest("mpc-v10", sorted(MPC_VECTORS), sorted(MPC_SCALARS))
 
 
 def ambiance_mpc():
@@ -449,37 +450,9 @@ col = lerp(col, Lumiere.rgb * 0.5 + sky * 0.35, foam * 0.75);
 float brk = saturate(rip * 0.9 + r2 * 0.8 - 0.45);                   // découpe irrégulière de l'écume
 col += saturate(hw) * (sky * 0.7 + Lumiere.rgb * 0.12) * (0.45 + 0.25 * fr);   // tempéré en rasant (traits blancs)
 col *= 1.0 - saturate(-hw) * 0.3;
-// écume dessinée (20/10 au casque : « je ne vois pas l'écume autour du bateau, ou alors elle n'est pas très jolie » ; c'était
-// un voile clair découpé par du bruit, noyé dans le reflet du ciel) : formes blanches à bord franc, comme dans l'animation
-// — liseré au contact de la coque, crête de la vague d'étrave, dentelle qui se détache le long des flancs puis s'effiloche
-// dans le sillage ; motif fixé à l'eau (il suit le courant) : la barque avance, la dentelle file le long des flancs
-float2 fuv = (q - adv * ph0) * 2.0 + 0.23, fdx = ddx(fuv), fdy = ddy(fuv);
-float4 f4 = float4(0.0, 0.5, 0.5, 0.0);
-[branch] if (d < 500.0 && back > -60.0) f4 = Texture2DSampleGrad(Rides, RidesSampler, fuv, fdx, fdy);   // près de la coque seulement
-float fl = f4.r;                                                    // crêtes (lignes fines)
-// taches de découpe : bruit lisse calculé (la pente compressée de la texture donnait des bords en escalier)
-float bn = sin(fuv.x * 7.1 + sin(fuv.y * 5.3) * 1.7) * sin(fuv.y * 6.3 + sin(fuv.x * 4.1) * 1.9);
-float blob = saturate(0.5 + 0.45 * bn + 0.15 * (fl - 0.3));
-// écume en V autour de la coque : depuis la place assise (yeux à 1,10 m au centre), le plat-bord masque l'eau à moins de
-// ~1,1 m de l'axe et l'étrave cache l'eau devant sur plusieurs mètres (mesuré le 20/10 : un col collé à la coque restait
-// invisible, même peint en rouge). Le col part fin de l'étrave (35 cm) et s'élargit vers l'arrière (~1,5 m au milieu,
-// ~2,6 m à la poupe : exagéré pour une barque à 1 m/s, mais c'est ce qui se voit depuis la place assise),
-// plein près de la coque, déchiré vers l'extérieur, bord irrégulier qui ondule.
-float foamW = 35.0 + 0.7 * max(back, 0.0) + 25.0 * (r2 - 0.5) + 12.0 * sin(lx * 0.045 + T * 0.8);
-float foamT = saturate(d / max(foamW, 1.0));                                                      // 0 coque → 1 bord du col
-// bande pleine au ras de la coque (un quart du col, bord ondulé), puis réseau de filets (crêtes de rides) qui s'éclaircit
-float coreW = 0.18 * foamW + (blob - 0.5) * 0.14 * foamW;
-float core = (1.0 - smoothstep(coreW - 6.0, coreW + 6.0, d)) * smoothstep(-4.0, 0.0, d);
-float net = smoothstep(0.3, 0.45, fl) * smoothstep(0.25, 0.45, blob) * (1.0 - smoothstep(0.55, 1.0, foamT));
-float foamRim = max(core, net * 0.9) * step(-60.0, back) * exp(-max(back - 330.0, 0.0) / 250.0);
-float crest = smoothstep(0.35, 0.5, bowh * (0.6 + 0.8 * fl));                                     // crête d'étrave
-float reach = 30.0 + 0.1 * max(back, 0.0);                                                         // la dentelle s'élargit vers l'arrière
-float lace = smoothstep(0.8, 0.86, blob) * exp(-pow(max(d - foamW, 0.0) / reach, 1.5)) * saturate(back / 40.0)
-           * exp(-max(back - 200.0, 0.0) / 450.0);
-float arms = smoothstep(0.55, 0.6, fl) * band * wfade * saturate(div + 0.3) * 0.8;                 // filets sur les bras du sillage
-float boatfoam = saturate(max(max(foamRim, crest), max(lace, arms))) * outside;
-float3 foamcol = Lumiere.rgb * 0.9 + sky * 0.25 + 0.06;                                            // blanc franc
-col = lerp(col, foamcol, boatfoam * 0.85);
+// écume autour de la barque retirée (21/10, Olivier : « de grosses taches qui sautent… juste la texture ondulée est très
+// bien ») : le sillage reste en relief et en reflets (hw), sans aplat blanc
+float boatfoam = 0.0;
 float2 lp = B.xy + float2(cb, sb) * %(lantx).1f + float2(-sb, cb) * %(lanty).1f;
 float dlw = length(WP.xy - lp);
 float flick = 0.86 + 0.1 * sin(T * 11.0) * sin(T * 6.7 + 1.3) + 0.04 * sin(T * 23.0);
@@ -1992,7 +1965,7 @@ if os.path.exists(SKY_PNG):
         eal.set_metadata_tag(sky_night_tex, "source_sha1", sky_night_digest)
         eal.save_loaded_asset(sky_night_tex)
     sky_digest = sky_digest + "-" + sky_night_digest
-    SKY_WATER_VERSION = "ciel-eau-v43"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
+    SKY_WATER_VERSION = "ciel-eau-v44"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
     sky_mat_path = f"{GB}/M_GB_CielPeint"
     sky_mat = eal.load_asset(sky_mat_path) if eal.does_asset_exist(sky_mat_path) else None
     rebuild_sky_water = not up_to_date(sky_mat, spec_digest(SKY_WATER_VERSION, sky_digest, MPC_DIGEST, WATER_CODE,

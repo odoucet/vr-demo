@@ -126,6 +126,10 @@ Article proposé (Still Wakes the Deep) inaccessible chez Epic (403) ; d'après 
 - ✅ **Écume** (« je ne la vois pas, ou alors pas très jolie ») : le plat-bord masque l'eau à moins de ~1,1 m de l'axe et un
   smoothstep inversé annulait le liseré ; refaite en V de 35 cm à l'étrave à ~2,6 m à la poupe (bande pleine + dentelle).
   **À revoir au casque** (APK greybox installé ~20 h).
+- ✅ **Écume retirée** (21/10 : « de grosses taches qui sautent… juste la texture ondulée est très bien ») : le sillage reste
+  en relief et en reflets. Le saut venait du motif, avancé sur une seule phase (retour en arrière à chaque cycle).
+- ✅ **Scène visible avant le noir au lancement** : le fondu valait « transparent » par défaut, avant que la séquence ne
+  démarre ; noir par défaut désormais (vérifié : premières images noires).
 - ⏸ **Essai Niagara Fluids** (« c'est très moche ») : modèle Shallow Water tel quel, attaché à la barque. Mis en pause :
   le rendre joli demanderait notre propre matériau d'eau sur la simulation et une mesure de coût, sans garantie de faire
   mieux que l'eau calculée. Script gardé (`BARQUE_ESSAI_EAU=1`, variante exp), plugin laissé activé (`tools.yaml`).
