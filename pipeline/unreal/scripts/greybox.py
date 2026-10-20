@@ -2709,6 +2709,16 @@ for a in actors.get_all_level_actors():
         comp.set_mobility(unreal.ComponentMobility.MOVABLE)
 
 levels.save_current_level()
+# Essai de simulation d'eau (20/10, Niagara Fluids « Shallow Water ») : seulement pour l'APK d'essai (BARQUE_ESSAI_EAU=1,
+# package_android.py --variant exp). Modèle tel quel (sphères qui tournent et poussent l'eau), 8 m devant la barque au
+# départ : savoir s'il tourne au Quest et ce qu'il coûte, avant de l'attacher à la barque.
+if os.environ.get("BARQUE_ESSAI_EAU") == "1":
+    _sw = eal.load_asset("/NiagaraFluids/Templates/Liquid/2D/Systems/ShallowWater/Grid2D_SW_ParticleCollisions")
+    if _sw is not None:
+        _h0 = math.radians(start["heading_deg"])
+        _swa = actors.spawn_actor_from_object(_sw, ue(start["x"] + 8 * math.cos(_h0), start["y"] + 8 * math.sin(_h0), 0.0))
+        tag(_swa, "GB_EssaiEauSim")
+        unreal.log("Essai Niagara Fluids : système Shallow Water placé devant la barque")
 # La séquence (animatic.py) référence les acteurs du niveau, qui viennent d'être recréés : la régénérer aussitôt,
 # sinon ses pistes pointent vers des acteurs disparus (barque immobile, créatures figées).
 import runpy  # noqa: E402
