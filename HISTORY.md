@@ -482,3 +482,18 @@ autonome. `SUIVI.md` dit où en est le projet ; ce fichier raconte comment on y 
 - « J'ai enfin compris ce qui me choquait : leurs animations sont synchronisées » : le troupeau avait bien un décalage de
   pas par animal… réglé par une fonction d'exécution, non sauvegardée avec le niveau. Toutes les bêtes repartaient à zéro.
 - Le casque posé : un essai réussi juste après qu'Olivier l'a reposé, puis perte de suivi dans la pièce sombre.
+
+## 20/10 matin — eau en relief, particules, assets d'Olivier
+
+- « Ton souci c'est que l'eau reste une surface plane » : l'article d'Epic sur Still Wakes the Deep (simulation d'eau peu
+  profonde dans Niagara, le corps du joueur comme « pompe », particules) sert de piste. Version Quest retenue pour la
+  journée : hauteur d'eau calculée (houle, sillage), grille fine déplacée autour de la barque, reflets sur la pente des
+  vagues, nénuphars qui flottent, flocons d'écume et feuilles qui dérivent. La vraie simulation attend un redémarrage de
+  l'éditeur (plugin Niagara Fluids), que seul Olivier peut faire.
+- La ligne droite qui traversait le lac venait du brouillard calculé aux sommets d'une grille de 5 m : trois fausses
+  pistes (reflet, carte de l'eau, fond) avant de la trouver, par élimination.
+- Olivier demande un « top 3 » d'images à fournir : ciel de nuit, arbre de l'île, plancher de la barque — ce qui restait
+  généré en local et se voit le plus. Livrés dans l'heure ; son idée de retourner le ciel de nuit pour caler ses nuages
+  sur ceux du jour donne un fondu presque sur place.
+- Le casque posé ne tient pas son suivi dans la pénombre ; l'appli se fige faute de suivi. Mesure relancée toutes les
+  30 min, ne gardant que les mesures où le GPU travaille vraiment.
