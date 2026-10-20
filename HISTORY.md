@@ -470,3 +470,15 @@ autonome. `SUIVI.md` dit où en est le projet ; ce fichier raconte comment on y 
   fond, pas de grave parasite — la leçon du « bruit de voiture »), validation à l'oreille laissée à Olivier.
 - **Animatic complet** relu (iter-054) : l'eau tient sur tout le parcours, de jour comme de nuit. APK installé ; le
   casque, posé, attend d'être porté pour la mesure de fluidité.
+
+## 20/10 matin — essai au casque d'Olivier, puis corrections
+
+- **Mesure casque porté** : malgré la barque à 80 k triangles et l'eau plus riche, la balade est plus fluide que la veille
+  (les niveaux de détail de l'arche ont payé) ; seul creux sous l'arche (65 i/s), qu'Olivier n'a pas senti.
+- **Retour** : « la barque est super propre », lanterne et pont validés. Mais le sillage reste « très très léger » et
+  « on voit l'eau un petit peu sous la barque » : la zone sans eau du shader était encore l'ellipse de l'ancienne barque,
+  plus large que la nouvelle coque pointue — un reste de la barque précédente, invisible en captures, flagrant au casque.
+  Forme de coque mesurée dans Blender à la flottaison.
+- « J'ai enfin compris ce qui me choquait : leurs animations sont synchronisées » : le troupeau avait bien un décalage de
+  pas par animal… réglé par une fonction d'exécution, non sauvegardée avec le niveau. Toutes les bêtes repartaient à zéro.
+- Le casque posé : un essai réussi juste après qu'Olivier l'a reposé, puis perte de suivi dans la pièce sombre.
