@@ -130,6 +130,13 @@ Article proposé (Still Wakes the Deep) inaccessible chez Epic (403) ; d'après 
   en relief et en reflets. Le saut venait du motif, avancé sur une seule phase (retour en arrière à chaque cycle).
 - ✅ **Scène visible avant le noir au lancement** : le fondu valait « transparent » par défaut, avant que la séquence ne
   démarre ; noir par défaut désormais (vérifié : premières images noires).
+- ✅ **Textures floues au Quest** (« la texture de la barque est assez moyenne ») : le profil Quest 3 d'Unreal hérite
+  d'Android_Mid, qui force `sg.TextureQuality=1` → toutes les textures un niveau en dessous (barque 4096 affichée en 2048)
+  et **aucun filtrage anisotrope** (plancher, eau, berges flous en biais) ; lu dans le journal du casque. Corrigé
+  (`DefaultDeviceProfiles.ini` par `create_project.py`) : textures pleines, anisotropie 4, réserve 1,5 Go ; vérifié appliqué
+  au casque. **À juger au casque, et fluidité à remesurer** (plus de mémoire et de bande passante).
+- 📝 **Version PC VR « plus riche » : hors périmètre** (Olivier, 21/10 : avec les sprites, pas de contrainte de polygones,
+  le contenu serait le même). La vidéo 4K « tout à fond » (`review/iter-059/animatic-hd.mp4`) sert de comparaison.
 - ⏸ **Essai Niagara Fluids** (« c'est très moche ») : modèle Shallow Water tel quel, attaché à la barque. Mis en pause :
   le rendre joli demanderait notre propre matériau d'eau sur la simulation et une mesure de coût, sans garantie de faire
   mieux que l'eau calculée. Script gardé (`BARQUE_ESSAI_EAU=1`, variante exp), plugin laissé activé (`tools.yaml`).

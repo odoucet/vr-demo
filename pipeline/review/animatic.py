@@ -2,6 +2,7 @@
 
     python pipeline/review/animatic.py --iter 1     # → review/iter-001/animatic.mp4
     python pipeline/review/animatic.py --extrait 125 133 --sortie eau.mp4     # extrait muet (vérifier un mouvement)
+    python pipeline/review/animatic.py --iter 59 --hd     # 4K, suréchantillonné, qualité maximale (PC, pour comparer au Quest)
 
 Nécessite l'éditeur ouvert. Images intermédiaires dans builds/animatic/frames/ (hors dépôt). La musique
 est posée à offset_s (pipeline/sequencer.yaml) ; S1 (0:00-0:20) est en noir, comme dans la séquence.
@@ -24,6 +25,8 @@ from tools import to_windows  # noqa: E402
 import run as ue_run  # noqa: E402
 
 FRAMES = ROOT / "builds" / "animatic" / "frames"
+EXT = "jpeg"          # "png" en mode --hd
+HD = False
 FPS = 30
 
 
@@ -34,7 +37,11 @@ def main():
     ap.add_argument("--sortie", help="vidéo de l'extrait (défaut : builds/animatic/extrait.mp4)")
     ap.add_argument("--timeout", type=int, default=3600)
     ap.add_argument("--mux-only", action="store_true", help="monter la vidéo à partir des images déjà rendues")
+    ap.add_argument("--hd", action="store_true", help="4K, 8×2 échantillons, qualité maximale (images PNG)")
     args = ap.parse_args()
+    global EXT, HD
+    if args.hd:
+        EXT, HD = "png", True
     seq = yaml.safe_load((ROOT / "pipeline" / "sequencer.yaml").read_text(encoding="utf-8"))
     duration = seq["music"]["offset_s"] + seq["music"]["duration_s"]
     expected = int(round(duration * FPS))
@@ -45,7 +52,7 @@ def main():
     elif args.iter is None:
         raise SystemExit("--iter ou --extrait requis")
     if args.mux_only:
-        mux(args.iter, seq, duration, len(list(FRAMES.glob("*.jpeg"))))
+        mux(args.iter, seq, duration, len(list(FRAMES.glob(f"*.{EXT}"))))
         return
     if FRAMES.exists():
         shutil.rmtree(FRAMES)
@@ -53,14 +60,14 @@ def main():
 
     with gpu_lock("animatic.py (rendu Movie Render Queue)"):
         wrapper = ROOT / "Unreal" / "Saved" / "barque_render.py"
-        wrapper.write_text(f"import os\nos.environ['BARQUE_FRAMES'] = r'{to_windows(FRAMES)}'\nos.environ['BARQUE_RANGE'] = '{rng}'\n"
+        wrapper.write_text(f"import os\nos.environ['BARQUE_FRAMES'] = r'{to_windows(FRAMES)}'\nos.environ['BARQUE_RANGE'] = '{rng}'\nos.environ['BARQUE_HD'] = '{"1" if args.hd else ""}'\n"
                            f"exec(open(r'{to_windows(ROOT / 'pipeline/unreal/scripts/render_animatic.py')}', encoding='utf-8').read())\n",
                            encoding="utf-8")
         if ue_run.run_live(wrapper) is None:
             raise SystemExit("Éditeur Unreal non joignable : le rendu de l'animatic a besoin de l'éditeur ouvert.")
         t0, last, last_change = time.time(), -1, time.time()
         while True:
-            n = len(list(FRAMES.glob("*.jpeg")))
+            n = len(list(FRAMES.glob(f"*.{EXT}")))
             if n != last:
                 last, last_change = n, time.time()
                 print(f"\r  {n}/{expected} images ({(time.time() - t0) / 60:.1f} min)", end="", flush=True)
@@ -73,9 +80,9 @@ def main():
     print()
     if args.extrait:
         dest = Path(args.sortie) if args.sortie else ROOT / "builds" / "animatic" / "extrait.mp4"
-        first = min(int(p.stem) for p in FRAMES.glob("*.jpeg"))
+        first = min(int(p.stem) for p in FRAMES.glob(f"*.{EXT}"))
         subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-framerate", str(FPS), "-start_number", str(first),
-                        "-i", str(FRAMES / "%05d.jpeg"), "-c:v", "libx264", "-crf", "20", "-pix_fmt", "yuv420p", str(dest)], check=True)
+                        "-i", str(FRAMES / f"%05d.{EXT}"), "-c:v", "libx264", "-crf", "20", "-pix_fmt", "yuv420p", str(dest)], check=True)
         print(dest)
         return
     mux(args.iter, seq, duration, last)
@@ -84,13 +91,13 @@ def main():
 def mux(iteration, seq, duration, last):
     """Vidéo + musique (à offset_s) + paysage sonore (pipeline/audio/soundscape.yaml, mixé en stéréo : les
     repères des créatures y sont centrés, ils ne sont spatialisés qu'en jeu)."""
-    out = ROOT / "review" / f"iter-{iteration:03d}" / "animatic.mp4"
+    out = ROOT / "review" / f"iter-{iteration:03d}" / ("animatic-hd.mp4" if HD else "animatic.mp4")
     out.parent.mkdir(parents=True, exist_ok=True)
     music = ROOT / seq["music"]["file"]
-    first = min(int(p.stem) for p in FRAMES.glob("*.jpeg"))
+    first = min(int(p.stem) for p in FRAMES.glob(f"*.{EXT}"))
     sounds = yaml.safe_load((ROOT / "pipeline" / "audio" / "soundscape.yaml").read_text(encoding="utf-8"))["sounds"]
     sfx_dir = ROOT / "Unreal" / "Saved" / "import" / "sfx"
-    inputs = ["-framerate", str(FPS), "-start_number", str(first), "-i", str(FRAMES / "%05d.jpeg"),
+    inputs = ["-framerate", str(FPS), "-start_number", str(first), "-i", str(FRAMES / f"%05d.{EXT}"),
               "-i", str(music)]
     filters = [f"[1:a]adelay={int(seq['music']['offset_s'] * 1000)}|{int(seq['music']['offset_s'] * 1000)}[m]"]
     labels = ["[m]"]
@@ -105,7 +112,7 @@ def mux(iteration, seq, duration, last):
         labels.append(f"[s{i}]")
     filters.append("".join(labels) + f"amix=inputs={len(labels)}:normalize=0:duration=longest,alimiter=limit=0.95[a]")
     subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", *inputs, "-filter_complex", ";".join(filters),
-                    "-map", "0:v", "-map", "[a]", "-c:v", "libx264", "-crf", "20", "-pix_fmt", "yuv420p",
+                    "-map", "0:v", "-map", "[a]", "-c:v", "libx264", "-crf", "16" if HD else "20", "-preset", "slow" if HD else "medium", "-pix_fmt", "yuv420p",
                     "-c:a", "aac", "-b:a", "192k", "-t", str(duration), "-movflags", "+faststart", str(out)], check=True)
     print(f"{out.relative_to(ROOT)} ({out.stat().st_size / 1e6:.0f} Mo, {last} images, {len(sounds)} sons + musique)")
     contact_sheet(iteration)
@@ -120,11 +127,11 @@ def contact_sheet(iteration):
     w, h = 640, 360
     sheet = Image.new("RGB", (w * 2, h * ((len(KEY_TIMES) + 1) // 2)))
     for i, t in enumerate(KEY_TIMES):
-        src = FRAMES / f"{int(t * FPS):05d}.jpeg"
+        src = FRAMES / f"{int(t * FPS):05d}.{EXT}"
         im = Image.open(src).resize((w, h)) if src.exists() else Image.new("RGB", (w, h))
         ImageDraw.Draw(im).text((8, 8), f"{t} s", fill="yellow")
         sheet.paste(im, ((i % 2) * w, (i // 2) * h))
-    out = ROOT / "review" / f"iter-{iteration:03d}" / "planche-animatic.jpg"
+    out = ROOT / "review" / f"iter-{iteration:03d}" / ("planche-animatic-hd.jpg" if HD else "planche-animatic.jpg")
     sheet.save(out, quality=88)
     print(out.relative_to(ROOT))
 

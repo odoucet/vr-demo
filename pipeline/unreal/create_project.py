@@ -167,6 +167,24 @@ def engine_association():
     return "5.8"
 
 
+# Profil du Quest 3 (21/10) : il hérite d'Android_Mid, qui force sg.TextureQuality=1 → r.Streaming.MipBias=1 (toutes les
+# textures un niveau de détail en dessous : barque 4096 affichée en 2048) et r.MaxAnisotropy=1 (aucun filtrage anisotrope :
+# plancher, eau, berges flous vus en biais). Lu dans le journal du casque. Textures pleines, anisotropie 4, réserve 1,5 Go.
+DEVICE_PROFILES_INI = """\
+[Meta_Quest_3 DeviceProfile]
+DeviceType=Android
+BaseProfileName=Android_OpenXR
++CVars=r.Mobile.Oculus.ForceSymmetric=1
++CVars=r.OcclusionFeedback.Enable=0
++CVars=r.Mobile.AdrenoOcclusionMode=1
++CVars=r.Vulkan.UseChunkedPSOCache=0
++CVars=sg.TextureQuality=3
++CVars=r.Streaming.MipBias=0
++CVars=r.MaxAnisotropy=4
++CVars=r.Streaming.PoolSize=1500
+"""
+
+
 def write(path, text):
     path.parent.mkdir(parents=True, exist_ok=True)
     if path.exists() and path.read_text(encoding="utf-8") == text:
@@ -201,6 +219,7 @@ def main():
             package_name=os.environ.get("BARQUE_PACKAGE_NAME", "com.odoucet.barque")) + extra_cvars()),
         (base / "Config" / "DefaultGame.ini", GAME_INI.format(project_id=project_id)),
         (base / "Config" / "DefaultEditorPerProjectUserSettings.ini", EDITOR_USER_INI),
+        (base / "Config" / "DefaultDeviceProfiles.ini", DEVICE_PROFILES_INI),
     ] if write(p, t)]
     (base / "Content").mkdir(exist_ok=True)
     print("Écrits : " + (", ".join(changed) if changed else "rien (déjà à jour)"))

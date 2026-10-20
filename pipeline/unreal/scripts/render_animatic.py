@@ -10,7 +10,10 @@ import os
 import unreal
 
 frames_dir = os.environ.get("BARQUE_FRAMES") or os.path.join(os.environ["BARQUE_ROOT"], "builds", "animatic", "frames")
-res = unreal.IntPoint(1280, 720)
+# BARQUE_HD=1 (21/10, demande d'Olivier : « une vidéo HD, tous les paramètres à fond, pour voir ce qui change du Quest ») :
+# 3840×2160, 4 échantillons temporels × 2 spatiaux par image, qualité maximale (sg.* à 4), filtrage anisotrope 16, PNG
+HD = os.environ.get("BARQUE_HD") == "1"
+res = unreal.IntPoint(3840, 2160) if HD else unreal.IntPoint(1280, 720)
 
 subsystem = unreal.get_editor_subsystem(unreal.MoviePipelineQueueSubsystem)
 queue = subsystem.get_queue()
@@ -30,7 +33,19 @@ if os.environ.get("BARQUE_RANGE"):         # extrait : "début,fin" en images (a
     out.use_custom_playback_range = True
     out.custom_start_frame, out.custom_end_frame = a, b
 cfg.find_or_add_setting_by_class(unreal.MoviePipelineDeferredPassBase)
-cfg.find_or_add_setting_by_class(unreal.MoviePipelineImageSequenceOutput_JPG)
+if HD:
+    aa = cfg.find_or_add_setting_by_class(unreal.MoviePipelineAntiAliasingSetting)
+    aa.temporal_sample_count, aa.spatial_sample_count = 4, 2
+    aa.override_anti_aliasing = True
+    aa.anti_aliasing_method = unreal.AntiAliasingMethod.AAM_NONE        # le suréchantillonnage fait l'anticrénelage
+    cv = cfg.find_or_add_setting_by_class(unreal.MoviePipelineConsoleVariableSetting)
+    for k, v in {"sg.TextureQuality": 4, "sg.ViewDistanceQuality": 4, "sg.EffectsQuality": 4, "sg.FoliageQuality": 4,
+                 "r.MaxAnisotropy": 16, "r.Streaming.MipBias": 0, "r.Streaming.FullyLoadUsedTextures": 1,
+                 "r.ViewDistanceScale": 3, "r.StaticMeshLODDistanceScale": 0.25}.items():
+        cv.add_or_update_console_variable(k, float(v))
+    cfg.find_or_add_setting_by_class(unreal.MoviePipelineImageSequenceOutput_PNG)
+else:
+    cfg.find_or_add_setting_by_class(unreal.MoviePipelineImageSequenceOutput_JPG)
 executor = unreal.MoviePipelineNewProcessExecutor()
 builtins.barque_mrq_executor = executor  # garde une référence pendant le rendu asynchrone
 subsystem.render_queue_with_executor_instance(executor)
