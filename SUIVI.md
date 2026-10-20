@@ -17,6 +17,11 @@ Article proposé (Still Wakes the Deep) inaccessible chez Epic (403) ; d'après 
   stéréo autour de la barque ; raccord par fondu de 1,5 m avec la grande grille plate de 5 m (qui ne calcule rien dessous).
 - **Reflets selon la pente réelle des vagues** sur toute l'eau : le reflet du ciel se brise en éclats au loin.
 - **Nénuphars qui flottent** sur ces vagues (sinon les crêtes les recouvraient).
+- **Particules** (idée de l'article) : flocons d'écume qui naissent à l'étrave et filent le long des flancs (fixés à l'eau,
+  la barque passe), 140 feuilles et pétales qui flottent et dérivent avec le courant le long du parcours.
+- **Simulation Niagara** (« Shallow Water » de Niagara Fluids, présent dans le moteur) : prête à activer
+  (`pipeline/tools.yaml`, `unreal: niagara_fluids: true`). Le charger impose de redémarrer l'éditeur → **ce soir, avec
+  Olivier**, puis essai Quest dans un APK séparé.
 - Coût : eau 556 instructions de pixel (488 avant). Pas encore mesuré au casque.
 - **À juger au casque** : relief perceptible ? amplitude à monter (2 à 4 cm pour l'instant, prudent) ? Une vraie simulation
   (Niagara) serait l'étape suivante si l'effet reste trop discret, plus lourde et à mesurer.

@@ -438,6 +438,12 @@ float brk = saturate(rip * 0.9 + r2 * 0.8 - 0.45);                   // découpe
 col += saturate(hw) * (sky * 0.7 + Lumiere.rgb * 0.12) * (0.45 + 0.25 * fr);   // tempéré en rasant (traits blancs)
 col *= 1.0 - saturate(-hw) * 0.3;
 float boatfoam = saturate(bowh * 1.4 + sideh * 1.0 * saturate((lx + 140.0) / 200.0) + band * wfade * 0.5 * saturate(div)) * (0.5 + 0.8 * brk) * outside;
+// flocons d'écume et bulles (20/10, idée reprise de Still Wakes the Deep : particules qui donnent le mouvement) : motif
+// fixé à l'eau (il suit le courant), révélé seulement près de la coque, de l'étrave vers l'arrière ; la barque avance, les
+// flocons filent donc le long des flancs puis s'éteignent dans le sillage (~5 m)
+float fl = Texture2DSample(Rides, RidesSampler, (q - adv * ph0) * 4.0 + 0.23).r;
+float flk = smoothstep(0.4, 0.7, fl) * exp(-max(d - 6.0, 0.0) / 80.0) * saturate(back / 30.0) * exp(-max(back - 250.0, 0.0) / 500.0) * outside;
+boatfoam = max(boatfoam, flk * 0.9);
 float3 foamcol = Lumiere.rgb * 0.8 + sky * 0.6 + 0.05;
 col = lerp(col, foamcol, boatfoam * 0.85);
 float2 lp = B.xy + float2(cb, sb) * %(lantx).1f + float2(-sb, cb) * %(lanty).1f;
@@ -1346,6 +1352,16 @@ else if (type < 3.5)                                 // libellule : file, ralent
     v = float3(-sin(tt), cos(tt), 0);
     size = 14.0 * day;
 }
+else if (type > 7.5)                                 // feuille ou pétale qui flotte : dérive avec le courant, à plat
+{
+    float f = frac(T * spd * 0.01 + P2.y);            // une dérive de 12 m en ~100 s, puis elle renaît plus haut
+    float2 dir = float2(cos(P2.x), sin(P2.x));        // cap du courant (rad, repère Unreal)
+    o = float3(dir * (f - 0.5) * 1200.0, 0.8 * sin(T * 1.5 + ph * 4.0));
+    size = 13.0 * saturate(min(f * 10.0, (1.0 - f) * 10.0));
+    float r = ph + T * 0.05;                          // tourne lentement sur elle-même
+    float2 cc = float2(c.x * cos(r) - c.y * sin(r), c.x * sin(r) + c.y * cos(r));
+    return o + float3(cc.x, cc.y, 0.0) * size * 0.5;  // à plat sur l'eau
+}
 else if (type > 6.5)                                 // canard : nage en petit cercle, dodeline (reste la nuit)
 {
     o = float3(cos(t) * rad, sin(t) * rad, 1.5 * sin(T * 1.9 + ph * 5.0));
@@ -1365,15 +1381,15 @@ else                                                 // feuilles, pétales : tom
 float flip = dot(v, VR.xyz) < 0.0 ? -1.0 : 1.0;      // les images regardent vers la droite
 return o + (VR.xyz * c.x * flip + VU.xyz * c.y) * size * 0.5;"""
 VIE_UV_CODE = """float type = round(P1.x);
-float cells[8] = {0, 1, 2, 3, 4, 5, 7, 6};
-float cell = cells[(int)min(type, 7.0)];
+float cells[9] = {0, 1, 2, 3, 4, 5, 7, 6, 4};
+float cell = cells[(int)min(type, 8.0)];
 return float2((fmod(cell, 4.0) + UV.x) / 4.0, (floor(cell / 4.0) + UV.y) / 2.0);"""
 
 
 def vie_material():
     path = f"{GB}/M_GB_Vie"
     atlas = look_texture("sprite_vie")
-    digest = spec_digest("vie-v7", VIE_WPO_CODE, VIE_UV_CODE, SPRITE_COLOR_CODE, MPC_DIGEST, eal.get_metadata_tag(atlas, "source_sha1"))
+    digest = spec_digest("vie-v8", VIE_WPO_CODE, VIE_UV_CODE, SPRITE_COLOR_CODE, MPC_DIGEST, eal.get_metadata_tag(atlas, "source_sha1"))
     mat = eal.load_asset(path) if eal.does_asset_exist(path) else None
     if up_to_date(mat, digest):
         return mat
@@ -1928,7 +1944,7 @@ if os.path.exists(SKY_PNG):
         sky_tex = eal.load_asset(f"{GB}/ciel")
         eal.set_metadata_tag(sky_tex, "source_sha1", sky_digest)
         eal.save_loaded_asset(sky_tex)
-    SKY_WATER_VERSION = "ciel-eau-v29"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
+    SKY_WATER_VERSION = "ciel-eau-v31"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
     sky_mat_path = f"{GB}/M_GB_CielPeint"
     sky_mat = eal.load_asset(sky_mat_path) if eal.does_asset_exist(sky_mat_path) else None
     rebuild_sky_water = not up_to_date(sky_mat, spec_digest(SKY_WATER_VERSION, sky_digest, MPC_DIGEST, WATER_CODE,

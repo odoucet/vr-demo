@@ -29,6 +29,10 @@ PLUGINS = [
     "MovieRenderPipeline",                                   # rendus offline (360, fenêtre stéréo)
     "PCG", "GeometryScripting",                              # procédural
 ]
+# Simulation d'eau (Niagara Fluids, modèles « Shallow Water ») : activée par pipeline/tools.yaml (unreal: niagara_fluids:
+# true). Prête le 20/10, activée au prochain redémarrage de l'éditeur (le charger impose un redémarrage), après essai Quest.
+if CONFIG["unreal"].get("niagara_fluids"):
+    PLUGINS.append("NiagaraFluids")
 
 ENGINE_INI = """\
 [/Script/EngineSettings.GameMapsSettings]

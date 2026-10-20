@@ -5,6 +5,7 @@ unreal:
   editor_cmd: Engine/Binaries/Win64/UnrealEditor-Cmd.exe
   project: Unreal/Barque.uproject       # relatif au dépôt
   mcp_url: http://172.19.32.1:8000/mcp   # WSL en NAT : adresse de Windows vue depuis WSL
+  niagara_fluids: false                 # simulation d'eau Niagara Fluids : à passer à true au redémarrage de l'éditeur (20/10)
 comfyui:
   url: http://172.19.32.1:8188          # ComfyUI lancé avec --listen 0.0.0.0
   root: G:/ComfyUI_windows_portable/ComfyUI

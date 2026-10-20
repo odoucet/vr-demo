@@ -476,6 +476,16 @@ def main():
         speed = sens * rng.uniform(0.12, 0.2)
         for k in range(n):
             vie.append([x, y, 0.0, 7, speed, 0.7 + 0.75 * k, (k / n + rng.uniform(-0.05, 0.05)) % 1.0])
+    # feuilles et pétales qui flottent (20/10, idée reprise de Still Wakes the Deep : des débris qui dérivent avec le
+    # courant donnent du mouvement autour de la barque, ils défilent le long des flancs) ; type 8, le champ « rayon » porte
+    # le cap du courant (radians, repère Unreal) ; générateur à part : le reste du décor ne bouge pas
+    frng = np.random.default_rng(77)
+    for _ in range(140):
+        p = min(s, key=lambda q: abs(q["t"] - frng.uniform(22, 235)))
+        h0 = math.radians(p["heading_deg"])
+        off = frng.choice([-1, 1]) * frng.uniform(0.9, max(1.0, min(5.0, p["width_m"] / 2 - 0.5)))
+        x, y = p["x"] - math.sin(h0) * off, p["y"] + math.cos(h0) * off
+        vie.append([x, y, 0.025, 8, frng.uniform(0.7, 1.3), -h0, frng.uniform()])
 
     # --- Orientation des plans immobiles ------------------------------------------------------------------------
     st = np.array([p["t"] for p in s])
