@@ -116,6 +116,15 @@ symétrique. Une pose enroulée ou en mouvement ne peut pas être animée propre
 ## Ciel et lointain — `--ar 2:1`
 
 - `ciel` : `wide panoramic dusk sky, towering cumulus clouds lit pink and gold from below, deep blue zenith, hand-painted, [style]`
+- `ciel-nuit` (20/10, priorité 1) : `wide panoramic night sky over a forest, large soft clouds lit silver-blue by an unseen moon, deep indigo zenith with scattered small stars, calm and luminous, no moon visible, no trees, no ground, horizon at the bottom edge, hand-painted, [style]`
+  (la lune est ajoutée dans Unreal ; même cadrage que `ciel` pour passer de l'un à l'autre pendant la tombée de la nuit)
+
+## Final et matières vues tout le trajet (20/10)
+
+- `arbre-ile` — `--ar 2:3 --style raw` (priorité 2 : l'arbre de l'île du lac, image finale de la balade, aujourd'hui un arbre peint
+  générique) : `a single majestic ancient tree with a wide spreading crown of dense foliage, gnarled trunk and visible roots, small warm paper lanterns hanging among the lowest branches, the whole tree in frame from roots to crown top, isolated subject, plain light grey background, flat even lighting, hand-painted, gouache, [style]`
+- `tex-planches` — `--tile --ar 1:1` (priorité 3 : le plancher de la barque, sous les yeux pendant 4 min, aujourd'hui texture générée en
+  local) : `seamless stylized worn wooden boat floor planks seen from above, long parallel boards running vertically, soft gouache, warm browns with darker gaps, small nail heads, hand-painted, flat even lighting`
 
 Référence de couleur et de forme pour le skydome, pas un équirectangulaire utilisable tel quel : le
 skydome final est produit dans le pipeline.
