@@ -14,7 +14,8 @@ Légende : 🔴 bloque un jalon, aucun contournement · 🟠 j'avance avec un co
   zénith prolongé, agrandi en 4096. **Fondu depuis le ciel du crépuscule de 2:25 à 2:52** (paramètre CielNuit), aussi dans
   les reflets de l'eau ; affiché à 45 % (gain) : à juger au casque (trop clair ? trop sombre ?).
 - ✅ **Arbre de l'île** (`refs/inbox/arbre-ile.png`, `style/ile_sprite.py`) : détouré (BiRefNet, nuage retiré), un plan peint
-  de 24 m à la place de l'arbre en volume ; ses lanternes s'allument à la nuit. 🔧 L'île elle-même reste un monticule nu.
+  de 24 m à la place de l'arbre en volume ; ses lanternes s'allument à la nuit. L'île, peinte jusque-là couleur fond du lac,
+  a maintenant herbe et terre, buissons, fougères et plantes lumineuses au pied de l'arbre.
 - ✅ **Plancher de la barque** (`refs/tex-planches.png`, raccordable) : remplace ma texture générée.
 
 ## ▶ Eau en relief (20/10, 9 h ; Olivier : « ton souci c'est que l'eau reste une surface plane. Des vagues c'est pas plat »)

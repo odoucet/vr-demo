@@ -250,6 +250,18 @@ def main():
     if ISLAND_PAINTED:
         iz = F.at(isl["x"], isl["y"])[0] or 0.0
         add("ile", "debout", [isl["x"], isl["y"], max(iz, 0.0) - 0.3, 24.0, 0, 0, 1.9])
+        # au pied de l'arbre : buissons, fougères, herbes, et plantes lumineuses qui s'allument avec ses lanternes
+        irng = np.random.default_rng(91)              # générateur à part : le reste du décor ne bouge pas
+        for k in range(26):
+            a_, r_ = irng.uniform(0, 2 * math.pi), irng.uniform(3.0, 8.5)
+            x, y = isl["x"] + math.cos(a_) * r_, isl["y"] + math.sin(a_) * r_
+            z = F.at(x, y)[0]
+            if z is None or z < 0.05:
+                continue
+            if k % 3 == 2:
+                add("nuit", "debout", [x, y, z - 0.03, irng.uniform(0.6, 1.1), int(irng.choice([0, 2, 4, 7])), 0, irng.uniform(2.1, 2.5)])
+            else:
+                add("buissons", "debout", [x, y, z - 0.1, irng.uniform(1.0, 2.2), int(irng.choice([0, 3, 4, 5, 6])), 0, irng.uniform(0.8, 0.95)])
     # pas au gué (S4, 98-128 s) : moussus, on les confondait avec les bêtes du troupeau
     for t in (31, 57, 88, 136, 158, 176, 195):
         p = min(s, key=lambda q: abs(q["t"] - t))

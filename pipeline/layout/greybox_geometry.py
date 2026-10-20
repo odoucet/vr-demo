@@ -121,6 +121,9 @@ def terrain(river):
 
     # Couleurs peintes : herbe en grandes plages de trois verts, terre nue près de l'eau, bande mouillée,
     # fond du lit ; alpha = occlusion (creux et pieds de berge plus sombres).
+    # l'île sort de l'eau : couleurs de berge (herbe, terre, bande mouillée), pas celles du fond du lac (20/10 : elle
+    # paraissait un monticule sombre) ; rivage à ~9,3 m du centre (z = 0)
+    d = np.maximum(d, 9.3 - d_isl)
     L = look()
     g = [np.array(c) for c in L["herbe"]]
     w = (np.sin(gx / 17 + phase[1]) * np.cos(gy / 13 + phase[2]) + 0.5 * np.sin(gx / 6.5 + gy / 7.5)) * 0.5 + 0.5
