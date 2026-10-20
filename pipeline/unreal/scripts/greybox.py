@@ -1944,7 +1944,7 @@ if os.path.exists(SKY_PNG):
         sky_tex = eal.load_asset(f"{GB}/ciel")
         eal.set_metadata_tag(sky_tex, "source_sha1", sky_digest)
         eal.save_loaded_asset(sky_tex)
-    SKY_WATER_VERSION = "ciel-eau-v31"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
+    SKY_WATER_VERSION = "ciel-eau-v32"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
     sky_mat_path = f"{GB}/M_GB_CielPeint"
     sky_mat = eal.load_asset(sky_mat_path) if eal.does_asset_exist(sky_mat_path) else None
     rebuild_sky_water = not up_to_date(sky_mat, spec_digest(SKY_WATER_VERSION, sky_digest, MPC_DIGEST, WATER_CODE,
@@ -1992,6 +1992,9 @@ if os.path.exists(SKY_PNG) and rebuild_sky_water:
         water.set_editor_property("float_precision_mode", unreal.MaterialFloatPrecisionMode.MFPM_FULL)   # Quest : pas de calcul en 16 bits
         water.set_editor_property("blend_mode", unreal.BlendMode.BLEND_TRANSLUCENT)
         water.set_editor_property("two_sided", True)
+        # brouillard par pixel (20/10) : calculé aux sommets de la grille de 5 m, son départ dessinait une ligne droite
+        # dans l'eau à l'entrée du lac (rendu PC ; à vérifier au casque)
+        water.set_editor_property("compute_fog_per_pixel", True)
         wcam = mel.create_material_expression(water, unreal.MaterialExpressionCameraVectorWS, -1000, 0)
         wpos = mel.create_material_expression(water, unreal.MaterialExpressionWorldPosition, -1000, 100)
         wt = mel.create_material_expression(water, unreal.MaterialExpressionTime, -1000, 200)

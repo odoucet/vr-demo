@@ -45,9 +45,9 @@ Article proposé (Still Wakes the Deep) inaccessible chez Epic (403) ; d'après 
   fleurs de lune), dont la lueur donnait du blanc pur ; lueur divisée par ~3 pour ces trois images.
 - ✅ **Héron** : il « se prend le bateau » → arrivée par la gauche en descente ; posé plus petit qu'en vol → tailles
   accordées ; « se pose à 10 cm au-dessus » → pattes calées sur le rebord dans les deux images (vérifié sur extrait).
-- ❓ **Ligne droite dans l'eau à l'entrée du lac** (rendu PC, ~198-204 s, au-delà l'eau est plus sombre et sans rides) :
-  ni le reflet des rives, ni la carte de l'eau, ni la marche du fond (trois transitions adoucies, sans effet) ; peut-être
-  le brouillard calculé aux sommets de la grille d'eau (mailles de 5 m). **La vois-tu au casque ?**
+- ✅ **Ligne droite dans l'eau à l'entrée du lac** (rendu PC, ~198-204 s) : c'était le brouillard, calculé aux sommets de la
+  grille d'eau de 5 m ; passé au calcul par pixel, la ligne disparaît. Au Quest, le rendu mobile honore-t-il ce réglage ?
+  **À vérifier au casque.**
 - ⚠ **Casque posé** : le test de 8 h 06 a marché (captures `review/iter-055/planche-casque.jpg`), puis le casque a perdu son
   suivi (boîte « Trouver la position », pièce sombre, face au tableau en liège) ; mesure de 8 h 15 invalide (90 i/s à
   GPU 31 % : appli pas au premier plan). Nouvel essai quand il fera plus clair.
