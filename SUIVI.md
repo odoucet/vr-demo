@@ -21,7 +21,9 @@ Article proposé (Still Wakes the Deep) inaccessible chez Epic (403) ; d'après 
   la barque passe), 140 feuilles et pétales qui flottent et dérivent avec le courant le long du parcours.
 - **Simulation Niagara** (« Shallow Water » de Niagara Fluids, présent dans le moteur) : prête à activer
   (`pipeline/tools.yaml`, `unreal: niagara_fluids: true`). Le charger impose de redémarrer l'éditeur → **ce soir, avec
-  Olivier**, puis essai Quest dans un APK séparé.
+  Olivier**, puis essai Quest dans un APK séparé. Le plugin a ses binaires Android. Modèles candidats :
+  `Grid2D_SW_ParticleCollisions` (eau peu profonde poussée par des objets : la barque en « pompe ») et
+  `SurfaceWaveletsMinimal` (vaguelettes de surface, plus léger).
 - Coût : eau 556 instructions de pixel (488 avant). Pas encore mesuré au casque.
 - **À juger au casque** : relief perceptible ? amplitude à monter (2 à 4 cm pour l'instant, prudent) ? Une vraie simulation
   (Niagara) serait l'étape suivante si l'effet reste trop discret, plus lourde et à mesurer.
