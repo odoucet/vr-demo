@@ -97,7 +97,8 @@ def terrain(river):
     # S3 : chenal profond dès 0:40 (la créature arrive de derrière la barque), fosse de 9 m devant où elle plonge.
     depth = 1.5 + 3.5 * window(t_near, 40, 98) - 0.9 * window(t_near, 100, 132)
     depth = depth + 4.0 * np.exp(-((t_near - ABYSS_PIT_T) / 4.0) ** 2) * smoothstep(-2, -6, d)
-    lake_w = smoothstep(-6, 6, d_river - d_lake)
+    # sur 60 m (12 avant le 20/10 : vue à travers l'eau, la marche du fond dessinait une ligne droite à l'entrée du lac)
+    lake_w = smoothstep(-30, 30, d_river - d_lake)
     depth = depth * (1 - lake_w) + 3.0 * lake_w
     bed = -depth * smoothstep(0, 4, -d)
     # Berges : montée douce, puis sol de forêt ondulé.

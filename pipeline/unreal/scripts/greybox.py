@@ -282,7 +282,8 @@ float2 rp = float2(WP.x, -WP.y) / 100.0;                   // repère du tracé,
 float4 m = Texture2DSample(Map, MapSampler, (rp - float2(%(x0)f, %(y0)f)) / %(size)f);
 float ca = (m.r - 0.5) * 0.5 * PI;                          // cap du courant (repère du tracé)
 float2 fd = float2(cos(ca), -sin(ca));                      // sens du courant, repère Unreal
-float lake = 1.0 - saturate((m.a - 0.5 + m.g) * 20.0);      // lac : courant presque nul
+// lac : courant presque nul ; fondu sur ~25 m autour de son rivage (20/10 : la bascule par la carte faisait une ligne)
+float lake = 1.0 - smoothstep(%(lkr).1f - 1500.0, %(lkr).1f + 1000.0, length(WP.xy - float2(%(lkx).1f, %(lky).1f)));
 float speed = lerp(1.0, 0.25, lake);
 float shore = m.b;                                          // 0 sur la rive, 1 à 8 m
 // rides (20/10) : réseau de crêtes sans direction (rides-iso.png) ; la perspective seule les écrase en traits
@@ -339,7 +340,9 @@ float fr = 0.06 + 0.94 * pow(1.0 - abs(v.z), 4.0);
 float2 hd = normalize(rd.xy + float2(1e-4, 0.0));
 float tanE = rd.z / max(length(rd.xy), 1e-3) + nr.y * 0.08 + hw * 0.12;
 float c = dot(hd, float2(fd.y, -fd.x));                     // vers la rive gauche si > 0
-float dist = c > 0.0 ? (m.a - 0.5) * 8000.0 / max(c, 0.05) : m.g * 4000.0 / max(-c, 0.05);
+// rive gauche ou droite selon le regard, fondues autour de l'axe (20/10 : la bascule nette dessinait une ligne en V dans
+// le reflet, visible à l'entrée du lac)
+float dist = lerp(m.g * 4000.0 / max(-c, 0.05), (m.a - 0.5) * 8000.0 / max(c, 0.05), smoothstep(-0.12, 0.12, c));
 float2 pc = WP.xy - float2(%(lkx).1f, %(lky).1f);
 float bq = dot(pc, hd);
 dist = max(lerp(dist, -bq + sqrt(max(%(lkr2).1f - dot(pc, pc) + bq * bq, 0.0)), lake), 50.0);
@@ -408,7 +411,7 @@ col += float3(0.15, 1.6, 2.0) * 0.18 * halo * (0.6 + 0.4 * rip);
 float op = max(lerp(0.68, 0.97, fr) * (1.0 - 0.55 * halo), max(foam, boatfoam * 0.85));   // eau plus claire au-dessus de la créature
 op *= smoothstep(-10.0, -2.0, d);                                  // pas d'eau dans la coque
 return float4(col, op);""" % {"lantx": LANTERN_LOCAL[0], "lanty": LANTERN_LOCAL[1], "cr": CANDLE_RGB[0], "cg": CANDLE_RGB[1], "cb": CANDLE_RGB[2], "x0": WATER_MAP["x0"], "y0": WATER_MAP["y0"], "size": WATER_MAP["size_m"], "drift": SKY_DRIFT,
-   "mx": MOON_DIR[0], "my": MOON_DIR[1], "mz": MOON_DIR[2], "eaumean": TEX_MEAN_EAU, "lkx": RIVER["lake"]["x"] * 100, "lky": -RIVER["lake"]["y"] * 100, "lkr2": (RIVER["lake"]["radius_m"] * 100) ** 2}
+   "mx": MOON_DIR[0], "my": MOON_DIR[1], "mz": MOON_DIR[2], "eaumean": TEX_MEAN_EAU, "lkx": RIVER["lake"]["x"] * 100, "lky": -RIVER["lake"]["y"] * 100, "lkr2": (RIVER["lake"]["radius_m"] * 100) ** 2, "lkr": RIVER["lake"]["radius_m"] * 100}
 
 
 BRUSH_PNG = os.path.join(ROOT, "assets", "textures", "pinceau.png")
@@ -1860,7 +1863,7 @@ if os.path.exists(SKY_PNG):
         sky_tex = eal.load_asset(f"{GB}/ciel")
         eal.set_metadata_tag(sky_tex, "source_sha1", sky_digest)
         eal.save_loaded_asset(sky_tex)
-    SKY_WATER_VERSION = "ciel-eau-v26"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
+    SKY_WATER_VERSION = "ciel-eau-v28"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
     sky_mat_path = f"{GB}/M_GB_CielPeint"
     sky_mat = eal.load_asset(sky_mat_path) if eal.does_asset_exist(sky_mat_path) else None
     rebuild_sky_water = not up_to_date(sky_mat, spec_digest(SKY_WATER_VERSION, sky_digest, MPC_DIGEST, WATER_CODE,
