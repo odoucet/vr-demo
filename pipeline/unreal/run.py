@@ -28,7 +28,11 @@ def run_live(script, timeout=5.0):
     """Exécution dans l'éditeur ouvert. Renvoie None si aucun éditeur n'est joignable."""
     wrapper = ROOT / "Unreal" / "Saved" / "barque_remote.py"
     wrapper.parent.mkdir(parents=True, exist_ok=True)
-    extra = "".join(f"os.environ[{k!r}] = {v!r}\n" for k, v in os.environ.items() if k.startswith("BARQUE_") and k != "BARQUE_ROOT")
+    passed = {k: v for k, v in os.environ.items() if k.startswith("BARQUE_") and k != "BARQUE_ROOT"}
+    # la session Python de l'éditeur garde son environnement d'un lancement à l'autre (20/10 : BARQUE_ESSAI_EAU d'un essai
+    # était resté actif et avait pollué le niveau principal) : on retire les variables BARQUE_* absentes de ce lancement
+    extra = (f"for _k in [k for k in os.environ if k.startswith('BARQUE_') and k not in {sorted(passed) + ['BARQUE_ROOT']!r}]:\n"
+             "    del os.environ[_k]\n") + "".join(f"os.environ[{k!r}] = {v!r}\n" for k, v in passed.items())
     wrapper.write_text(
         "import os, runpy\n"
         f"os.environ['BARQUE_ROOT'] = r'{to_windows(ROOT)}'\n" + extra +
