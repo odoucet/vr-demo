@@ -94,7 +94,7 @@ Article proposé (Still Wakes the Deep) inaccessible chez Epic (403) ; d'après 
 - 📦 **APK installé au Quest** (20/10, ~23 h 30, `builds/android_greybox/`, 713 Mo) avec tout ce qui précède. Casque
   posé et en veille : **fluidité non mesurée** (il faut le porter).
 
-### À vérifier ce soir au casque (APK du 20/10 ~15 h 30 installé ; animatic `review/iter-057/`)
+### À vérifier ce soir au casque (APK du 20/10 ~15 h installé ; animatic `review/iter-057/`)
 
 1. **Fluidité** : pas de mesure valide depuis ce matin (casque posé sans suivi) ; eau en relief + grille fine + 2 textures de
    ciel → mesure dès que tu le portes.
