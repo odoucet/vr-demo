@@ -1085,7 +1085,7 @@ def sprite_material(relief=False):
     name = "M_GB_SpriteRelief" if relief else "M_GB_Sprite"
     path = f"{GB}/{name}"
     digest = spec_digest("sprite-v7", SPRITE_UV_CODE, SPRITE_COLOR_CODE, SPRITE_EDGE_CODE, SPRITE_TINT_CODE, MPC_DIGEST,
-                         SPRITE_RELIEF_CODE if relief else "", SPRITE_WIND_CODE)
+                         SPRITE_RELIEF_CODE if relief else "", SPRITE_WIND_CODE, WAVE_WPO_CODE)
     mat = eal.load_asset(path) if eal.does_asset_exist(path) else None
     if up_to_date(mat, digest):
         return mat
@@ -1150,7 +1150,23 @@ def sprite_material(relief=False):
         mel.connect_material_expressions(wpo, "", add_, "A")
         mel.connect_material_expressions(wind, "", add_, "B")
         wpo_out = add_
-    mel.connect_material_property(wpo_out, "", unreal.MaterialProperty.MP_WORLD_POSITION_OFFSET)
+    # nénuphars (« Flotte », interrupteur statique : seule leur variante calcule les vagues) : ils suivent le relief de l'eau
+    # de la grille fine (même hauteur que M_GB_EauProche), sinon les crêtes les recouvraient
+    fb = mel.create_material_expression(mat, unreal.MaterialExpressionCollectionParameter, -1300, 2000)
+    fb.set_editor_property("collection", MPC)
+    fb.set_editor_property("parameter_name", "Barque")
+    flo = custom_node(mat, WAVE_WPO_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["WP", "T", "B"], -1000, 2000)
+    for pin, src in (("WP", wwp), ("T", mel.create_material_expression(mat, unreal.MaterialExpressionTime, -1300, 2100)), ("B", fb)):
+        mel.connect_material_expressions(src, "", flo, pin)
+    fadd = mel.create_material_expression(mat, unreal.MaterialExpressionAdd, -500, 1900)
+    mel.connect_material_expressions(wpo_out, "", fadd, "A")
+    mel.connect_material_expressions(flo, "", fadd, "B")
+    fsw = mel.create_material_expression(mat, unreal.MaterialExpressionStaticSwitchParameter, -350, 1900)
+    fsw.set_editor_property("parameter_name", "Flotte")
+    fsw.set_editor_property("default_value", False)
+    mel.connect_material_expressions(fadd, "", fsw, "True")
+    mel.connect_material_expressions(wpo_out, "", fsw, "False")
+    mel.connect_material_property(fsw, "", unreal.MaterialProperty.MP_WORLD_POSITION_OFFSET)
     tex = mel.create_material_expression(mat, unreal.MaterialExpressionTextureSampleParameter2D, -700, -300)
     tex.set_editor_property("parameter_name", "Atlas")
     tex.set_editor_property("texture", look_texture("sprite_arbres"))
@@ -1212,7 +1228,8 @@ def sprite_set(key, mode, instances, cull_cm):
     params = (("Cols", float(cols)), ("Rows", float(rows)), ("Tranche", 0.0 if mode == "sol" else 1.0),
               ("Vent", 0.0 if mode in ("sol", "fixe") else 1.0), ("Centre", 1.0 if mode == "touffe" else 0.0),
               ("Creux", RELIEF_CREUX.get(name, 0.12) if mode == "relief" else 0.0))
-    mi_digest = spec_digest("mi-sprite-v1", parent.get_path_name(), eal.get_metadata_tag(parent, "source_sha1"),
+    flotte = name == "eau" and mode == "sol"
+    mi_digest = spec_digest("mi-sprite-v2", flotte, parent.get_path_name(), eal.get_metadata_tag(parent, "source_sha1"),
                             atlas.get_path_name(), eal.get_metadata_tag(atlas, "source_sha1"),
                             rtex.get_path_name() if rtex else "", eal.get_metadata_tag(rtex, "source_sha1") if rtex else "", params)
     mi = eal.load_asset(mi_path) if eal.does_asset_exist(mi_path) else None
@@ -1225,6 +1242,7 @@ def sprite_set(key, mode, instances, cull_cm):
         for k, v in params:
             if k != "Creux" or mode == "relief":
                 mel.set_material_instance_scalar_parameter_value(mi, k, v)
+        mel.set_material_instance_static_switch_parameter_value(mi, "Flotte", flotte)
         mel.update_material_instance(mi)
         mark_saved(mi, mi_digest)
     hw = aspect / 2
