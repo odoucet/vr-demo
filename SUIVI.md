@@ -7,6 +7,20 @@ Légende : 🔴 bloque un jalon, aucun contournement · 🟠 j'avance avec un co
 
 ---
 
+## ▶ Eau en relief (20/10, 9 h ; Olivier : « ton souci c'est que l'eau reste une surface plane. Des vagues c'est pas plat »)
+
+Article proposé (Still Wakes the Deep) inaccessible chez Epic (403) ; d'après ses reprises, leur eau est une simulation
+2D d'eau peu profonde (Niagara) qui déplace la surface, le corps du joueur y injecte des vitesses. Repris ici, version Quest :
+- **Hauteur réelle de l'eau** dans le shader : houle de cinq ondes de gravité (2 à 4 cm de creux, plus calme sur le lac) et
+  sillage en relief (crêtes de Kelvin 4 cm, vague d'étrave 6 cm, creux le long des flancs).
+- **Grille fine** de 12,5 cm (20 × 12 m, 30 k triangles) attachée à la barque, **déplacée en hauteur** : relief visible en
+  stéréo autour de la barque ; raccord par fondu de 1,5 m avec la grande grille plate de 5 m (qui ne calcule rien dessous).
+- **Reflets selon la pente réelle des vagues** sur toute l'eau : le reflet du ciel se brise en éclats au loin.
+- **Nénuphars qui flottent** sur ces vagues (sinon les crêtes les recouvraient).
+- Coût : eau 556 instructions de pixel (488 avant). Pas encore mesuré au casque.
+- **À juger au casque** : relief perceptible ? amplitude à monter (2 à 4 cm pour l'instant, prudent) ? Une vraie simulation
+  (Niagara) serait l'étape suivante si l'effet reste trop discret, plus lourde et à mesurer.
+
 ## ▶ Retours au casque du 20/10 matin (corrigés, APK installé à 8 h 15)
 
 - 📊 **Fluidité** (casque porté, `review/perf/greybox-20261020-0743`) : mieux que la veille malgré la barque à 80 k et l'eau
