@@ -52,7 +52,10 @@ Article proposé (Still Wakes the Deep) inaccessible chez Epic (403) ; d'après 
   **À vérifier au casque.**
 - ⚠ **Casque posé** : le test de 8 h 06 a marché (captures `review/iter-055/planche-casque.jpg`), puis le casque a perdu son
   suivi (boîte « Trouver la position », pièce sombre, face au tableau en liège) ; mesure de 8 h 15 invalide (90 i/s à
-  GPU 31 % : appli pas au premier plan). Nouvel essai quand il fera plus clair.
+  GPU 31 % : appli pas au premier plan). Essais auto toutes les 30 min : suivi retrouvé à 9 h 55, reperdu une minute
+  plus tard ; quand le suivi manque, l'appli se fige (« Barque ne répond pas »). Posé face au tableau en liège dans la
+  pénombre, le casque n'est pas fiable : mesure relancée automatiquement toutes les 30 min, seule une mesure valide
+  (GPU chargé) est gardée. **Pour la soirée : plus de lumière ou le casque tourné vers la pièce.**
 
 ## ▶ Session autonome du 20/10 (20 h, casque et 3D rendus par Olivier) — en cours
 
