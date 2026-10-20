@@ -318,12 +318,12 @@ float band = exp(-pow((aly - edge) / (32.0 + back * 0.06), 2.0)) * step(0.0, bac
 float div = pow(saturate(sin((back * 0.94 + aly * 0.34) * 0.075) * 0.5 + 0.5), 5.0) * 2.2 - 0.35;
 float inside = saturate(1.0 - aly / max(edge, 1.0)) * step(0.0, back);
 float trv = sin(back * 0.06) * inside * exp(-max(back, 0.0) / 450.0);   // vagues transversales (courtes : au loin, des barres régulières)
-float wfade = exp(-max(back, 0.0) / 2200.0) * saturate(back / 40.0);
+float wfade = exp(-max(back, 0.0) / 1300.0) * saturate(back / 40.0);
 float outside = smoothstep(-3.0, 4.0, d);
 float bowh = exp(-pow((d - 10.0) / 12.0, 2.0)) * saturate((lx - 40.0) / 90.0);          // vague d'étrave
 float sideh = exp(-pow((d - 9.0) / 10.0, 2.0)) * (0.55 + 0.45 * sin(lx * 0.06 + T * 3.0));   // bourrelet des flancs
 // 20/10 (« je ne vois pas vraiment de traînée autour du bateau, c'est très très léger ») : sillage renforcé
-float hw = ((band * div * 1.6 + trv * 0.15) * wfade + bowh * 1.0 + sideh * 0.6) * outside;
+float hw = ((band * div * 1.6 * (0.45 + r2) + trv * 0.15) * wfade + bowh * 1.0 + sideh * 0.6) * outside;   // crêtes inégales
 // reflet du ciel peint, déformé par les rides et le sillage
 float3 rd = float3(v.x, v.y, abs(v.z));
 // houle lente : les reflets ondoient (19/10 : « zéro animation ») — deux trains d'ondes croisés, quelques mètres
@@ -392,9 +392,9 @@ float foam = (1.0 - smoothstep(0.0, lap, shore)) * (0.55 + 0.45 * r2);
 col = lerp(col, Lumiere.rgb * 0.5 + sky * 0.35, foam * 0.75);
 // sillage : crêtes éclairées, creux plus sombres ; écume à l'étrave, le long des flancs et sur les crêtes des bras
 float brk = saturate(rip * 0.9 + r2 * 0.8 - 0.45);                   // découpe irrégulière de l'écume
-col += saturate(hw) * (sky * 0.9 + Lumiere.rgb * 0.15) * (0.5 + 0.5 * fr);
+col += saturate(hw) * (sky * 0.7 + Lumiere.rgb * 0.12) * (0.45 + 0.25 * fr);   // tempéré en rasant (traits blancs)
 col *= 1.0 - saturate(-hw) * 0.3;
-float boatfoam = saturate(bowh * 1.4 + sideh * 1.0 * saturate((lx + 140.0) / 200.0) + band * wfade * 0.9 * saturate(div)) * (0.5 + 0.8 * brk) * outside;
+float boatfoam = saturate(bowh * 1.4 + sideh * 1.0 * saturate((lx + 140.0) / 200.0) + band * wfade * 0.5 * saturate(div)) * (0.5 + 0.8 * brk) * outside;
 float3 foamcol = Lumiere.rgb * 0.8 + sky * 0.6 + 0.05;
 col = lerp(col, foamcol, boatfoam * 0.85);
 float2 lp = B.xy + float2(cb, sb) * %(lantx).1f + float2(-sb, cb) * %(lanty).1f;
@@ -1860,7 +1860,7 @@ if os.path.exists(SKY_PNG):
         sky_tex = eal.load_asset(f"{GB}/ciel")
         eal.set_metadata_tag(sky_tex, "source_sha1", sky_digest)
         eal.save_loaded_asset(sky_tex)
-    SKY_WATER_VERSION = "ciel-eau-v24"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
+    SKY_WATER_VERSION = "ciel-eau-v26"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
     sky_mat_path = f"{GB}/M_GB_CielPeint"
     sky_mat = eal.load_asset(sky_mat_path) if eal.does_asset_exist(sky_mat_path) else None
     rebuild_sky_water = not up_to_date(sky_mat, spec_digest(SKY_WATER_VERSION, sky_digest, MPC_DIGEST, WATER_CODE,
