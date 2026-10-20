@@ -277,28 +277,13 @@ with open(os.path.join(ROOT, "pipeline", "layout", "water_map.json"), encoding="
     WATER_MAP = json.load(f)
 with open(os.path.join(ROOT, "assets", "textures", "stats.json"), encoding="utf-8") as _f:
     TEX_MEAN_EAU = json.load(_f).get("tex-eau", 0.25)     # luminance moyenne de l'eau peinte d'Olivier (textures.py)
-WATER_CODE = """float3 v = -normalize(Dir.xyz);                       // de la caméra vers le point d'eau
-float2 rp = float2(WP.x, -WP.y) / 100.0;                   // repère du tracé, mètres
-float4 m = Texture2DSample(Map, MapSampler, (rp - float2(%(x0)f, %(y0)f)) / %(size)f);
-float ca = (m.r - 0.5) * 0.5 * PI;                          // cap du courant (repère du tracé)
-float2 fd = float2(cos(ca), -sin(ca));                      // sens du courant, repère Unreal
-// lac : courant presque nul ; fondu sur ~25 m autour de son rivage (20/10 : la bascule par la carte faisait une ligne)
+# Grille d'eau fine attachée à la barque (repère barque, cm) : 13 m derrière, 7 m devant, 6 m de chaque côté
+PATCH_RECT = {"px0": 1300.0, "px1": 700.0, "py": 600.0}
+PATCH_CELL = 12.5
+# Relief de l'eau et sillage (20/10) : bloc commun au shader de l'eau (reflets) et au déplacement de la grille fine qui
+# suit la barque (WAVE_WPO_CODE). Entrées : WP (position monde, cm), T, B (barque : x, y, lacet).
+WAVE_CORE = """// lac : courant presque nul ; fondu sur ~25 m autour de son rivage (20/10 : la bascule par la carte faisait une ligne)
 float lake = 1.0 - smoothstep(%(lkr).1f - 1500.0, %(lkr).1f + 1000.0, length(WP.xy - float2(%(lkx).1f, %(lky).1f)));
-float speed = lerp(1.0, 0.25, lake);
-float shore = m.b;                                          // 0 sur la rive, 1 à 8 m
-// rides (20/10) : réseau de crêtes sans direction (rides-iso.png) ; la perspective seule les écrase en traits
-// horizontaux, quel que soit le regard (les traits orientés en travers de la rivière devenaient des rayons qui
-// convergent dès qu'on regardait sur le côté : effet « pluie »). Flowmap à deux phases : elles avancent avec le
-// courant local sans s'étirer ni revenir en arrière. G, B : pente de la surface, qui fait onduler les reflets.
-float2 q = WP.xy / 300.0;
-float ph0 = frac(T * 0.08), ph1 = frac(T * 0.08 + 0.5);
-float w = abs(ph0 * 2.0 - 1.0);
-float2 adv = fd * speed * 1.5;     // 19/10 : « zéro animation » à 0,9 (rides quasi immobiles) → courant lisible
-float4 t0 = Texture2DSample(Rides, RidesSampler, q - adv * ph0);
-float4 t1 = Texture2DSample(Rides, RidesSampler, (q - adv * ph1) * 1.27 + 0.5);
-float rip = saturate(lerp(t0.r, t1.r, w) * 1.1);
-float2 nr = (lerp(t0.gb, t1.gb, w) - 0.5) * 2.0;
-float r2 = saturate(0.5 + nr.x * 0.5 + nr.y * 0.3);   // variation lente (découpe de l'écume, reflets des berges)
 // autour de la barque (B : x, y, lacet en z) — reprise du 20/10 (« le bateau ne fait aucun effet sur l'eau ») :
 // sillage de Kelvin né à l'étrave (deux bras à ~19,5° qui longent les flancs à ~50 cm de la coque puis s'ouvrent
 // derrière, crêtes en biais fixes par rapport à la barque, vagues transversales entre les bras), vague d'étrave,
@@ -323,17 +308,72 @@ float wfade = exp(-max(back, 0.0) / 1300.0) * saturate(back / 40.0);
 float outside = smoothstep(-3.0, 4.0, d);
 float bowh = exp(-pow((d - 10.0) / 12.0, 2.0)) * saturate((lx - 40.0) / 90.0);          // vague d'étrave
 float sideh = exp(-pow((d - 9.0) / 10.0, 2.0)) * (0.55 + 0.45 * sin(lx * 0.06 + T * 3.0));   // bourrelet des flancs
+// --- Relief de l'eau (20/10, Olivier : « ton souci c'est que l'eau reste une surface plane ») : hauteur wh (cm) et pente
+// wg, partagées par la grille fine qui suit la barque (déplacée en hauteur) et par les reflets de toute l'eau.
+// Houle de rivière : cinq ondes de gravité (vitesse c = racine(g λ / 2π)), 2 à 4 cm de creux, plus calme sur le lac.
+float wh = 0.0;
+float2 wg = float2(0.0, 0.0);
+const float4 WV[5] = { float4(0.94, 0.34, 220.0, 1.8), float4(0.73, -0.68, 140.0, 1.2), float4(0.27, 0.96, 90.0, 0.8),
+                       float4(-0.32, -0.95, 55.0, 0.45), float4(-0.86, 0.52, 34.0, 0.3) };
+float calm = lerp(1.0, 0.35, lake);
+for (int i = 0; i < 5; i++)
+{
+    float k = 6.2832 / WV[i].z;
+    float ph = k * dot(WV[i].xy, WP.xy) - sqrt(981.0 * k) * T;
+    wh += WV[i].w * calm * sin(ph);
+    wg += WV[i].w * calm * k * cos(ph) * WV[i].xy;
+}
+// sillage en relief : crêtes de Kelvin (4 cm), vagues transversales, vague d'étrave (6 cm), creux le long des flancs
+float wph = (back * 0.94 + aly * 0.34) * 0.075;
+float wk = band * wfade * outside;
+float sly = ly >= 0.0 ? 1.0 : -1.0;
+wh += (wk * 4.0 * sin(wph) + trv * wfade * 1.5 + (bowh * 6.0 - sideh * 1.5) * outside);
+float2 gbt = wk * 4.0 * cos(wph) * float2(-0.0705, 0.0255 * sly);                    // pente des crêtes (repère barque)
+float2 nd = abs(lx) < 158.0 ? float2(0.0, sly) : normalize(float2(abs(lx) - 158.0, ly) + 1e-3) * float2(sign(lx), 1.0);
+gbt += (bowh * 6.0 * (-2.0 * (d - 10.0) / 144.0) + sideh * 1.5 * 2.0 * (d - 9.0) / 100.0) * outside * nd;
+wg += gbt.x * float2(cb, sb) + gbt.y * float2(-sb, cb);
+// grille fine : rectangle autour de la barque (repère barque, cm), fondu sur 1,5 m au bord (raccord avec la grille de 5 m)
+float pf = smoothstep(0.0, 150.0, min(min(lx + %(px0).1f, %(px1).1f - lx), %(py).1f - aly));
+"""
+WATER_CODE = ("""float3 v = -normalize(Dir.xyz);                       // de la caméra vers le point d'eau
+""" + WAVE_CORE + """#if !PATCH
+if (pf > 0.995) return float4(0.0, 0.0, 0.0, 0.0);         // la grille fine prend le relais : pas de calcul inutile
+#endif
+float2 rp = float2(WP.x, -WP.y) / 100.0;                   // repère du tracé, mètres
+float4 m = Texture2DSample(Map, MapSampler, (rp - float2(%(x0)f, %(y0)f)) / %(size)f);
+float ca = (m.r - 0.5) * 0.5 * PI;                          // cap du courant (repère du tracé)
+float2 fd = float2(cos(ca), -sin(ca));                      // sens du courant, repère Unreal
+float speed = lerp(1.0, 0.25, lake);
+float shore = m.b;                                          // 0 sur la rive, 1 à 8 m
+// rides (20/10) : réseau de crêtes sans direction (rides-iso.png) ; la perspective seule les écrase en traits
+// horizontaux, quel que soit le regard (les traits orientés en travers de la rivière devenaient des rayons qui
+// convergent dès qu'on regardait sur le côté : effet « pluie »). Flowmap à deux phases : elles avancent avec le
+// courant local sans s'étirer ni revenir en arrière. G, B : pente de la surface, qui fait onduler les reflets.
+float2 q = WP.xy / 300.0;
+float ph0 = frac(T * 0.08), ph1 = frac(T * 0.08 + 0.5);
+float w = abs(ph0 * 2.0 - 1.0);
+float2 adv = fd * speed * 1.5;     // 19/10 : « zéro animation » à 0,9 (rides quasi immobiles) → courant lisible
+float4 t0 = Texture2DSample(Rides, RidesSampler, q - adv * ph0);
+float4 t1 = Texture2DSample(Rides, RidesSampler, (q - adv * ph1) * 1.27 + 0.5);
+float rip = saturate(lerp(t0.r, t1.r, w) * 1.1);
+float2 nr = (lerp(t0.gb, t1.gb, w) - 0.5) * 2.0;
+float r2 = saturate(0.5 + nr.x * 0.5 + nr.y * 0.3);   // variation lente (découpe de l'écume, reflets des berges)
 // 20/10 (« je ne vois pas vraiment de traînée autour du bateau, c'est très très léger ») : sillage renforcé
 float hw = ((band * div * 1.6 * (0.45 + r2) + trv * 0.15) * wfade + bowh * 1.0 + sideh * 0.6) * outside;   // crêtes inégales
-// reflet du ciel peint, déformé par les rides et le sillage
-float3 rd = float3(v.x, v.y, abs(v.z));
+// reflet du ciel peint selon la pente réelle des vagues (atténuée au loin : les petites ondes y scintilleraient), plus
+// les rides peintes et le sillage
+float cdist = length(WP.xyz - Cam.xyz);
+float2 wgv = wg * saturate(1.6 - cdist / 2500.0);
+float3 wn = normalize(float3(-wgv.x, -wgv.y, 1.0));
+float3 rd = reflect(v, wn);
+rd.z = max(abs(rd.z), 0.02);
 // houle lente : les reflets ondoient (19/10 : « zéro animation ») — deux trains d'ondes croisés, quelques mètres
 float sw = sin(dot(WP.xy, float2(0.0021, 0.0013)) + T * 0.9) * 0.6 + sin(dot(WP.xy, float2(-0.0017, 0.0026)) - T * 0.7) * 0.4;
 float su = 0.5 + atan2(rd.y, rd.x) / (2.0 * PI) + T * %(drift)f + sw * 0.004 + nr.x * 0.004;
 float se = min(asin(clamp(rd.z, 0.0, 1.0)), 0.96);   // pas au-delà de 55° : au zénith l'équirectangulaire s'étire en rayons
 float sv = clamp(0.82 - se / (0.5 * PI) * 0.82 + nr.y * 0.03 + sw * 0.012 + hw * 0.05, 0.0, 1.0);
 float3 sky = Texture2DSample(Sky, SkySampler, float2(su, sv)).rgb * Teinte.rgb;
-float fr = 0.06 + 0.94 * pow(1.0 - abs(v.z), 4.0);
+float fr = 0.06 + 0.94 * pow(1.0 - saturate(dot(wn, -v)), 4.0);
 // reflet de la lisière : le rayon réfléchi part vers le haut, vers la rive qu'il rencontre (distance aux rives
 // précalculée dans la carte ; dans le lac, intersection exacte avec le cercle de la rive) ; les arbres (~15 m,
 // cime irrégulière) masquent le ciel sous l'angle de leur cime
@@ -410,8 +450,15 @@ float halo = exp(-dot(da, da) / (420.0 * 420.0)) * saturate(1.0 + Ab.z / 900.0) 
 col += float3(0.15, 1.6, 2.0) * 0.18 * halo * (0.6 + 0.4 * rip);
 float op = max(lerp(0.68, 0.97, fr) * (1.0 - 0.55 * halo), max(foam, boatfoam * 0.85));   // eau plus claire au-dessus de la créature
 op *= smoothstep(-10.0, -2.0, d);                                  // pas d'eau dans la coque
-return float4(col, op);""" % {"lantx": LANTERN_LOCAL[0], "lanty": LANTERN_LOCAL[1], "cr": CANDLE_RGB[0], "cg": CANDLE_RGB[1], "cb": CANDLE_RGB[2], "x0": WATER_MAP["x0"], "y0": WATER_MAP["y0"], "size": WATER_MAP["size_m"], "drift": SKY_DRIFT,
-   "mx": MOON_DIR[0], "my": MOON_DIR[1], "mz": MOON_DIR[2], "eaumean": TEX_MEAN_EAU, "lkx": RIVER["lake"]["x"] * 100, "lky": -RIVER["lake"]["y"] * 100, "lkr2": (RIVER["lake"]["radius_m"] * 100) ** 2, "lkr": RIVER["lake"]["radius_m"] * 100}
+#if PATCH
+op *= pf;
+#else
+op *= 1.0 - pf;
+#endif
+return float4(col, op);""") % (WATER_FMT := {"lantx": LANTERN_LOCAL[0], "lanty": LANTERN_LOCAL[1], "cr": CANDLE_RGB[0], "cg": CANDLE_RGB[1], "cb": CANDLE_RGB[2], "x0": WATER_MAP["x0"], "y0": WATER_MAP["y0"], "size": WATER_MAP["size_m"], "drift": SKY_DRIFT,
+   "mx": MOON_DIR[0], "my": MOON_DIR[1], "mz": MOON_DIR[2], "eaumean": TEX_MEAN_EAU, "lkx": RIVER["lake"]["x"] * 100, "lky": -RIVER["lake"]["y"] * 100, "lkr2": (RIVER["lake"]["radius_m"] * 100) ** 2, "lkr": RIVER["lake"]["radius_m"] * 100, **PATCH_RECT})
+# déplacement de la grille fine : hauteur de l'eau, fondue au bord (raccord avec la grille plate de 5 m)
+WAVE_WPO_CODE = (WAVE_CORE + "return float3(0.0, 0.0, wh * pf);") % WATER_FMT
 
 
 BRUSH_PNG = os.path.join(ROOT, "assets", "textures", "pinceau.png")
@@ -1863,7 +1910,7 @@ if os.path.exists(SKY_PNG):
         sky_tex = eal.load_asset(f"{GB}/ciel")
         eal.set_metadata_tag(sky_tex, "source_sha1", sky_digest)
         eal.save_loaded_asset(sky_tex)
-    SKY_WATER_VERSION = "ciel-eau-v28"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
+    SKY_WATER_VERSION = "ciel-eau-v29"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
     sky_mat_path = f"{GB}/M_GB_CielPeint"
     sky_mat = eal.load_asset(sky_mat_path) if eal.does_asset_exist(sky_mat_path) else None
     rebuild_sky_water = not up_to_date(sky_mat, spec_digest(SKY_WATER_VERSION, sky_digest, MPC_DIGEST, WATER_CODE,
@@ -1901,53 +1948,94 @@ if os.path.exists(SKY_PNG) and rebuild_sky_water:
     # Eau peinte (voir WATER_CODE) : rides qui suivent le courant, reflet du ciel déformé, reflets de crêtes,
     # bande sombre du reflet des arbres près des berges, écume le long des rives, fond profond ; translucide
     # pour voir la créature des abysses. Sans réflexions temps réel (coût Quest faible).
-    water = eal.load_asset(f"{GB}/M_GB_Eau")
-    mel.delete_all_material_expressions(water)
-    water.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_UNLIT)
-    water.set_editor_property("float_precision_mode", unreal.MaterialFloatPrecisionMode.MFPM_FULL)   # Quest : pas de calcul en 16 bits
-    water.set_editor_property("blend_mode", unreal.BlendMode.BLEND_TRANSLUCENT)
-    water.set_editor_property("two_sided", True)
-    wcam = mel.create_material_expression(water, unreal.MaterialExpressionCameraVectorWS, -1000, 0)
-    wpos = mel.create_material_expression(water, unreal.MaterialExpressionWorldPosition, -1000, 100)
-    wt = mel.create_material_expression(water, unreal.MaterialExpressionTime, -1000, 200)
-    wnode = custom_node(water, WATER_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT4,
-                        ["Dir", "WP", "T", "Map", "Rides", "Sky", "Teinte", "Lumiere", "B", "Ab", "Af", "Glow", "Day", "Lf", "Ff", "EauTex"], -600, 0)
-    mel.connect_material_expressions(wcam, "", wnode, "Dir")
-    mel.connect_material_expressions(wpos, "", wnode, "WP")
-    mel.connect_material_expressions(wt, "", wnode, "T")
-    for i, (pin, tex) in enumerate((("Map", WATER_MAP_TEX), ("Rides", RIDES_TEX), ("Sky", sky_tex), ("Glow", GLOW_TEX), ("EauTex", EAU_TEX))):
-        to = mel.create_material_expression(water, unreal.MaterialExpressionTextureObject, -1000, 300 + 100 * i)
-        to.set_editor_property("texture", tex)
-        mel.connect_material_expressions(to, "", wnode, pin)
-    mel.connect_material_expressions(mpc_rgb(water, "CielTeinte", -1000, 650), "", wnode, "Teinte")
-    mel.connect_material_expressions(mpc_rgb(water, "Lumiere", -1000, 750), "", wnode, "Lumiere")
-    wb = mel.create_material_expression(water, unreal.MaterialExpressionCollectionParameter, -1000, 850)
-    wb.set_editor_property("collection", MPC)
-    wb.set_editor_property("parameter_name", "Barque")
-    mel.connect_material_expressions(wb, "", wnode, "B")
-    for i, (pin, pname) in enumerate((("Ab", "AbyssPos"), ("Af", "AbyssFade"), ("Day", "VieJour"), ("Lf", "LucioleFade"),
-                                      ("Ff", "FinaleFade"))):
-        cpw = mel.create_material_expression(water, unreal.MaterialExpressionCollectionParameter, -1000, 950 + 100 * i)
-        cpw.set_editor_property("collection", MPC)
-        cpw.set_editor_property("parameter_name", pname)
-        mel.connect_material_expressions(cpw, "", wnode, pin)
-    rgb = mel.create_material_expression(water, unreal.MaterialExpressionComponentMask, -300, 0)
-    for c in ("r", "g", "b"):
-        rgb.set_editor_property(c, True)
-    alpha = mel.create_material_expression(water, unreal.MaterialExpressionComponentMask, -300, 150)
-    alpha.set_editor_property("a", True)
-    mel.connect_material_expressions(wnode, "", rgb, "")
-    mel.connect_material_expressions(wnode, "", alpha, "")
-    mel.connect_material_property(rgb, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
-    mel.connect_material_property(alpha, "", unreal.MaterialProperty.MP_OPACITY)
-    mel.recompile_material(water)
-    if mel.get_statistics(water).num_pixel_shader_instructions <= 0 or mel.get_statistics(sky_mat).num_pixel_shader_instructions <= 0:
-        raise RuntimeError("Matériau du ciel ou de l'eau : échec de compilation")
-    eal.save_loaded_asset(water)
+    def build_water(name, patch):
+        """Eau de la grande grille (plate, patch=False) ou de la grille fine qui suit la barque (patch=True : relief des
+        vagues en déplacement de sommets). Même code (WATER_CODE), PATCH choisit le fondu de raccord."""
+        path = f"{GB}/{name}"
+        water = eal.load_asset(path) if eal.does_asset_exist(path) else tools.create_asset(name, GB, unreal.Material, unreal.MaterialFactoryNew())
+        mel.delete_all_material_expressions(water)
+        water.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_UNLIT)
+        water.set_editor_property("float_precision_mode", unreal.MaterialFloatPrecisionMode.MFPM_FULL)   # Quest : pas de calcul en 16 bits
+        water.set_editor_property("blend_mode", unreal.BlendMode.BLEND_TRANSLUCENT)
+        water.set_editor_property("two_sided", True)
+        wcam = mel.create_material_expression(water, unreal.MaterialExpressionCameraVectorWS, -1000, 0)
+        wpos = mel.create_material_expression(water, unreal.MaterialExpressionWorldPosition, -1000, 100)
+        wt = mel.create_material_expression(water, unreal.MaterialExpressionTime, -1000, 200)
+        wcp = mel.create_material_expression(water, unreal.MaterialExpressionCameraPositionWS, -1000, 250)
+        wnode = custom_node(water, f"#define PATCH {int(patch)}\n" + WATER_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT4,
+                            ["Dir", "WP", "T", "Map", "Rides", "Sky", "Teinte", "Lumiere", "B", "Ab", "Af", "Glow", "Day", "Lf", "Ff", "EauTex", "Cam"], -600, 0)
+        mel.connect_material_expressions(wcam, "", wnode, "Dir")
+        mel.connect_material_expressions(wpos, "", wnode, "WP")
+        mel.connect_material_expressions(wt, "", wnode, "T")
+        mel.connect_material_expressions(wcp, "", wnode, "Cam")
+        for i, (pin, tex) in enumerate((("Map", WATER_MAP_TEX), ("Rides", RIDES_TEX), ("Sky", sky_tex), ("Glow", GLOW_TEX), ("EauTex", EAU_TEX))):
+            to = mel.create_material_expression(water, unreal.MaterialExpressionTextureObject, -1000, 300 + 100 * i)
+            to.set_editor_property("texture", tex)
+            mel.connect_material_expressions(to, "", wnode, pin)
+        mel.connect_material_expressions(mpc_rgb(water, "CielTeinte", -1000, 650), "", wnode, "Teinte")
+        mel.connect_material_expressions(mpc_rgb(water, "Lumiere", -1000, 750), "", wnode, "Lumiere")
+        wb = mel.create_material_expression(water, unreal.MaterialExpressionCollectionParameter, -1000, 850)
+        wb.set_editor_property("collection", MPC)
+        wb.set_editor_property("parameter_name", "Barque")
+        mel.connect_material_expressions(wb, "", wnode, "B")
+        for i, (pin, pname) in enumerate((("Ab", "AbyssPos"), ("Af", "AbyssFade"), ("Day", "VieJour"), ("Lf", "LucioleFade"),
+                                          ("Ff", "FinaleFade"))):
+            cpw = mel.create_material_expression(water, unreal.MaterialExpressionCollectionParameter, -1000, 950 + 100 * i)
+            cpw.set_editor_property("collection", MPC)
+            cpw.set_editor_property("parameter_name", pname)
+            mel.connect_material_expressions(cpw, "", wnode, pin)
+        rgb = mel.create_material_expression(water, unreal.MaterialExpressionComponentMask, -300, 0)
+        for c in ("r", "g", "b"):
+            rgb.set_editor_property(c, True)
+        alpha = mel.create_material_expression(water, unreal.MaterialExpressionComponentMask, -300, 150)
+        alpha.set_editor_property("a", True)
+        mel.connect_material_expressions(wnode, "", rgb, "")
+        mel.connect_material_expressions(wnode, "", alpha, "")
+        mel.connect_material_property(rgb, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
+        mel.connect_material_property(alpha, "", unreal.MaterialProperty.MP_OPACITY)
+        if patch:      # relief : hauteur des vagues et du sillage en déplacement de sommets (grille de 12,5 cm)
+            vpos = mel.create_material_expression(water, unreal.MaterialExpressionWorldPosition, -1000, 1500)
+            vt = mel.create_material_expression(water, unreal.MaterialExpressionTime, -1000, 1600)
+            vb = mel.create_material_expression(water, unreal.MaterialExpressionCollectionParameter, -1000, 1700)
+            vb.set_editor_property("collection", MPC)
+            vb.set_editor_property("parameter_name", "Barque")
+            wpo = custom_node(water, WAVE_WPO_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["WP", "T", "B"], -600, 1500)
+            for src, pin in ((vpos, "WP"), (vt, "T"), (vb, "B")):
+                mel.connect_material_expressions(src, "", wpo, pin)
+            mel.connect_material_property(wpo, "", unreal.MaterialProperty.MP_WORLD_POSITION_OFFSET)
+        mel.recompile_material(water)
+        if mel.get_statistics(water).num_pixel_shader_instructions <= 0:
+            raise RuntimeError(f"{name} : échec de compilation")
+        eal.save_loaded_asset(water)
+        return water
+    water = build_water("M_GB_Eau", False)
+    build_water("M_GB_EauProche", True)
+    if mel.get_statistics(sky_mat).num_pixel_shader_instructions <= 0:
+        raise RuntimeError("Matériau du ciel : échec de compilation")
 if os.path.exists(SKY_PNG):
     MATS["CielPeint"] = sky_mat
     sky_sphere = place_mesh(SPHERE, "GB_CielPeint", "CielPeint", unreal.Vector(10000, 0, 0), scale=(10000, 10000, 10000))
     sky_sphere.static_mesh_component.set_editor_property("cast_shadow", False)
+# Grille d'eau fine (20/10) : attachée à la barque, mailles de 12,5 cm, déplacée en hauteur par M_GB_EauProche (vagues et
+# sillage en relief, visibles en stéréo) ; la grande grille de 5 m s'efface dessous (fondu sur 1,5 m au bord).
+if eal.does_asset_exist(f"{GB}/M_GB_EauProche"):
+    MATS["EauProche"] = eal.load_asset(f"{GB}/M_GB_EauProche")
+    _nx_ = int((PATCH_RECT["px0"] + PATCH_RECT["px1"]) / PATCH_CELL)
+    _ny_ = int(2 * PATCH_RECT["py"] / PATCH_CELL)
+    _pv = [[(-PATCH_RECT["px0"] + i * PATCH_CELL) / 100.0, (-PATCH_RECT["py"] + j * PATCH_CELL) / 100.0, 0.0]
+           for j in range(_ny_ + 1) for i in range(_nx_ + 1)]
+    _pt = []
+    for j in range(_ny_):
+        for i in range(_nx_):
+            a0 = j * (_nx_ + 1) + i
+            _pt += [[a0, a0 + 1, a0 + _nx_ + 2], [a0, a0 + _nx_ + 2, a0 + _nx_ + 1]]
+    _patch = place_mesh(build_mesh("EauProche", {"vertices": _pv, "triangles": _pt, "normals": [[0, 0, 1]] * len(_pv)}),
+                        "GB_EauProche", "EauProche", boat.get_actor_location(), boat.get_actor_rotation())
+    _patch.static_mesh_component.set_mobility(unreal.ComponentMobility.MOVABLE)
+    _patch.attach_to_actor(boat, "", unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, False)
+    _patch.root_component.set_editor_property("relative_location", unreal.Vector(0, 0, 0))
+    _patch.root_component.set_editor_property("relative_rotation", unreal.Rotator(0, 0, 0))
+    _patch.static_mesh_component.set_editor_property("bounds_scale", 1.5)
 
 # Lanternes de l'arbre de S7 retirées (retour d'Olivier : trop loin, on ne voyait pas leur forme) : remplacées
 # par la nuée de lucioles du lac (LuciolesLac, greybox_geometry.py), qui monte autour de la barque et dans l'arbre.
