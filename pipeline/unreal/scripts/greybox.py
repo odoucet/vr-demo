@@ -449,16 +449,36 @@ col = lerp(col, Lumiere.rgb * 0.5 + sky * 0.35, foam * 0.75);
 float brk = saturate(rip * 0.9 + r2 * 0.8 - 0.45);                   // découpe irrégulière de l'écume
 col += saturate(hw) * (sky * 0.7 + Lumiere.rgb * 0.12) * (0.45 + 0.25 * fr);   // tempéré en rasant (traits blancs)
 col *= 1.0 - saturate(-hw) * 0.3;
-float boatfoam = saturate(bowh * 1.4 + sideh * 1.0 * saturate((lx + 140.0) / 200.0) + band * wfade * 0.5 * saturate(div)) * (0.5 + 0.8 * brk) * outside;
-// flocons d'écume et bulles (20/10, idée reprise de Still Wakes the Deep : particules qui donnent le mouvement) : motif
-// fixé à l'eau (il suit le courant), révélé seulement près de la coque, de l'étrave vers l'arrière ; la barque avance, les
-// flocons filent donc le long des flancs puis s'éteignent dans le sillage (~5 m)
-float2 fuv = (q - adv * ph0) * 4.0 + 0.23, fdx = ddx(fuv), fdy = ddy(fuv);
-float fl = 0.0;
-[branch] if (d < 400.0 && back > -60.0) fl = Texture2DSampleGrad(Rides, RidesSampler, fuv, fdx, fdy).r;   // près de la coque seulement
-float flk = smoothstep(0.4, 0.7, fl) * exp(-max(d - 6.0, 0.0) / 80.0) * saturate(back / 30.0) * exp(-max(back - 250.0, 0.0) / 500.0) * outside;
-boatfoam = max(boatfoam, flk * 0.9);
-float3 foamcol = Lumiere.rgb * 0.8 + sky * 0.6 + 0.05;
+// écume dessinée (20/10 au casque : « je ne vois pas l'écume autour du bateau, ou alors elle n'est pas très jolie » ; c'était
+// un voile clair découpé par du bruit, noyé dans le reflet du ciel) : formes blanches à bord franc, comme dans l'animation
+// — liseré au contact de la coque, crête de la vague d'étrave, dentelle qui se détache le long des flancs puis s'effiloche
+// dans le sillage ; motif fixé à l'eau (il suit le courant) : la barque avance, la dentelle file le long des flancs
+float2 fuv = (q - adv * ph0) * 2.0 + 0.23, fdx = ddx(fuv), fdy = ddy(fuv);
+float4 f4 = float4(0.0, 0.5, 0.5, 0.0);
+[branch] if (d < 500.0 && back > -60.0) f4 = Texture2DSampleGrad(Rides, RidesSampler, fuv, fdx, fdy);   // près de la coque seulement
+float fl = f4.r;                                                    // crêtes (lignes fines)
+// taches de découpe : bruit lisse calculé (la pente compressée de la texture donnait des bords en escalier)
+float bn = sin(fuv.x * 7.1 + sin(fuv.y * 5.3) * 1.7) * sin(fuv.y * 6.3 + sin(fuv.x * 4.1) * 1.9);
+float blob = saturate(0.5 + 0.45 * bn + 0.15 * (fl - 0.3));
+// écume en V autour de la coque : depuis la place assise (yeux à 1,10 m au centre), le plat-bord masque l'eau à moins de
+// ~1,1 m de l'axe et l'étrave cache l'eau devant sur plusieurs mètres (mesuré le 20/10 : un col collé à la coque restait
+// invisible, même peint en rouge). Le col part fin de l'étrave (35 cm) et s'élargit vers l'arrière (~1,5 m au milieu,
+// ~2,6 m à la poupe : exagéré pour une barque à 1 m/s, mais c'est ce qui se voit depuis la place assise),
+// plein près de la coque, déchiré vers l'extérieur, bord irrégulier qui ondule.
+float foamW = 35.0 + 0.7 * max(back, 0.0) + 25.0 * (r2 - 0.5) + 12.0 * sin(lx * 0.045 + T * 0.8);
+float foamT = saturate(d / max(foamW, 1.0));                                                      // 0 coque → 1 bord du col
+// bande pleine au ras de la coque (un quart du col, bord ondulé), puis réseau de filets (crêtes de rides) qui s'éclaircit
+float coreW = 0.18 * foamW + (blob - 0.5) * 0.14 * foamW;
+float core = (1.0 - smoothstep(coreW - 6.0, coreW + 6.0, d)) * smoothstep(-4.0, 0.0, d);
+float net = smoothstep(0.3, 0.45, fl) * smoothstep(0.25, 0.45, blob) * (1.0 - smoothstep(0.55, 1.0, foamT));
+float foamRim = max(core, net * 0.9) * step(-60.0, back) * exp(-max(back - 330.0, 0.0) / 250.0);
+float crest = smoothstep(0.35, 0.5, bowh * (0.6 + 0.8 * fl));                                     // crête d'étrave
+float reach = 30.0 + 0.1 * max(back, 0.0);                                                         // la dentelle s'élargit vers l'arrière
+float lace = smoothstep(0.8, 0.86, blob) * exp(-pow(max(d - foamW, 0.0) / reach, 1.5)) * saturate(back / 40.0)
+           * exp(-max(back - 200.0, 0.0) / 450.0);
+float arms = smoothstep(0.55, 0.6, fl) * band * wfade * saturate(div + 0.3) * 0.8;                 // filets sur les bras du sillage
+float boatfoam = saturate(max(max(foamRim, crest), max(lace, arms))) * outside;
+float3 foamcol = Lumiere.rgb * 0.9 + sky * 0.25 + 0.06;                                            // blanc franc
 col = lerp(col, foamcol, boatfoam * 0.85);
 float2 lp = B.xy + float2(cb, sb) * %(lantx).1f + float2(-sb, cb) * %(lanty).1f;
 float dlw = length(WP.xy - lp);
@@ -553,7 +573,7 @@ return col;""" % {"lx": LANTERN_LOCAL[0], "ly": LANTERN_LOCAL[1], "lz": LANTERN_
 # d'un vrai triplanaire : mesure du 18/10, GPU saturé sur Quest ; les bords de projection se perdent dans la touche.
 TRI_CODE = """float3 n = abs(N.xyz);
 float3 pp = Local > 0.5 ? LP.xyz : P.xyz;      // repère de l'objet pour ce qui bouge (plancher de la barque)
-float2 uv = (n.z >= n.x && n.z >= n.y) ? pp.xy : ((n.x >= n.y) ? pp.yz : pp.xz);
+float2 uv = (n.z >= n.x && n.z >= n.y) ? (Local > 0.5 ? pp.yx : pp.xy) : ((n.x >= n.y) ? pp.yz : pp.xz);   // plancher : planches dans la longueur
 return Texture2DSample(Tex, TexSampler, uv / Scale).rgb;"""
 TOP_CODE = """return Texture2DSample(Tex, TexSampler, P.xy / Scale).rgb;"""
 DETAIL_CODE = """float3 a = pow(max(Albedo.rgb, 0.0), 2.2);
@@ -1739,7 +1759,7 @@ float qx, qy, show;
 if (UV1.x < 0.5)
 {
     // ailes : bande du haut (au-dessus de la tête) et haut de l'image derrière le cou ; tête et pattes ne bougent pas
-    float wing = max(smoothstep(0.36, 0.26, v), smoothstep(0.36, 0.46, u) * smoothstep(0.56, 0.46, v));
+    float wing = max((1.0 - smoothstep(0.26, 0.36, v)), smoothstep(0.36, 0.46, u) * (1.0 - smoothstep(0.46, 0.56, v)));
     float s = lerp(0.3, lerp(-0.1, 1.0, 0.5 + 0.5 * fl), env);    // 1 : levées (l'image), 0,3 : plané, < 0 : abaissées
     s = lerp(s, 0.1, fold);
     float vv = v + (0.48 - v) * (1.0 - s) * wing;
@@ -1770,7 +1790,7 @@ HERON_UV_CODE = """return float2((UV1.x + UV0.x) * 0.5, UV0.y);"""
 def heron_material():
     path = f"{GB}/M_GB_Heron"
     atlas = look_texture("sprite_heron")
-    digest = spec_digest("heron-v3", HERON_WPO_CODE, HERON_UV_CODE, HERON_MASK_CODE, SPRITE_COLOR_CODE, MPC_DIGEST, eal.get_metadata_tag(atlas, "source_sha1"))
+    digest = spec_digest("heron-v4", HERON_WPO_CODE, HERON_UV_CODE, HERON_MASK_CODE, SPRITE_COLOR_CODE, MPC_DIGEST, eal.get_metadata_tag(atlas, "source_sha1"))
     mat = eal.load_asset(path) if eal.does_asset_exist(path) else None
     if up_to_date(mat, digest):
         return mat
@@ -1972,7 +1992,7 @@ if os.path.exists(SKY_PNG):
         eal.set_metadata_tag(sky_night_tex, "source_sha1", sky_night_digest)
         eal.save_loaded_asset(sky_night_tex)
     sky_digest = sky_digest + "-" + sky_night_digest
-    SKY_WATER_VERSION = "ciel-eau-v34"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
+    SKY_WATER_VERSION = "ciel-eau-v43"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
     sky_mat_path = f"{GB}/M_GB_CielPeint"
     sky_mat = eal.load_asset(sky_mat_path) if eal.does_asset_exist(sky_mat_path) else None
     rebuild_sky_water = not up_to_date(sky_mat, spec_digest(SKY_WATER_VERSION, sky_digest, MPC_DIGEST, WATER_CODE,
