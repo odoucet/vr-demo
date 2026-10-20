@@ -7,6 +7,29 @@ Légende : 🔴 bloque un jalon, aucun contournement · 🟠 j'avance avec un co
 
 ---
 
+## ▶ Retours au casque du 20/10 matin (corrigés, APK installé à 8 h 15)
+
+- 📊 **Fluidité** (casque porté, `review/perf/greybox-20261020-0743`) : mieux que la veille malgré la barque à 80 k et l'eau
+  plus riche — S2 72,6 i/s (GPU 88 % au lieu de 96), gué 71,6 (creux 66 au lieu de 63) ; seul point faible de 1:57 à 2:18
+  (approche et passage sous l'arche, 65-70 i/s), **non perçu par Olivier** (« je vois pas de ralentissement sous le
+  pont ») : arche gardée telle quelle.
+- ✅ Validés : barque (« super propre »), lanterne au plancher, bancs retirés, bête des abysses, pont, tête, hibou.
+- ✅ **Sillage « très très léger »** : renforcé (crêtes en biais nettes qui s'écartent de la coque, écume le long des flancs).
+- ✅ **« On voit l'eau un petit peu sous la barque »** : la zone sans eau était l'ellipse de l'ancienne barque (3,56 × 1,56 m)
+  alors que la nouvelle coque fait 3,10 × 1,14 m à la flottaison, pointue : l'eau devenait transparente autour. Forme
+  mesurée sur le maillage, le sillage s'y raccroche.
+- ✅ **Troupeau au pas synchronisé** : le décalage de phase n'était pas sauvegardé avec le niveau (réglage « d'exécution ») ;
+  corrigé, et chaque bête a sa cadence (±10 %).
+- ✅ **Rocher-sprite à fougère qui « passe dans l'eau »** après le pont : les rochers géants peints étaient posés jusqu'à
+  1,2 m dans l'eau ; posés sur la berge (le reste du décor ne bouge pas).
+- ✅ **Joncs et grandes fleurs blanches trop blancs** à l'arrivée sur le lac : plantes lumineuses blanches (épis pâles, lys,
+  fleurs de lune), dont la lueur donnait du blanc pur ; lueur divisée par ~3 pour ces trois images.
+- ✅ **Héron** : il « se prend le bateau » → arrivée par la gauche en descente ; posé plus petit qu'en vol → tailles
+  accordées ; « se pose à 10 cm au-dessus » → pattes calées sur le rebord dans les deux images (vérifié sur extrait).
+- ⚠ **Casque posé** : le test de 8 h 06 a marché (captures `review/iter-055/planche-casque.jpg`), puis le casque a perdu son
+  suivi (boîte « Trouver la position », pièce sombre, face au tableau en liège) ; mesure de 8 h 15 invalide (90 i/s à
+  GPU 31 % : appli pas au premier plan). Nouvel essai quand il fera plus clair.
+
 ## ▶ Session autonome du 20/10 (20 h, casque et 3D rendus par Olivier) — en cours
 
 - ✅ **Blender autonome** : lancé en arrière-plan depuis WSL (`pipeline/blender/run.py`), étape `blender-3d` de build.py.

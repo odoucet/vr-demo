@@ -428,7 +428,7 @@ _hb = next((b for b in seq.get_bindings() if b.get_display_name() == "GB_Son_Her
 if _hb is None and "GB_Son_Heron" in by_label:
     _hb = seq.add_possessable(by_label["GB_Son_Heron"])
 if _hb is not None:
-    _ha, _hm, _hbz = (3200.0, -1600.0, 900.0), (700.0, -1000.0, 300.0), (90.0, -58.0, 50.0)
+    _ha, _hm, _hbz = (3200.0, -1600.0, 900.0), (150.0, -750.0, 420.0), (90.0, -58.0, 45.0)
     _sec = _hb.add_track(unreal.MovieScene3DTransformTrack).add_section()
     _sec.set_range(0, end)
     _ch = _sec.get_all_channels()  # Location XYZ, Rotation XYZ, Scale XYZ (comme transform_track)

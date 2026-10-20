@@ -305,20 +305,25 @@ float r2 = saturate(0.5 + nr.x * 0.5 + nr.y * 0.3);   // variation lente (décou
 float cb = cos(B.z), sb = sin(B.z);
 float2 rel = WP.xy - B.xy;
 float lx = dot(rel, float2(cb, sb)), ly = dot(rel, float2(-sb, cb));
-float hull = (lx / 178.0) * (lx / 178.0) + (ly / 78.0) * (ly / 78.0);   // coque 3,5 × 1,56 m
-float e = sqrt(hull);
-float back = 165.0 - lx;                                             // distance derrière l'étrave (cm)
+// coque à la flottaison, mesurée sur le maillage (20/10) : 3,10 × 1,14 m, pointue aux deux bouts (demi-largeur
+// 57 cm au milieu, 45 à ±80 cm, 24 à ±120). L'ancienne ellipse (3,56 × 1,56 m) débordait : entre elle et la coque, l'eau
+// devenait transparente (« on voit l'eau un petit peu sous la barque »). d : distance au bord de la coque (cm, < 0 dedans)
+float wx = 57.0 * pow(max(1.0 - (lx / 158.0) * (lx / 158.0), 0.0), 0.8);
+float d = abs(lx) < 158.0 ? abs(ly) - wx : length(float2(abs(lx) - 158.0, ly));
+float back = 158.0 - lx;                                             // distance derrière l'étrave (cm)
 float aly = abs(ly);
 float edge = back * 0.36 + 25.0;                                     // bras du sillage
-float band = exp(-pow((aly - edge) / (22.0 + back * 0.05), 2.0)) * step(0.0, back);
-float div = sin((back * 0.94 + aly * 0.34) * 0.075);                 // crêtes divergentes, en biais
+float band = exp(-pow((aly - edge) / (32.0 + back * 0.06), 2.0)) * step(0.0, back);
+// crêtes divergentes, en biais : lignes fines (pointe d'une sinusoïde) plutôt que des taches
+float div = pow(saturate(sin((back * 0.94 + aly * 0.34) * 0.075) * 0.5 + 0.5), 5.0) * 2.2 - 0.35;
 float inside = saturate(1.0 - aly / max(edge, 1.0)) * step(0.0, back);
 float trv = sin(back * 0.06) * inside * exp(-max(back, 0.0) / 450.0);   // vagues transversales (courtes : au loin, des barres régulières)
 float wfade = exp(-max(back, 0.0) / 2200.0) * saturate(back / 40.0);
-float outside = smoothstep(0.98, 1.04, e);
-float bowh = exp(-pow((e - 1.06) / 0.06, 2.0)) * saturate((lx - 60.0) / 100.0);       // vague d'étrave
-float sideh = exp(-pow((e - 1.07) / 0.05, 2.0)) * (0.55 + 0.45 * sin(lx * 0.06 + T * 3.0));   // bourrelet des flancs
-float hw = ((band * div * 1.1 + trv * 0.15) * wfade + bowh * 0.8 + sideh * 0.4) * outside;
+float outside = smoothstep(-3.0, 4.0, d);
+float bowh = exp(-pow((d - 10.0) / 12.0, 2.0)) * saturate((lx - 40.0) / 90.0);          // vague d'étrave
+float sideh = exp(-pow((d - 9.0) / 10.0, 2.0)) * (0.55 + 0.45 * sin(lx * 0.06 + T * 3.0));   // bourrelet des flancs
+// 20/10 (« je ne vois pas vraiment de traînée autour du bateau, c'est très très léger ») : sillage renforcé
+float hw = ((band * div * 1.6 + trv * 0.15) * wfade + bowh * 1.0 + sideh * 0.6) * outside;
 // reflet du ciel peint, déformé par les rides et le sillage
 float3 rd = float3(v.x, v.y, abs(v.z));
 // houle lente : les reflets ondoient (19/10 : « zéro animation ») — deux trains d'ondes croisés, quelques mètres
@@ -387,9 +392,9 @@ float foam = (1.0 - smoothstep(0.0, lap, shore)) * (0.55 + 0.45 * r2);
 col = lerp(col, Lumiere.rgb * 0.5 + sky * 0.35, foam * 0.75);
 // sillage : crêtes éclairées, creux plus sombres ; écume à l'étrave, le long des flancs et sur les crêtes des bras
 float brk = saturate(rip * 0.9 + r2 * 0.8 - 0.45);                   // découpe irrégulière de l'écume
-col += saturate(hw) * (sky * 0.5 + Lumiere.rgb * 0.05) * (0.4 + 0.6 * fr);
-col *= 1.0 - saturate(-hw) * 0.18;
-float boatfoam = saturate(bowh * 1.1 + sideh * 0.6 * saturate((lx + 100.0) / 250.0) + band * wfade * 0.6 * saturate(div)) * (0.45 + 0.8 * brk) * outside;
+col += saturate(hw) * (sky * 0.9 + Lumiere.rgb * 0.15) * (0.5 + 0.5 * fr);
+col *= 1.0 - saturate(-hw) * 0.3;
+float boatfoam = saturate(bowh * 1.4 + sideh * 1.0 * saturate((lx + 140.0) / 200.0) + band * wfade * 0.9 * saturate(div)) * (0.5 + 0.8 * brk) * outside;
 float3 foamcol = Lumiere.rgb * 0.8 + sky * 0.6 + 0.05;
 col = lerp(col, foamcol, boatfoam * 0.85);
 float2 lp = B.xy + float2(cb, sb) * %(lantx).1f + float2(-sb, cb) * %(lanty).1f;
@@ -401,7 +406,7 @@ float2 da = WP.xy - Ab.xy;
 float halo = exp(-dot(da, da) / (420.0 * 420.0)) * saturate(1.0 + Ab.z / 900.0) * saturate(Af);
 col += float3(0.15, 1.6, 2.0) * 0.18 * halo * (0.6 + 0.4 * rip);
 float op = max(lerp(0.68, 0.97, fr) * (1.0 - 0.55 * halo), max(foam, boatfoam * 0.85));   // eau plus claire au-dessus de la créature
-op *= smoothstep(0.9, 1.02, hull);
+op *= smoothstep(-10.0, -2.0, d);                                  // pas d'eau dans la coque
 return float4(col, op);""" % {"lantx": LANTERN_LOCAL[0], "lanty": LANTERN_LOCAL[1], "cr": CANDLE_RGB[0], "cg": CANDLE_RGB[1], "cb": CANDLE_RGB[2], "x0": WATER_MAP["x0"], "y0": WATER_MAP["y0"], "size": WATER_MAP["size_m"], "drift": SKY_DRIFT,
    "mx": MOON_DIR[0], "my": MOON_DIR[1], "mz": MOON_DIR[2], "eaumean": TEX_MEAN_EAU, "lkx": RIVER["lake"]["x"] * 100, "lky": -RIVER["lake"]["y"] * 100, "lkr2": (RIVER["lake"]["radius_m"] * 100) ** 2}
 
@@ -1617,8 +1622,10 @@ HERON_WPO_CODE = """float p = saturate(P);
 float pa = saturate(p / 0.95);                            // 0.95 : contact avec le plat-bord
 float k = 1.0 - pow(1.0 - pa, 1.8);                       // ralentit en arrivant
 float3 a = float3(3200.0, -1600.0, 900.0);               // départ, repère de la barque (cm) : loin devant à gauche, haut
-float3 m = float3(700.0, -1000.0, 300.0);                // arrive par la gauche (avant le 20/10 : en travers de la proue)
-float3 b = float3(90.0, -58.0, 50.0);                    // sur le plat-bord gauche, en avant (rebord à ~64 cm du milieu, à ~50 cm de haut)
+// 20/10 au casque : « il se prend un peu le bateau en pleine pomme » → fin d'approche par la gauche, en descente, sans
+// passer devant le visage ; « il se pose à 10 cm au-dessus de la barque » → pattes sur le rebord (mesuré : 45 cm)
+float3 m = float3(150.0, -750.0, 420.0);
+float3 b = float3(90.0, -58.0, 45.0);                    // sur le plat-bord gauche, à 90 cm devant le centre de la barque
 float3 pl = lerp(lerp(a, m, k), lerp(m, b, k), k);        // courbe de Bézier : plane en descendant
 float3 dl = lerp(m - a, b - m, k);
 float fold = smoothstep(0.95, 0.97, p);                   // ailes repliées, passage à l'image « posé »
@@ -1638,7 +1645,8 @@ if (UV1.x < 0.5)
     float s = lerp(0.3, lerp(-0.1, 1.0, 0.5 + 0.5 * fl), env);    // 1 : levées (l'image), 0,3 : plané, < 0 : abaissées
     s = lerp(s, 0.1, fold);
     float vv = v + (0.48 - v) * (1.0 - s) * wing;
-    float x0 = (u - 0.5) * 140.0, y0 = (0.5 - vv) * 140.0;   // envergure ~1,2 m (170 avant : il masquait tout en passant)
+    // envergure ~1 m ; pattes (bas de l'image, v ≈ 0,93) sur la trajectoire : au contact, elles touchent le rebord
+    float x0 = (u - 0.5) * 120.0, y0 = (0.93 - vv) * 120.0;
     float desc = saturate(-dl.z / max(length(dl), 1.0));
     float ang = desc * 0.5 - 0.25 * smoothstep(0.8, 0.95, pa) * (1.0 - fold);   // pique en descendant, se cabre en freinant
     float ca = cos(ang), sa = sin(ang);
@@ -1648,8 +1656,9 @@ if (UV1.x < 0.5)
 }
 else
 {
-    qx = (u - 0.5) * 80.0 * flip;                             // ~75 cm debout (100 avant : il dominait le champ)
-    qy = (1.0 - v) * 80.0 * (1.0 + 0.012 * sin(T * 1.7));    // respiration
+    // ~90 cm debout (20/10 : posé, il paraissait plus petit qu'en vol) ; pattes (v ≈ 0,94) sur le rebord ; respiration
+    qx = (u - 0.5) * 95.0 * flip;
+    qy = (0.94 - v) * 95.0 * (1.0 + 0.012 * sin(T * 1.7));
     show = step(0.001, fold);
 }
 return pw + (VR.xyz * qx + VU.xyz * qy) * show;"""
@@ -1851,7 +1860,7 @@ if os.path.exists(SKY_PNG):
         sky_tex = eal.load_asset(f"{GB}/ciel")
         eal.set_metadata_tag(sky_tex, "source_sha1", sky_digest)
         eal.save_loaded_asset(sky_tex)
-    SKY_WATER_VERSION = "ciel-eau-v22"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
+    SKY_WATER_VERSION = "ciel-eau-v24"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
     sky_mat_path = f"{GB}/M_GB_CielPeint"
     sky_mat = eal.load_asset(sky_mat_path) if eal.does_asset_exist(sky_mat_path) else None
     rebuild_sky_water = not up_to_date(sky_mat, spec_digest(SKY_WATER_VERSION, sky_digest, MPC_DIGEST, WATER_CODE,
@@ -1967,10 +1976,11 @@ return float3(0, 0, hs * 0.22 * n * n * sin(T * 1.8 + Ph));""",
 float legs = saturate((BZN + h * 0.45 - LP.z) / (h * 0.45));
 float side = LP.x > (BXX + BXN) * 0.5 ? 1.0 : -1.0;
 float fore = LP.y > (BYX + BYN) * 0.5 ? 1.0 : -1.0;
-float ph = T * 4.6 + Ph + (side * fore > 0.0 ? 0.0 : 3.1416);
+float cad = T * (4.6 + 0.5 * sin(Ph * 2.3)) + Ph;          // cadence propre à chaque animal (±10 %)
+float ph = cad + (side * fore > 0.0 ? 0.0 : 3.1416);
 float stride = sin(ph) * h * 0.13 * legs;
 float lift = max(0.0, cos(ph)) * h * 0.06 * legs;
-float bob = sin((T * 4.6 + Ph) * 2.0) * h * 0.015;
+float bob = sin(cad * 2.0) * h * 0.015;
 return float3(0, stride, lift + bob);""",
     # nage : onde qui parcourt le corps, ailes larges qui ondulent (raie géante), lente
     "nage": """float L = BYX - BYN, W = BXX - BXN;
@@ -2214,7 +2224,9 @@ def creature(label, kind, loc):
         if pm is not None:
             m.static_mesh_component.set_material(i, pm)
     _phase[0] += 1.7                                   # chaque animal à son pas
-    m.static_mesh_component.set_custom_primitive_data_float(0, _phase[0])
+    # valeur par défaut (sauvegardée avec le niveau) ; set_custom_primitive_data_float ne vit qu'à l'exécution : en jeu,
+    # tous les animaux repartaient à la phase 0, d'où le troupeau au pas synchronisé (Olivier, 20/10)
+    m.static_mesh_component.set_default_custom_primitive_data_float(0, _phase[0])
     return blk
 
 

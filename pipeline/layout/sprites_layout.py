@@ -247,11 +247,15 @@ def main():
     for t in (31, 57, 88, 136, 158, 176, 195):
         p = min(s, key=lambda q: abs(q["t"] - t))
         h0 = math.radians(p["heading_deg"])
-        o = rng.choice([-1, 1]) * (p["width_m"] / 2 + rng.uniform(-1.2, 0.5))
+        # sur la berge, au ras de l'eau (20/10 : posés jusqu'à 1,2 m dans l'eau, l'image plate « passait dans l'eau »,
+        # visible à travers l'eau translucide)
+        o = rng.choice([-1, 1]) * (p["width_m"] / 2 + rng.uniform(0.6, 1.4))
         x, y = p["x"] - math.sin(h0) * o, p["y"] + math.cos(h0) * o
         z, _d = F.at(x, y)
         if z is not None and not excluded(x, y):
-            add("heros", "debout", [x, y, max(z, -0.9) - 0.4, rng.uniform(2.2, 3.6), 2, 0, rng.uniform(0.85, 0.95)])
+            size_, bright_ = rng.uniform(2.2, 3.6), rng.uniform(0.85, 0.95)   # mêmes tirages qu'avant : le reste du décor ne bouge pas
+            if z > 0.0:
+                add("heros", "debout", [x, y, z - 0.15, size_, 2, 0, bright_])
     for t in (70, 168):
         p = min(s, key=lambda q: abs(q["t"] - t))
         h0 = math.radians(p["heading_deg"])
@@ -405,6 +409,7 @@ def main():
     NIGHT = [(0, 0.5, 0.9, 3), (1, 0.7, 1.2, 2), (2, 0.6, 1.0, 2), (3, 0.9, 1.6, 1), (4, 0.5, 0.9, 2), (5, 0.9, 1.5, 2),
              (6, 1.0, 1.6, 1), (7, 0.8, 1.3, 2)]
     nw = np.array([n[3] for n in NIGHT], float)
+    WHITE_NIGHT = (1, 5, 6)                  # fleurs-lune, herbes-lumineuses (épis pâles), lys-lumineux
     for _ in range(700):
         if rng.uniform() < 0.25:                         # rives du lac
             a = rng.uniform(0, 2 * math.pi)
@@ -422,7 +427,10 @@ def main():
         if z is None or d < 0.2 or (excluded(x, y) and math.hypot(x - colossal_xy[0], y - colossal_xy[1]) > 18):
             continue
         cell, h1, h2, _w = NIGHT[rng.choice(len(NIGHT), p=nw / nw.sum())]
-        add("nuit", "debout", [x, y, z - 0.03, rng.uniform(h1, h2), cell, 0, rng.uniform(2.1, 2.6)])
+        size_, bright_ = rng.uniform(h1, h2), rng.uniform(2.1, 2.6)
+        if cell in WHITE_NIGHT:              # sujets blancs : la lueur les rendait blanc pur (« trop blancs », 20/10)
+            bright_ = 1.5 + (bright_ - 1.5) * 0.35
+        add("nuit", "debout", [x, y, z - 0.03, size_, cell, 0, bright_])
 
     # champignons et mousses lumineux au pied de la tête et dans ses creux (ils s'allument à la tombée de la nuit, S6)
     for _ in range(28):
