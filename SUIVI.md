@@ -68,7 +68,7 @@ Article proposé (Still Wakes the Deep) inaccessible chez Epic (403) ; d'après 
   pénombre, le casque n'est pas fiable : mesure relancée automatiquement toutes les 30 min, seule une mesure valide
   (GPU chargé) est gardée. **Pour la soirée : plus de lumière ou le casque tourné vers la pièce.**
 
-## ▶ Session autonome du 20/10 (20 h, casque et 3D rendus par Olivier) — en cours
+## ▶ Session autonome du 19-20/10 (casque et 3D rendus par Olivier)
 
 - ✅ **Blender autonome** : lancé en arrière-plan depuis WSL (`pipeline/blender/run.py`), étape `blender-3d` de build.py.
 - ✅ **Bancs flottants de la barque retirés** (`pipeline/blender/nettoyage_3d.py`) : c'étaient deux morceaux séparés du
@@ -94,19 +94,27 @@ Article proposé (Still Wakes the Deep) inaccessible chez Epic (403) ; d'après 
 - 📦 **APK installé au Quest** (20/10, ~23 h 30, `builds/android_greybox/`, 713 Mo) avec tout ce qui précède. Casque
   posé et en veille : **fluidité non mesurée** (il faut le porter).
 
-### À vérifier au prochain essai (casque porté)
+### À vérifier ce soir au casque (APK du 20/10 ~15 h 30 installé ; animatic `review/iter-057/`)
 
-1. **Fluidité** : barque passée de 30 k à 80 k triangles, textures 4096, eau plus riche ; arche à niveaux de détail (le gué
-   décrochait à 63 i/s) → je lance la mesure dès que tu portes le casque (`quest_perf.py`).
-2. **Barque** : plus de bancs flottants ? coque plus fine ? couleur du bois (plus sombre, lanterne moins forte de jour) ?
-3. **Lanterne** au plancher, à l'avant droit : gêne-t-elle encore ? éclaire-t-elle assez la nuit ?
-4. **Eau** : rides vivantes, plus d'effet « pluie » en tournant la tête ? reflets qui ondulent ? sillage visible sur les
-   côtés et derrière ? vague d'étrave ? texture qui ne saute plus ?
-5. **Vent** : les arbres bougent ensemble, sans s'entrechoquer ?
-6. **Héron** : battements, plané, posé sur le plat-bord ; son cri et ses ailes (choisis sans les écouter) te conviennent-ils ?
-   Posé sur le plat-bord (en perspective il semble debout dans l'eau ; vue de dessus il est
-   bien sur le rebord : la stéréo dira).
-7. **Troupeau** régénéré (plus net) ; tête, ponton, créatures : plus de détail qu'avant ?
+1. **Fluidité** : pas de mesure valide depuis ce matin (casque posé sans suivi) ; eau en relief + grille fine + 2 textures de
+   ciel → mesure dès que tu le portes.
+2. **Eau en relief** : vagues perceptibles en stéréo autour de la barque ? reflets brisés au loin ? amplitude à monter ?
+3. **Sillage** : crêtes en biais le long des flancs, écume et flocons qui filent ; trop ou pas assez ?
+4. **Eau sous la coque** : plus de transparence autour de la barque ?
+5. **Feuilles et pétales qui flottent**, nénuphars qui suivent les vagues.
+6. **Troupeau** : pas désynchronisés ?
+7. **Joncs et fleurs blanches** à l'entrée du lac : plus discrets ?
+8. **Ligne droite** dans l'eau à l'entrée du lac : disparue au Quest aussi ?
+9. **Ciel de nuit** (fondu de 2:25 à 2:52) : luminosité ? le miroir se remarque-t-il ?
+10. **Arbre de l'île** et ses lanternes ; île plantée.
+11. **Héron** : arrivée par la gauche, taille, pattes sur le rebord ; son cri et ses ailes.
+12. **Plancher de la barque** (ta texture).
+
+### Ce soir, si tu redémarres l'éditeur : essai de simulation d'eau (Niagara Fluids)
+
+1. Fermer l'éditeur ; je passe `niagara_fluids: true` dans `pipeline/tools.yaml` et relance `create_project.py`.
+2. Rouvrir l'éditeur (le plugin se charge) ; je monte `Grid2D_SW_ParticleCollisions` attaché à la barque dans un APK séparé
+   (`--variant exp`), à comparer au casque.
 
 ## ▶ Retours au casque du 19/10, 4e essai (mesure faite, casque porté)
 
