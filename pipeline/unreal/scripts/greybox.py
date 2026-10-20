@@ -378,8 +378,13 @@ float sw = sin(dot(WP.xy, float2(0.0021, 0.0013)) + T * 0.9) * 0.6 + sin(dot(WP.
 float su = 0.5 + atan2(rd.y, rd.x) / (2.0 * PI) + T * %(drift)f + sw * 0.004 + nr.x * 0.004;
 float se = min(asin(clamp(rd.z, 0.0, 1.0)), 0.96);   // pas au-delà de 55° : au zénith l'équirectangulaire s'étire en rayons
 float sv = clamp(0.82 - se / (0.5 * PI) * 0.82 + nr.y * 0.03 + sw * 0.012 + hw * 0.05, 0.0, 1.0);
-float3 sky = lerp(Texture2DSample(Sky, SkySampler, float2(su, sv)).rgb * Teinte.rgb,
-                  Texture2DSample(SkyN, SkyNSampler, float2(su, sv)).rgb * %(ng).2f, Nn);   // ciel de nuit (CielNuit)
+// ciel du crépuscule ou de nuit (CielNuit) : une seule lecture hors du fondu (mesure du 20/10 : GPU saturé au Quest)
+float2 suv = float2(su, sv), sdx = ddx(suv), sdy = ddy(suv);
+float3 sky;
+[branch] if (Nn < 0.001) sky = Texture2DSampleGrad(Sky, SkySampler, suv, sdx, sdy).rgb * Teinte.rgb;
+else if (Nn > 0.999) sky = Texture2DSampleGrad(SkyN, SkyNSampler, suv, sdx, sdy).rgb * %(ng).2f;
+else sky = lerp(Texture2DSampleGrad(Sky, SkySampler, suv, sdx, sdy).rgb * Teinte.rgb,
+                Texture2DSampleGrad(SkyN, SkyNSampler, suv, sdx, sdy).rgb * %(ng).2f, Nn);
 float fr = 0.06 + 0.94 * pow(1.0 - saturate(dot(wn, -v)), 4.0);
 // reflet de la lisière : le rayon réfléchi part vers le haut, vers la rive qu'il rencontre (distance aux rives
 // précalculée dans la carte ; dans le lac, intersection exacte avec le cercle de la rive) ; les arbres (~15 m,
@@ -428,11 +433,11 @@ col += float3(1.0, 0.95, 0.82) * mg * (0.4 + 1.6 * rip) * nsky * (1.0 - trees * 
 // eau peinte d'Olivier (refs/tex-eau.png), entraînée par le courant avec les rides : vue plongeante, on voit la
 // matière peinte de l'eau ; partout, elle module la valeur (touches claires et creux sombres)
 // deux phases fondues comme les rides (19/10 : avec une seule phase, la texture revenait en arrière d'un coup à
-// chaque cycle, « la texture saute ») ; une seconde couche plus lente, en travers, fait vivre la surface
+// chaque cycle, « la texture saute ») ; la couche lente en travers est retirée le 20/10 (coût : GPU saturé au Quest,
+// la houle et les reflets ondulés font maintenant vivre la surface)
 float3 we0 = Texture2DSample(EauTex, EauTexSampler, (q - adv * ph0 * 1.6) * 1.3).rgb;
 float3 we1 = Texture2DSample(EauTex, EauTexSampler, (q - adv * ph1 * 1.6) * 1.3 + 0.37).rgb;
-float3 we2 = Texture2DSample(EauTex, EauTexSampler, (q + float2(-fd.y, fd.x) * T * 0.012 - adv * T * 0.02) * 0.7 + 0.61).rgb;
-float3 we = lerp(we0, we1, w) * 0.65 + we2 * 0.35;
+float3 we = lerp(we0, we1, w);
 float wl = dot(we, float3(0.3, 0.6, 0.1));
 col = lerp(col, we * (Lumiere.rgb * 0.6 + 0.12) + sky * 0.08, (1.0 - fr) * 0.5 * (1.0 - trees * 0.4));
 col *= 0.82 + 0.36 * saturate(wl / %(eaumean).4f);
@@ -448,7 +453,9 @@ float boatfoam = saturate(bowh * 1.4 + sideh * 1.0 * saturate((lx + 140.0) / 200
 // flocons d'écume et bulles (20/10, idée reprise de Still Wakes the Deep : particules qui donnent le mouvement) : motif
 // fixé à l'eau (il suit le courant), révélé seulement près de la coque, de l'étrave vers l'arrière ; la barque avance, les
 // flocons filent donc le long des flancs puis s'éteignent dans le sillage (~5 m)
-float fl = Texture2DSample(Rides, RidesSampler, (q - adv * ph0) * 4.0 + 0.23).r;
+float2 fuv = (q - adv * ph0) * 4.0 + 0.23, fdx = ddx(fuv), fdy = ddy(fuv);
+float fl = 0.0;
+[branch] if (d < 400.0 && back > -60.0) fl = Texture2DSampleGrad(Rides, RidesSampler, fuv, fdx, fdy).r;   // près de la coque seulement
 float flk = smoothstep(0.4, 0.7, fl) * exp(-max(d - 6.0, 0.0) / 80.0) * saturate(back / 30.0) * exp(-max(back - 250.0, 0.0) / 500.0) * outside;
 boatfoam = max(boatfoam, flk * 0.9);
 float3 foamcol = Lumiere.rgb * 0.8 + sky * 0.6 + 0.05;
@@ -1965,7 +1972,7 @@ if os.path.exists(SKY_PNG):
         eal.set_metadata_tag(sky_night_tex, "source_sha1", sky_night_digest)
         eal.save_loaded_asset(sky_night_tex)
     sky_digest = sky_digest + "-" + sky_night_digest
-    SKY_WATER_VERSION = "ciel-eau-v33"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
+    SKY_WATER_VERSION = "ciel-eau-v34"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
     sky_mat_path = f"{GB}/M_GB_CielPeint"
     sky_mat = eal.load_asset(sky_mat_path) if eal.does_asset_exist(sky_mat_path) else None
     rebuild_sky_water = not up_to_date(sky_mat, spec_digest(SKY_WATER_VERSION, sky_digest, MPC_DIGEST, WATER_CODE,

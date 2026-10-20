@@ -31,7 +31,11 @@ OUT = ROOT / "review" / "perf"
 PACKAGES = {"j1": "com.odoucet.barque", "greybox": "com.odoucet.barque.greybox", "j1b": "com.odoucet.barque.j1b",
             "hd": "com.odoucet.barque.hd", "exp": "com.odoucet.barque.exp"}
 ACTIVITY = "com.epicgames.unreal.GameActivity"
-LINE = re.compile(r"FPS=(\d+)/(\d+).*?Stale=(\d+).*?GPU%=([\d.]+).*?CPU%=([\d.]+)")
+LINE = re.compile(r"FPS=(\d+)/(\d+).*?Early=(\d+).*?Stale=(\d+).*?App=([\d.]+)ms.*?GPU%=([\d.]+).*?CPU%=([\d.]+)")
+# Casque posé (20/10) : quand il perd le suivi, l'interface système (boîte « Trouver la position » sur fond de vision de la
+# pièce) rend en même temps que l'appli et partage le GPU ; ses lignes (temps GPU < 2 ms, images « en avance ») étaient
+# mêlées aux nôtres et faussaient la moyenne. Elles sont écartées, et la mesure signalée comme contaminée.
+SYSTEM_APP_MS = 2.0
 TARGET_FPS = 72
 
 
@@ -81,12 +85,19 @@ def record(variant, duration, log_path):
 def parse(log_path):
     lines = log_path.read_text(encoding="utf-8").splitlines()
     t0 = float(re.search(r"t0=([\d.]+)", lines[0]).group(1))
-    rows = []
+    rows, system = [], 0
     for l in lines[1:]:
         m = LINE.search(l)
         if m:
+            fps, rate, early, stale, app, gpu, cpu = m.groups()
+            if float(app) < SYSTEM_APP_MS and int(early) > 20:
+                system += 1
+                continue
             ts = float(l.split()[0])
-            rows.append((ts - t0, int(m.group(1)), int(m.group(2)), int(m.group(3)), float(m.group(4)), float(m.group(5))))
+            rows.append((ts - t0, int(fps), int(rate), int(stale), float(gpu), float(cpu), float(app)))
+    if system > 0.1 * max(len(rows), 1):
+        print(f"⚠ Mesure contaminée : {system} lignes d'une autre appli VR (interface système, suivi perdu ?) écartées ; "
+              "elle partageait le GPU, les temps de l'appli sont gonflés.")
     return rows
 
 
@@ -96,7 +107,7 @@ def summarize(rows, log_path, load_s):
     rows = [(r[0] - load_s, *r[1:]) for r in rows]
     beats = [(b["id"], offset + b["music_s"]) for b in seq["beats"]]
     report = [f"Mesure : {log_path.name}, {len(rows)} échantillons (1/s), chargement estimé à {load_s} s", ""]
-    report.append(f"{'beat':12s} {'FPS min':>8s} {'FPS moy':>8s} {'images perdues':>15s} {'GPU % max':>10s} {'CPU % max':>10s}")
+    report.append(f"{'beat':12s} {'FPS min':>8s} {'FPS moy':>8s} {'images perdues':>15s} {'GPU % max':>10s} {'CPU % max':>10s} {'GPU appli ms':>13s}")
     for i, (bid, start) in enumerate(beats):
         end = beats[i + 1][1] if i + 1 < len(beats) else offset + seq["music"]["duration_s"]
         sel = [r for r in rows if start <= r[0] < end]
@@ -105,7 +116,8 @@ def summarize(rows, log_path, load_s):
         fps = [r[1] for r in sel]
         flag = "  ⚠" if min(fps) < TARGET_FPS else ""
         report.append(f"{bid:12s} {min(fps):8d} {sum(fps) / len(fps):8.1f} {sum(r[3] for r in sel):15d} "
-                      f"{max(r[4] for r in sel) * 100:10.0f} {max(r[5] for r in sel) * 100:10.0f}{flag}")
+                      f"{max(r[4] for r in sel) * 100:10.0f} {max(r[5] for r in sel) * 100:10.0f} "
+                      f"{sum(r[6] for r in sel) / len(sel):13.1f}{flag}")
     text = "\n".join(report) + "\n"
     log_path.with_suffix(".txt").write_text(text, encoding="utf-8")
     print(text)

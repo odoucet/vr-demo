@@ -94,6 +94,16 @@ Article proposé (Still Wakes the Deep) inaccessible chez Epic (403) ; d'après 
 - 📦 **APK installé au Quest** (20/10, ~23 h 30, `builds/android_greybox/`, 713 Mo) avec tout ce qui précède. Casque
   posé et en veille : **fluidité non mesurée** (il faut le porter).
 
+### Mesures de l'après-midi (casque posé) — non concluantes
+
+- 16 h 13 et 16 h 21, seules mesures où l'appli tournait : 52-60 i/s sur la rivière (S2-S5), 72 sur le lac. Mais
+  **contaminées** : l'interface système (suivi perdu) rendait en même temps et partageait le GPU, et le casque posé
+  regarde de côté, pas droit devant. `quest_perf.py` écarte désormais ces lignes et le signale.
+- Temps GPU de l'appli : lac 9,6 ms (9,4 ce matin casque porté) → l'eau en relief coûte peu ; rivière 13-15 ms (11-12 ce
+  matin) → à confirmer casque porté. Essai A/B : couper toute l'eau ne fait rien gagner, couper les sprites ~3 ms.
+- Eau allégée quand même (une lecture de ciel au lieu de deux, flocons seulement près de la coque, une couche de texture
+  d'eau en moins) : ~0,3-0,4 ms.
+
 ### À vérifier ce soir au casque (APK du 20/10 ~15 h installé ; animatic `review/iter-057/`)
 
 1. **Fluidité** : pas de mesure valide depuis ce matin (casque posé sans suivi) ; eau en relief + grille fine + 2 textures de
