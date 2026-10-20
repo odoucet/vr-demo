@@ -119,6 +119,87 @@ symétrique. Une pose enroulée ou en mouvement ne peut pas être animée propre
 - `ciel-nuit` (20/10, priorité 1) : `wide panoramic night sky over a forest, large soft clouds lit silver-blue by an unseen moon, deep indigo zenith with scattered small stars, calm and luminous, no moon visible, no trees, no ground, horizon at the bottom edge, hand-painted, [style]`
   (la lune est ajoutée dans Unreal ; même cadrage que `ciel` pour passer de l'un à l'autre pendant la tombée de la nuit)
 
+## Buissons supplémentaires (21/10) — 16 images, `--ar 1:1 --style raw`
+
+Pour casser les répétitions de buissons (avec 16 images et ~8 buissons dans 5 m, la même image revenait côte à côte).
+**Il en faut 16** (8 + 8), une image par prompt. Prompts complets, à copier-coller tels quels, en ajoutant ton `--sref`.
+Dépôt : `refs/inbox/sprites/<identifiant>.png` (ex. `refs/inbox/sprites/houx.png`) ; je les détoure et les mets dans
+l'atlas à la place de mes substituts. **Pas besoin d'upscale** : une image Midjourney standard (1024 px) suffit, les
+cases font 512 px. Sujet entier, fond gris uni, rien autour (le détourage garde le plus gros morceau).
+
+**buissons2**
+
+- `houx` :
+  ```
+  single isolated dense round holly bush with glossy dark green leaves and a few red berries, leaves down to the ground, no visible trunk, the whole plant visible from its base to its top, lit by soft warm dusk light from the left, centered, plain flat light grey background, no ground, no shadow, nothing else in the image, hand-painted, hand-painted 1980s Japanese animation background art, gouache and watercolor, soft painterly edges, flat color shapes, gentle diffuse light, lush saturated greens, nostalgic and serene mood --ar 1:1 --style raw
+  ```
+- `myrtilles` :
+  ```
+  single isolated low wide blueberry shrub with small oval leaves and dark blue berries, leaves down to the ground, the whole plant visible from its base to its top, lit by soft warm dusk light from the left, centered, plain flat light grey background, no ground, no shadow, nothing else in the image, hand-painted, hand-painted 1980s Japanese animation background art, gouache and watercolor, soft painterly edges, flat color shapes, gentle diffuse light, lush saturated greens, nostalgic and serene mood --ar 1:1 --style raw
+  ```
+- `genets` :
+  ```
+  single isolated rounded broom shrub with many thin green stems covered in small yellow flowers, the whole plant visible from its base to its top, lit by soft warm dusk light from the left, centered, plain flat light grey background, no ground, no shadow, nothing else in the image, hand-painted, hand-painted 1980s Japanese animation background art, gouache and watercolor, soft painterly edges, flat color shapes, gentle diffuse light, lush saturated greens, nostalgic and serene mood --ar 1:1 --style raw
+  ```
+- `fougere-royale` :
+  ```
+  single isolated royal fern clump with broad upright light green fronds, the whole plant visible from its base to its top, lit by soft warm dusk light from the left, centered, plain flat light grey background, no ground, no shadow, nothing else in the image, hand-painted, hand-painted 1980s Japanese animation background art, gouache and watercolor, soft painterly edges, flat color shapes, gentle diffuse light, lush saturated greens, nostalgic and serene mood --ar 1:1 --style raw
+  ```
+- `laiches` :
+  ```
+  single isolated tuft of sedge grass with long arching blades, some golden tips, the whole plant visible from its base to its top, lit by soft warm dusk light from the left, centered, plain flat light grey background, no ground, no shadow, nothing else in the image, hand-painted, hand-painted 1980s Japanese animation background art, gouache and watercolor, soft painterly edges, flat color shapes, gentle diffuse light, lush saturated greens, nostalgic and serene mood --ar 1:1 --style raw
+  ```
+- `iris-jaunes` :
+  ```
+  single isolated clump of yellow flag irises with tall sword leaves growing at the water's edge, the whole plant visible from its base to its top, lit by soft warm dusk light from the left, centered, plain flat light grey background, no ground, no shadow, nothing else in the image, hand-painted, hand-painted 1980s Japanese animation background art, gouache and watercolor, soft painterly edges, flat color shapes, gentle diffuse light, lush saturated greens, nostalgic and serene mood --ar 1:1 --style raw
+  ```
+- `lavande` :
+  ```
+  single isolated clump of wild lavender with purple flower spikes and grey green leaves, the whole plant visible from its base to its top, lit by soft warm dusk light from the left, centered, plain flat light grey background, no ground, no shadow, nothing else in the image, hand-painted, hand-painted 1980s Japanese animation background art, gouache and watercolor, soft painterly edges, flat color shapes, gentle diffuse light, lush saturated greens, nostalgic and serene mood --ar 1:1 --style raw
+  ```
+- `eglantier` :
+  ```
+  single isolated thorny wild rose bush with small pink flowers and dark leaves, the whole plant visible from its base to its top, lit by soft warm dusk light from the left, centered, plain flat light grey background, no ground, no shadow, nothing else in the image, hand-painted, hand-painted 1980s Japanese animation background art, gouache and watercolor, soft painterly edges, flat color shapes, gentle diffuse light, lush saturated greens, nostalgic and serene mood --ar 1:1 --style raw
+  ```
+
+**fourres2**
+
+- `buisson-sombre` :
+  ```
+  single isolated very wide dense dark green shrub with layered rounded foliage masses down to the ground, no visible trunk, the whole plant visible from its base to its top, lit by soft warm dusk light from the left, centered, plain flat light grey background, no ground, no shadow, nothing else in the image, hand-painted, hand-painted 1980s Japanese animation background art, gouache and watercolor, soft painterly edges, flat color shapes, gentle diffuse light, lush saturated greens, nostalgic and serene mood --ar 1:1 --style raw
+  ```
+- `noisetier` :
+  ```
+  single isolated hazel bush with several thin stems and broad round leaves, the whole plant visible from its base to its top, lit by soft warm dusk light from the left, centered, plain flat light grey background, no ground, no shadow, nothing else in the image, hand-painted, hand-painted 1980s Japanese animation background art, gouache and watercolor, soft painterly edges, flat color shapes, gentle diffuse light, lush saturated greens, nostalgic and serene mood --ar 1:1 --style raw
+  ```
+- `monardes` :
+  ```
+  single isolated clump of red and pink wild bee balm flowers with green leaves, the whole plant visible from its base to its top, lit by soft warm dusk light from the left, centered, plain flat light grey background, no ground, no shadow, nothing else in the image, hand-painted, hand-painted 1980s Japanese animation background art, gouache and watercolor, soft painterly edges, flat color shapes, gentle diffuse light, lush saturated greens, nostalgic and serene mood --ar 1:1 --style raw
+  ```
+- `preles` :
+  ```
+  single isolated clump of horsetail plants, thin upright green stems with whorls of fine needle-like branches, the whole plant visible from its base to its top, lit by soft warm dusk light from the left, centered, plain flat light grey background, no ground, no shadow, nothing else in the image, hand-painted, hand-painted 1980s Japanese animation background art, gouache and watercolor, soft painterly edges, flat color shapes, gentle diffuse light, lush saturated greens, nostalgic and serene mood --ar 1:1 --style raw
+  ```
+- `saule-buissonnant` :
+  ```
+  single isolated tall shrubby willow with long narrow silvery green leaves, the whole plant visible from its base to its top, lit by soft warm dusk light from the left, centered, plain flat light grey background, no ground, no shadow, nothing else in the image, hand-painted, hand-painted 1980s Japanese animation background art, gouache and watercolor, soft painterly edges, flat color shapes, gentle diffuse light, lush saturated greens, nostalgic and serene mood --ar 1:1 --style raw
+  ```
+- `rocher-fougeres` :
+  ```
+  single isolated medium mossy rock with ferns growing around its base, the whole plant visible from its base to its top, lit by soft warm dusk light from the left, centered, plain flat light grey background, no ground, no shadow, nothing else in the image, hand-painted, hand-painted 1980s Japanese animation background art, gouache and watercolor, soft painterly edges, flat color shapes, gentle diffuse light, lush saturated greens, nostalgic and serene mood --ar 1:1 --style raw
+  ```
+- `tronc-couche` :
+  ```
+  single isolated fallen mossy log with small ferns and mushrooms, the whole plant visible from its base to its top, lit by soft warm dusk light from the left, centered, plain flat light grey background, no ground, no shadow, nothing else in the image, hand-painted, hand-painted 1980s Japanese animation background art, gouache and watercolor, soft painterly edges, flat color shapes, gentle diffuse light, lush saturated greens, nostalgic and serene mood --ar 1:1 --style raw
+  ```
+- `ombelliferes` :
+  ```
+  single isolated clump of tall green wild umbellifer plants with pale green flower umbels, the whole plant visible from its base to its top, lit by soft warm dusk light from the left, centered, plain flat light grey background, no ground, no shadow, nothing else in the image, hand-painted, hand-painted 1980s Japanese animation background art, gouache and watercolor, soft painterly edges, flat color shapes, gentle diffuse light, lush saturated greens, nostalgic and serene mood --ar 1:1 --style raw
+  ```
+
+Facultatif ensuite, pour unifier le style de toute la forêt : les mêmes prompts pour les 16 buissons existants
+(`buissons` et `fourres` de `pipeline/comfy/sprites.yaml`), même dépôt, même nommage.
+
 ## Final et matières vues tout le trajet (20/10)
 
 - `arbre-ile` — `--ar 2:3 --style raw` (priorité 2 : l'arbre de l'île du lac, image finale de la balade, aujourd'hui un arbre peint

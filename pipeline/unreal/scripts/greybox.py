@@ -339,6 +339,15 @@ float2 gbt = wk * 4.0 * cos(wph) * float2(-0.0705, 0.0255 * sly);               
 float2 nd = abs(lx) < 158.0 ? float2(0.0, sly) : normalize(float2(abs(lx) - 158.0, ly) + 1e-3) * float2(sign(lx), 1.0);
 gbt += (bowh * 6.0 * (-2.0 * (d - 10.0) / 144.0) + sideh * 1.5 * 2.0 * (d - 9.0) / 100.0) * outside * nd;
 wg += gbt.x * float2(cb, sb) + gbt.y * float2(-sb, cb);
+// houle de la créature des abysses (21/10) : bosse au-dessus d'elle et rides qui s'en éloignent, d'autant plus fortes
+// qu'elle est près de la surface (Ab : position, z en cm ; Af : elle s'éteint en s'éloignant)
+float2 dab = WP.xy - Ab.xy;
+float abr = max(length(dab), 1.0);
+float abk = saturate(1.0 + (Ab.z + 100.0) / 200.0) * saturate(Af);   // 1 au ras de la surface, 0 sous 3 m
+float abh = exp(-(abr / 350.0) * (abr / 350.0));
+float abw = sin(abr * 0.025 - T * 2.5) * exp(-abr / 900.0) * saturate(abr / 250.0);
+wh += abk * (12.0 * abh + 3.5 * abw);
+wg += abk * (12.0 * abh * (-2.0 * abr / (350.0 * 350.0)) + 3.5 * 0.025 * cos(abr * 0.025 - T * 2.5) * exp(-abr / 900.0) * saturate(abr / 250.0)) * dab / abr;
 // grille fine : rectangle autour de la barque (repère barque, cm), fondu sur 1,5 m au bord (raccord avec la grille de 5 m)
 float pf = smoothstep(0.0, 150.0, min(min(lx + %(px0).1f, %(px1).1f - lx), %(py).1f - aly));
 """
@@ -472,6 +481,9 @@ return float4(col, op);""") % (WATER_FMT := {"lantx": LANTERN_LOCAL[0], "lanty":
    "mx": MOON_DIR[0], "my": MOON_DIR[1], "mz": MOON_DIR[2], "eaumean": TEX_MEAN_EAU, "lkx": RIVER["lake"]["x"] * 100, "lky": -RIVER["lake"]["y"] * 100, "lkr2": (RIVER["lake"]["radius_m"] * 100) ** 2, "lkr": RIVER["lake"]["radius_m"] * 100, "ng": NIGHT_SKY_GAIN, **PATCH_RECT})
 # déplacement de la grille fine : hauteur de l'eau, fondue au bord (raccord avec la grille plate de 5 m)
 WAVE_WPO_CODE = (WAVE_CORE + "return float3(0.0, 0.0, wh * pf);") % WATER_FMT
+# nénuphars et fleurs posés sur l'eau : suivent les vagues partout (21/10 : hors de la grille fine qui suit la barque, ils
+# restaient fixes alors que les reflets ondulaient) ; au-delà, amplitude réduite (l'eau y reste un plan : pas de plongée)
+FLOAT_WPO_CODE = (WAVE_CORE + "return float3(0.0, 0.0, wh * lerp(0.6, 1.0, pf));") % WATER_FMT
 
 
 BRUSH_PNG = os.path.join(ROOT, "assets", "textures", "pinceau.png")
@@ -1098,7 +1110,7 @@ def sprite_material(relief=False):
     name = "M_GB_SpriteRelief" if relief else "M_GB_Sprite"
     path = f"{GB}/{name}"
     digest = spec_digest("sprite-v7", SPRITE_UV_CODE, SPRITE_COLOR_CODE, SPRITE_EDGE_CODE, SPRITE_TINT_CODE, MPC_DIGEST,
-                         SPRITE_RELIEF_CODE if relief else "", SPRITE_WIND_CODE, WAVE_WPO_CODE)
+                         SPRITE_RELIEF_CODE if relief else "", SPRITE_WIND_CODE, FLOAT_WPO_CODE)
     mat = eal.load_asset(path) if eal.does_asset_exist(path) else None
     if up_to_date(mat, digest):
         return mat
@@ -1168,9 +1180,14 @@ def sprite_material(relief=False):
     fb = mel.create_material_expression(mat, unreal.MaterialExpressionCollectionParameter, -1300, 2000)
     fb.set_editor_property("collection", MPC)
     fb.set_editor_property("parameter_name", "Barque")
-    flo = custom_node(mat, WAVE_WPO_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["WP", "T", "B"], -1000, 2000)
+    flo = custom_node(mat, FLOAT_WPO_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["WP", "T", "B", "Ab", "Af"], -1000, 2000)
     for pin, src in (("WP", wwp), ("T", mel.create_material_expression(mat, unreal.MaterialExpressionTime, -1300, 2100)), ("B", fb)):
         mel.connect_material_expressions(src, "", flo, pin)
+    for pin, pname, y in (("Ab", "AbyssPos", 2200), ("Af", "AbyssFade", 2300)):
+        cpa = mel.create_material_expression(mat, unreal.MaterialExpressionCollectionParameter, -1300, y)
+        cpa.set_editor_property("collection", MPC)
+        cpa.set_editor_property("parameter_name", pname)
+        mel.connect_material_expressions(cpa, "", flo, pin)
     fadd = mel.create_material_expression(mat, unreal.MaterialExpressionAdd, -500, 1900)
     mel.connect_material_expressions(wpo_out, "", fadd, "A")
     mel.connect_material_expressions(flo, "", fadd, "B")
@@ -1217,7 +1234,7 @@ def relief_texture(name):
     return look_texture(f"relief_{name}", srgb=False, compression=unreal.TextureCompressionSettings.TC_GRAYSCALE)
 
 
-RELIEF_CREUX = {"buissons": 0.2, "fourres": 0.2, "heros": 0.1, "faune": 0.1}   # avancée max (hauteur de case = 1)
+RELIEF_CREUX = {"buissons": 0.2, "fourres": 0.2, "buissons2": 0.2, "fourres2": 0.2, "heros": 0.1, "faune": 0.1}   # avancée max (hauteur de case = 1)
 
 
 def sprite_set(key, mode, instances, cull_cm):
@@ -1266,7 +1283,7 @@ def sprite_set(key, mode, instances, cull_cm):
         verts = [[-hw, 0, -0.5], [hw, 0, -0.5], [hw, 0, 0.5], [-hw, 0, 0.5]]
         nrm = [[0, -1, 0]] * 4
     elif mode == "relief":     # vertical, pied au sol, grille creusée par le matériau (arbres 6 × 12, petits sujets 6 × 6)
-        rows = 6 if name in ("buissons", "fourres", "faune") else 12
+        rows = 6 if name in ("buissons", "fourres", "buissons2", "fourres2", "faune") else 12
         nz = rows + 1
         nx = max(5, round(rows * aspect) + 1)
         verts = [[-hw + 2 * hw * i / (nx - 1), 0, j / (nz - 1)] for j in range(nz) for i in range(nx)]
@@ -1478,7 +1495,7 @@ def vie_mesh(items):
                                     "uv": uv, "uv1": uv1, "uv2": uv2, "uv3": uv3, "color": [1, 1, 1, 1]})
 
 
-SPRITE_CULL = {"arbres": 18000, "arbres2": 18000, "arbres3": 18000, "arbres4": 18000, "buissons": 7000, "fourres": 8000, "lisieres": 0, "feuillages": 0, "eau": 6000, "faune": 6000, "nuit": 6000, "heros": 0}
+SPRITE_CULL = {"arbres": 18000, "arbres2": 18000, "arbres3": 18000, "arbres4": 18000, "buissons": 7000, "fourres": 8000, "buissons2": 7000, "fourres2": 8000, "lisieres": 0, "feuillages": 0, "eau": 6000, "faune": 6000, "nuit": 6000, "heros": 0}
 if os.path.exists(SPRITE_LAYOUT):
     MATS["Sprite"] = sprite_material()
     MATS["SpriteRelief"] = sprite_material(relief=True)
@@ -1646,6 +1663,16 @@ def boat_mesh():
 
 start = pose_at(0)
 boat = place_mesh(CUBE, "Barque", "Bois", ue(start["x"], start["y"], 0.0), unreal.Rotator(0, 0, ue_yaw(start["heading_deg"])))  # échelle 1 : le modèle attaché en hérite
+# pivot de tangage (21/10, idée d'Olivier : « faire un peu tanguer la barque quand la bête aquatique passe ») : la coque,
+# le plancher, la lanterne et le héron y sont attachés, pas la caméra (contrainte VR : jamais de roulis caméra) ; animé
+# par la séquence (animatic.py), immobile le reste du temps
+rock = tag(actors.spawn_actor_from_class(unreal.TargetPoint, boat.get_actor_location(), boat.get_actor_rotation()), "GB_Tangage")
+# même mobilité que la barque (statique : la séquence la déplace quand même) ; « mobile », il refusait ses enfants statiques
+# (coque, lanterne) et la coque restait à l'origine du monde
+rock.root_component.set_mobility(boat.root_component.get_editor_property("mobility"))
+rock.attach_to_actor(boat, "", unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, False)
+rock.root_component.set_editor_property("relative_location", unreal.Vector(0, 0, 0))
+rock.root_component.set_editor_property("relative_rotation", unreal.Rotator(0, 0, 0))
 model = boat_mesh()
 if model is not None:
     boat.set_actor_hidden_in_game(True)
@@ -1653,7 +1680,7 @@ if model is not None:
     hull = actors.spawn_actor_from_object(model, boat.get_actor_location(), boat.get_actor_rotation())
     tag(hull, "BarqueModele")
     hull.static_mesh_component.set_collision_enabled(unreal.CollisionEnabled.NO_COLLISION)
-    hull.attach_to_actor(boat, "", unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, False)
+    hull.attach_to_actor(rock, "", unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, False)
     hull.root_component.set_editor_property("relative_location", unreal.Vector(0, 0, BOAT_Z))
     hull.root_component.set_editor_property("relative_rotation", unreal.Rotator(0, 0, BOAT_YAW))
     hull.root_component.set_editor_property("relative_scale3d", unreal.Vector(BOAT_SCALE, BOAT_SCALE_Y, BOAT_SCALE_Z))
@@ -1672,7 +1699,7 @@ if model is not None:
     else:
         paper = place_mesh(CYL, "LanternePapier", "LanternePapier", boat.get_actor_location())
         lc_, scale_ = LANTERN, unreal.Vector(0.22, 0.22, LANTERN_H / 100.0)
-    paper.attach_to_actor(boat, "", unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, False)
+    paper.attach_to_actor(rock, "", unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, False)
     paper.root_component.set_editor_property("relative_location", lc_)
     paper.root_component.set_editor_property("relative_rotation", unreal.Rotator(0, 0, 0))
     paper.root_component.set_editor_property("relative_scale3d", scale_)
@@ -1680,16 +1707,16 @@ if model is not None:
     # Plancher de la barque : planches opaques juste au-dessus de la ligne de flottaison, dans la coque ; l'eau
     # ne se voit plus à l'intérieur même si le masque du shader de l'eau échoue (retour d'Olivier).
     fl = place_mesh(hull_floor(model), "PlancherBarque", "PeintPlanches", boat.get_actor_location())
-    fl.attach_to_actor(boat, "", unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, False)
+    fl.attach_to_actor(rock, "", unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, False)
     fl.root_component.set_editor_property("relative_location", unreal.Vector(0, 0, 0))
     fl.root_component.set_editor_property("relative_rotation", unreal.Rotator(0, 0, 0))
     halo = place_mesh(SPHERE, "HaloLanterne", "HaloLanterne", boat.get_actor_location())
-    halo.attach_to_actor(boat, "", unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, False)
+    halo.attach_to_actor(rock, "", unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, False)
     halo.root_component.set_editor_property("relative_location", LANTERN)
     halo.root_component.set_editor_property("relative_scale3d", unreal.Vector(0.7, 0.7, 0.7))
     halo.static_mesh_component.set_editor_property("cast_shadow", False)
     lantern = tag(actors.spawn_actor_from_class(unreal.PointLight, boat.get_actor_location()), "LumiereLanterne")
-    lantern.attach_to_actor(boat, "", unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, False)
+    lantern.attach_to_actor(rock, "", unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, False)
     lantern.root_component.set_editor_property("relative_location", LANTERN)
     lc = lantern.point_light_component
     lc.set_editor_property("intensity_units", unreal.LightUnits.CANDELAS)
@@ -1847,7 +1874,7 @@ if os.path.exists(os.path.join(ROOT, "assets", "textures", "sprite_heron.png")):
                                            "color": [1, 1, 1, 1]})
     heron = place_mesh(heron_mesh, "GB_HeronFinal", "Heron", boat.get_actor_location())
     heron.static_mesh_component.set_mobility(unreal.ComponentMobility.MOVABLE)
-    heron.attach_to_actor(boat, "", unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, False)
+    heron.attach_to_actor(rock, "", unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, False)
     heron.root_component.set_editor_property("relative_location", unreal.Vector(0, 0, 0))
     heron.root_component.set_editor_property("relative_rotation", unreal.Rotator(0, 0, 0))
     heron.static_mesh_component.set_editor_property("bounds_scale", 4000.0)   # il vient de 36 m : jamais exclu du rendu
@@ -1965,7 +1992,7 @@ if os.path.exists(SKY_PNG):
         eal.set_metadata_tag(sky_night_tex, "source_sha1", sky_night_digest)
         eal.save_loaded_asset(sky_night_tex)
     sky_digest = sky_digest + "-" + sky_night_digest
-    SKY_WATER_VERSION = "ciel-eau-v44"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
+    SKY_WATER_VERSION = "ciel-eau-v45"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
     sky_mat_path = f"{GB}/M_GB_CielPeint"
     sky_mat = eal.load_asset(sky_mat_path) if eal.does_asset_exist(sky_mat_path) else None
     rebuild_sky_water = not up_to_date(sky_mat, spec_digest(SKY_WATER_VERSION, sky_digest, MPC_DIGEST, WATER_CODE,
@@ -2067,9 +2094,14 @@ if os.path.exists(SKY_PNG) and rebuild_sky_water:
             vb = mel.create_material_expression(water, unreal.MaterialExpressionCollectionParameter, -1000, 1700)
             vb.set_editor_property("collection", MPC)
             vb.set_editor_property("parameter_name", "Barque")
-            wpo = custom_node(water, WAVE_WPO_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["WP", "T", "B"], -600, 1500)
+            wpo = custom_node(water, WAVE_WPO_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["WP", "T", "B", "Ab", "Af"], -600, 1500)
             for src, pin in ((vpos, "WP"), (vt, "T"), (vb, "B")):
                 mel.connect_material_expressions(src, "", wpo, pin)
+            for pin, pname, y in (("Ab", "AbyssPos", 1800), ("Af", "AbyssFade", 1900)):
+                cpa = mel.create_material_expression(water, unreal.MaterialExpressionCollectionParameter, -1000, y)
+                cpa.set_editor_property("collection", MPC)
+                cpa.set_editor_property("parameter_name", pname)
+                mel.connect_material_expressions(cpa, "", wpo, pin)
             mel.connect_material_property(wpo, "", unreal.MaterialProperty.MP_WORLD_POSITION_OFFSET)
         mel.recompile_material(water)
         if mel.get_statistics(water).num_pixel_shader_instructions <= 0:

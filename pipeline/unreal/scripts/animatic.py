@@ -189,11 +189,14 @@ with open(os.path.join(ROOT, "pipeline", "layout", "creatures.json"), encoding="
 
 
 def creature_keys(keys, hide_before=True, hide_after=True):
-    k = [(t, (x * 100, -y * 100, z * 100), -h) for t, x, y, z, h in keys]
+    # clés au-delà de la fin écartées (21/10 : la trajectoire de la créature volante allait jusqu'à 239,8 s ; la clé « cachée
+    # sous le terrain » posée à DURATION tombait avant ses dernières clés, et elle plongeait de 100 m dans la dernière
+    # seconde, pendant le fondu au noir — vu au casque)
+    k = [(t, (x * 100, -y * 100, z * 100), -h) for t, x, y, z, h in keys if t <= DURATION]
     hid = lambda kk: (kk[1][0], kk[1][1], -6000.0)       # noqa: E731
     if hide_before:
         k = [(0.0, hid(k[0]), k[0][2]), (k[0][0] - 0.5, hid(k[0]), k[0][2])] + k
-    if hide_after:
+    if hide_after and k[-1][0] + 0.5 < DURATION:
         k = k + [(k[-1][0] + 0.5, hid(k[-1]), k[-1][2]), (DURATION, hid(k[-1]), k[-1][2])]
     return k
 
@@ -272,6 +275,26 @@ if "GB_LuciolesLac" in by_label:
 # sphère de fondu : affichée seulement pendant les fondus (une surface translucide plein écran coûte même transparente)
 visible_windows("GB_Fondu", [(0.0, FADE_IN_END + 0.1), (T_FADE_OUT - 0.1, DURATION + 1)])
 visible_between("GB_Lucioles", t_env - 0.5, DURATION + 1)
+
+# Tangage de la barque au passage de la créature des abysses (21/10) : roulis amorti ~2°, tangage ~0,8°, sur le pivot
+# GB_Tangage (coque, plancher, lanterne ; la caméra n'y est pas attachée : jamais de roulis caméra)
+if "GB_Tangage" in by_label:
+    _t1 = MARKS["abysses-passage"]["t"] - 1.0
+    _ch = seq.add_possessable(by_label["GB_Tangage"]).add_track(unreal.MovieScene3DTransformTrack).add_section()
+    _ch.set_range(0, end)
+    _cs = _ch.get_all_channels()
+    for _i, _v in ((0, 0.0), (1, 0.0), (2, 0.0), (3, 0.0), (4, 0.0), (5, 0.0), (6, 1.0), (7, 1.0), (8, 1.0)):
+        _cs[_i].set_default(_v)
+    _t = _t1 - 3.0
+    while _t <= _t1 + 16.0:
+        _u = _t - _t1
+        _env = (math.exp(-max(_u, 0.0) / 4.0) if _u >= 0 else math.exp(-(_u / 1.5) ** 2)) * min(1.0, (_t - (_t1 - 3.0)) / 3.0)
+        _cs[3].add_key(frame(_t), 2.2 * _env * math.sin(2 * math.pi * _u / 3.2), interpolation=SMOOTH)          # roulis
+        _cs[4].add_key(frame(_t), 0.8 * _env * math.sin(2 * math.pi * _u / 2.6 + 1.1), interpolation=SMOOTH)    # tangage
+        _t += 0.2
+    for _i in (3, 4):
+        _cs[_i].add_key(frame(_t1 - 3.2), 0.0, interpolation=SMOOTH)
+        _cs[_i].add_key(frame(_t1 + 16.4), 0.0, interpolation=SMOOTH)
 
 # Crépuscule → nuit : luminosité du ciel peint (MPC_Ambiance.CielLuminosite), pleine en S2-S4, baisse sous les
 # racines et pendant la trouée, nuit pour la lune (S6) et le lac (S7).

@@ -39,7 +39,7 @@ EYE = 1.1                     # hauteur des yeux au-dessus de l'eau (m)
 ARCHE_STATUES = (ROOT / "assets" / "3d" / "arche-statues" / "trellis2-s42" / "model.glb").exists()   # D18, greybox.py
 # (le relief compte surtout de près : au-delà de ~15 m, l'écart stéréo d'un mètre de profondeur devient faible ; coût
 # estimé par pipeline/review/charge.py)
-RELIEF_M = {"arbres": 18, "arbres2": 18, "arbres3": 18, "arbres4": 18, "buissons": 10, "fourres": 10, "heros": 999,
+RELIEF_M = {"arbres": 18, "arbres2": 18, "arbres3": 18, "arbres4": 18, "buissons": 10, "fourres": 10, "buissons2": 10, "fourres2": 10, "heros": 999,
             "faune": 999}
 SPRITES = ROOT / "assets" / "textures" / "sprites"
 
@@ -378,8 +378,11 @@ def main():
             continue
         pads.append((x, y, r))
         glow = cell in (0, 2, 5) and rng.uniform() < 0.7
-        add("eau", "sol", [x, y, 0.02 + 0.006 * (len(pads) % 5), size, cell, rng.uniform(0, 360),
-                           rng.uniform(1.9, 2.3) if glow else rng.uniform(0.85, 1.0)])
+        rot_ = rng.uniform(0, 360)
+        bright_ = rng.uniform(1.9, 2.3) if glow else rng.uniform(0.85, 1.0)
+        if glow and cell == 0:               # fleur blanche : la lueur la saturait en blanc pur (21/10), lueur divisée par ~3
+            bright_ = 1.5 + (bright_ - 1.5) * 0.3
+        add("eau", "sol", [x, y, 0.02 + 0.006 * (len(pads) % 5), size, cell, rot_, bright_])
 
     # --- Faune des berges (sujets posés, aux moments du parcours où on les voit bien) ----------------------------
     def bank_spot(t, side, off):
@@ -505,6 +508,54 @@ def main():
         off = frng.choice([-1, 1]) * frng.uniform(0.9, max(1.0, min(5.0, p["width_m"] / 2 - 0.5)))
         x, y = p["x"] - math.sin(h0) * off, p["y"] + math.cos(h0) * off
         vie.append([x, y, 0.025, 8, frng.uniform(0.7, 1.3), -h0, frng.uniform()])
+
+    # --- Buissons sans jumeaux (21/10, Olivier : « quelques répétitions de buissons ») -------------------------------
+    # Avec 16 images et ~8 voisins dans 5 m, la même image se retrouvait côte à côte. Répartition gloutonne : chaque buisson
+    # garde son image si aucun voisin proche ne l'a, sinon prend une image de même rôle et de même taille (même case de la
+    # famille jumelle buissons2 / fourres2, ou case de taille voisine) qu'aucun voisin n'a ; rayon 6 m près du parcours
+    # (< 10 m), 3 m au-delà. Générateur à part : le reste du décor ne bouge pas.
+    def size_range(fam, cell):
+        rs = [(s1, s2) for f, c, s1, s2, _w in BANK + WATERLINE + FLOOR if f == fam and c == cell]
+        return (min(r[0] for r in rs), max(r[1] for r in rs)) if rs else (0.5, 5.0)
+    pairs = {"buissons": "buissons2", "fourres": "fourres2"}
+    have = [f for f in ("buissons2", "fourres2") if (SPRITES / f"{f}.json").exists()]
+    special = {("buissons", 5), ("fourres", 5), ("fourres", 6)}     # bord de l'eau, rocher, souche : rôle à garder
+    items = []
+    for fam in ("buissons", "fourres"):
+        for inst in sets.get(fam, {"instances": []})["instances"]:
+            items.append([fam, inst])
+    order = sorted(range(len(items)), key=lambda i: path_dist(items[i][1][0], items[i][1][1]))
+    placed = []                                                       # (x, y, image)
+    drng = np.random.default_rng(55)
+    grid = {}
+    for i in order:
+        base, inst = items[i]
+        cell = int(inst[4])
+        R = 6.0 if path_dist(inst[0], inst[1]) < 10.0 else 3.0
+        gx, gy = int(inst[0] // 6), int(inst[1] // 6)
+        near = {img for (x, y, img) in (q for dx in (-1, 0, 1) for dy in (-1, 0, 1) for q in grid.get((gx + dx, gy + dy), []))
+                if math.hypot(x - inst[0], y - inst[1]) < R}
+        cands = [(base, cell)] + ([(pairs[base], cell)] if pairs[base] in have else [])
+        if (base, cell) not in special:
+            lo, hi = size_range(base, cell)
+            for c in range(8):
+                if c != cell and (base, c) not in special:
+                    l2, h2 = size_range(base, c)
+                    if l2 <= inst[3] * 1.25 and inst[3] <= h2 * 1.25 and not (hi < l2 * 0.7 or h2 < lo * 0.7):
+                        cands += [(base, c)] + ([(pairs[base], c)] if pairs[base] in have else [])
+        free = [c for c in cands if c not in near]
+        if (base, cell) in free or not free:     # garde son image (ou aucune n'est libre : 16 images ne suffisent pas)
+            img = (base, cell)
+        else:
+            img = free[int(drng.integers(len(free)))]
+        inst[4] = float(img[1])
+        items[i][0] = img[0]
+        grid.setdefault((gx, gy), []).append((inst[0], inst[1], img))
+    for fam in ("buissons", "fourres", "buissons2", "fourres2"):
+        if fam in sets:
+            sets[fam]["instances"] = []
+    for fam, inst in items:
+        sets.setdefault(fam, {"mode": "debout", "instances": []})["instances"].append(inst)
 
     # --- Orientation des plans immobiles ------------------------------------------------------------------------
     st = np.array([p["t"] for p in s])

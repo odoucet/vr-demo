@@ -120,6 +120,24 @@ Article proposé (Still Wakes the Deep) inaccessible chez Epic (403) ; d'après 
 11. **Héron** : arrivée par la gauche, taille, pattes sur le rebord ; son cri et ses ailes.
 12. **Plancher de la barque** (ta texture).
 
+### Retours au casque du 21/10 (nuit) — corrigés, APK installé ~1 h 45
+
+- ✅ Barque nette au casque (profil de textures), « très abouti », nuit et lucioles « top », fluide.
+- ✅ **Répétitions de buissons** : algorithme qui interdit la même image chez les voisins (6 m près du parcours, 3 m
+  au-delà, entre images de même rôle et de même taille) + 16 images de plus (`buissons2`, `fourres2`, générées en local,
+  substituts) : jumeaux proches 74 → 8 sur 145 (rayon 5 m). **Prompts complets pour tes versions dans PROMPTS.md.**
+- ✅ **Fleurs blanches sur l'eau fixes** : elles suivent maintenant les vagues partout (et la houle de la bête).
+- ✅ **Fleurs blanches trop lumineuses sur le lac final** : lueur de la fleur blanche divisée par ~3.
+- ✅ **La barque tangue au passage de la bête** (roulis ~2°, amorti) : pivot qui porte coque, plancher, lanterne, héron ;
+  **la caméra n'y est pas** (contrainte VR : jamais de roulis caméra) — ta vue reste horizontale, la barque bouge sous toi.
+  **À juger au casque (confort).** Houle autour de la bête : bosse et rides qui s'éloignent.
+- ✅ **La bête affleure** (ton hésitation, appliquée par défaut, réversible : `ABYSS_BREACH` dans `creatures.py`) : le dos
+  perce la surface ~40 cm à 1:12, devant à droite, puis replonge. **À juger.**
+- ✅ **Bête volante qui « tombe » au fondu final** : sa trajectoire dépassait la fin de séquence, la clé « cachée sous le
+  terrain » s'insérait avant ses dernières positions (plongée de 100 m dans la dernière seconde). Corrigé.
+- 🎬 **Vidéo 4K tout à fond** : `review/iter-059/animatic-hd.mp4` (785 Mo, 3840×2160, 8 échantillons par image, son).
+- ⚠ Mesure au casque impossible cette nuit (pièce trop sombre, le système demande d'allumer).
+
 ### Retours au casque du 20/10 au soir
 
 - ✅ « J'aime beaucoup », « l'eau c'est très chouette », vidéo fluide.

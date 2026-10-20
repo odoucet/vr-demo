@@ -126,6 +126,38 @@ sets:
       - [mousse-rocher, "large boulder covered with thick green moss and small ferns"]
       - [souche, "old mossy tree stump with small mushrooms and ferns"]
       - [digitales, "clump of tall foxglove flowers in pink and purple"]
+  # 21/10 (Olivier : « encore quelques répétitions de buissons ») : 8 images de plus par famille, même rôle et même taille
+  # que la case de même numéro de buissons / fourres (sprites_layout.py les permute pour qu'aucun voisin ne se ressemble)
+  buissons2:
+    type: plant
+    cell: [512, 512]
+    grid: [4, 2]
+    size: [1024, 1024]
+    seed: 1250
+    items:
+      - [houx, "dense round holly bush with glossy dark green leaves and a few red berries, leaves down to the ground, no visible trunk"]
+      - [myrtilles, "low wide blueberry shrub with small oval leaves and dark blue berries, leaves down to the ground"]
+      - [genets, "rounded broom shrub with many thin green stems covered in small yellow flowers"]
+      - [fougere-royale, "royal fern clump with broad upright light green fronds"]
+      - [laiches, "tuft of sedge grass with long arching blades, some golden tips"]
+      - [iris-jaunes, "clump of yellow flag irises with tall sword leaves growing at the water's edge"]
+      - [lavande, "clump of wild lavender with purple flower spikes and grey green leaves"]
+      - [eglantier, "thorny wild rose bush with small pink flowers and dark leaves"]
+  fourres2:
+    type: plant
+    cell: [512, 512]
+    grid: [4, 2]
+    size: [1024, 1024]
+    seed: 1350
+    items:
+      - [buisson-sombre, "very wide dense dark green shrub with layered rounded foliage masses down to the ground, no visible trunk"]
+      - [noisetier, "hazel bush with several thin stems and broad round leaves"]
+      - [monardes, "clump of red and pink wild bee balm flowers with green leaves"]   # salicaires : doublon de la lavande (21/10)
+      - [preles, "clump of horsetail plants, thin upright green stems with whorls of fine needle-like branches", {seed: 1371}]   # 1ʳᵉ graine : un cactus
+      - [saule-buissonnant, "tall shrubby willow with long narrow silvery green leaves"]
+      - [rocher-fougeres, "medium mossy rock with ferns growing around its base"]
+      - [tronc-couche, "fallen mossy log with small ferns and mushrooms"]
+      - [ombelliferes, "clump of tall green wild umbellifer plants with pale green flower umbels"]
   lisieres:
     type: strip
     cell: [2048, 512]

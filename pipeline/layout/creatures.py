@@ -47,11 +47,12 @@ def main():
         return (a["x"] + f * (b["x"] - a["x"]), a["y"] + f * (b["y"] - a["y"]),
                 a["heading_deg"] + f * (b["heading_deg"] - a["heading_deg"]))
 
+    ABYSS_BREACH = True       # 21/10 : à juger au casque (False : reste sous l'eau, comme avant)
     out = {"units": "m", "abysses": [], "troupeau": [], "volante": []}
 
     # --- Abysses : avance relative de -24 m (derrière) à +20 m (devant) entre 54 s et 84 s, puis plongée --------
     t0 = marks["abysses-passage"]["t"]
-    for t in np.arange(t0 - 22, t0 + 13, 1.0):
+    for t in np.arange(t0 - 22, t0 + 13, 0.5):              # pas de 0,5 s : la remontée dure ~4 s
         # arrive de derrière, passe sous la barque, file devant puis s'enfonce et s'éteint en restant dans le
         # chenal profond (retour d'Olivier : elle ne doit plus « disparaître dans le sol » sous la barque)
         lead = np.interp(t, [t0 - 16, t0, t0 + 14], [-24.0, 0.0, 17.0])
@@ -69,6 +70,10 @@ def main():
             depth = np.interp(t, [t0 - 22, t0 - 12], [bed - 3.0, depth])
         if t > t0 + 4:                                          # s'enfonce doucement en s'éloignant
             depth = np.interp(t, [t0 + 4, t0 + 12], [depth, -4.5])   # éteinte (AbyssFade) avant le haut-fond
+        # affleure (21/10, idée d'Olivier : « légèrement monter, dépasser la surface et replonger, qu'on la voie bien ») :
+        # le dos perce la surface (~40 cm) juste après son passage sous la barque, devant à droite, puis replonge
+        if ABYSS_BREACH:
+            depth += 1.1 * math.exp(-((t - (t0 + 2.5)) / 2.2) ** 2)
         out["abysses"].append([round(float(t), 2), round(x, 3), round(y, 3), round(float(depth), 3), round(h, 2)])
 
     # --- Troupeau : sentier forêt droite → gué → forêt gauche, à 1,8 m/s, hauteur sur le terrain --------------

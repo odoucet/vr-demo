@@ -5,6 +5,9 @@
     python pipeline/comfy/sprites.py buissons fourres        # familles listées (toutes si aucune) → images + atlas
     python pipeline/comfy/sprites.py --atlas-only            # réassemble les atlas depuis les images existantes
 
+Images d'Olivier : refs/inbox/sprites/<identifiant d'item>.png (ex. houx.png) remplace la génération locale de cet item
+(détourée, rognée) ; relancer la famille concernée.
+
 Pour chaque famille : images <famille>_<n>.png (RGBA rogné sur le sujet) dans assets/textures/sprites/<famille>/,
 atlas assets/textures/sprite_<famille>.png (cases de la taille `cell`, sujet en bas au centre, ou centré pour les
 feuillages et la petite faune) et assets/textures/sprites/<famille>.json (emprise du sujet dans chaque case, lue par
@@ -47,6 +50,25 @@ def workflow(prompt, seed, size, prefix):
     wf["52"] = {"class_type": "MaskToImage", "inputs": {"mask": ["51", 0]}}
     wf["53"] = {"class_type": "SaveImage", "inputs": {"images": ["52", 0], "filename_prefix": prefix + "_masque"}}
     return wf
+
+
+OLIVIER = ROOT / "refs" / "inbox" / "sprites"     # images d'Olivier (Midjourney), nommées par identifiant d'item
+
+
+def from_olivier(src, dest):
+    """Image d'Olivier (refs/inbox/sprites/<item>.png) détourée (BiRefNet, style/projection.py) et rognée sur le sujet ;
+    refaite si l'image source est plus récente que la case."""
+    if dest.exists() and dest.stat().st_mtime >= src.stat().st_mtime:
+        return dest
+    from style.projection import silhouette
+    rgb = np.asarray(Image.open(src).convert("RGB"))
+    m = silhouette(src)
+    a = np.asarray(Image.fromarray((m * 255).astype(np.uint8)).resize((rgb.shape[1], rgb.shape[0]))).astype(np.float32) / 255.0
+    a = np.clip((a - 0.15) / 0.7, 0, 1)
+    ys, xs = np.nonzero(a > 0.5)
+    rgba = np.dstack([rgb, (a * 255).astype(np.uint8)])
+    Image.fromarray(rgba, "RGBA").crop((xs.min(), ys.min(), xs.max() + 1, ys.max() + 1)).save(dest)
+    return dest
 
 
 def generate(prompt, seed, size, dest):
@@ -238,7 +260,11 @@ def main():
                     dest = d / (f"essai_{i}.png" if args.test else f"{name}_{i}.png")
                     prompt = CATALOG["prompts"][spec["type"]].format(kind=kind, style=SPRITE_STYLE)
                     opts = item[2] if len(item) > 2 else {}
-                    paths.append(generate(prompt, opts.get("seed", spec["seed"] + i), spec["size"], dest))
+                    mine = OLIVIER / f"{iname}.png"
+                    if mine.exists() and not args.test:          # l'image d'Olivier remplace la génération locale
+                        paths.append(from_olivier(mine, dest))
+                    else:
+                        paths.append(generate(prompt, opts.get("seed", spec["seed"] + i), spec["size"], dest))
                     print(f"  {name}/{iname} → {dest.relative_to(ROOT)}", flush=True)
         if not args.test:
             atlas(name, spec, paths)
