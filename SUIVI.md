@@ -520,7 +520,7 @@ binning : un triangle qui couvre plusieurs tuiles est traité plusieurs fois, [M
 | I2 | Concepts S1, S3, S4 manquants | concepts provisoires générés en local (`assets/concepts/`, `pipeline/comfy/concepts.py`, prompts de PROMPTS.md) | génération Midjourney |
 | ~~I3~~ | ~~Blender absent~~ — **levé le 20/10** : Blender 5.2.2 portable (D9), utilisé en arrière-plan | — | — |
 | I4 | Pas de création de PR (connecteur GitHub sans accès, `gh` non connecté) | D6 | `gh auth login`, ou installer l'application GitHub de Claude sur le dépôt |
-| I5 | Musique en MP3 185 kb/s | MP3 utilisé tel quel | export WAV depuis Suno |
+| ~~I5~~ | ~~Musique en MP3~~ — **levé** : WAV d'Olivier, versé au dépôt en FLAC sans perte le 20/10 (musique + 10 stems, 100 Mo) | — | Olivier peut supprimer les WAV de `audio/music/` |
 | I6 | Freesound : seuls les aperçus OGG sont accessibles sans OAuth | aperçus utilisés pour le prototype | connexion OAuth pour les originaux (au master) |
 
 ## 🟢 Mineurs
