@@ -508,3 +508,19 @@ autonome. `SUIVI.md` dit où en est le projet ; ce fichier raconte comment on y 
 - Essai de la simulation d'eau Niagara Fluids (piste de l'article Still Wakes the Deep), après un redémarrage de
   l'éditeur : un premier APK vide (système posé après l'enregistrement du niveau), puis un second où Olivier la voit —
   « c'est très moche ». Le modèle brut n'est pas exploitable ; mis en pause au profit de l'eau calculée.
+
+## 21/10 nuit — textures, buissons, tangage
+
+- « La barque c'est bien là dans le casque ! Globalement c'est très abouti. » La netteté venait d'un réglage caché : le
+  profil Quest 3 d'Unreal hérite d'un profil Android moyen, qui affiche toutes les textures un niveau en dessous et coupe
+  le filtrage anisotrope. Trouvé dans le journal du casque, corrigé par un profil propre au projet.
+- Une vidéo 4K « tout à fond » pour comparer au casque : même contenu, plus net. La version PC VR « plus riche » sort du
+  périmètre (Olivier : avec les sprites, pas de contrainte de polygones).
+- Répétitions de buissons : avec 16 images et ~8 buissons dans 5 m, le hasard seul mettait des jumeaux côte à côte.
+  Répartition gloutonne (aucun voisin identique, entre images de même rôle et de même taille) et 16 images de plus ;
+  prompts complets pour qu'Olivier les refasse dans son style.
+- Bête volante qui « tombe » au fondu : sa trajectoire dépassait la fin de la séquence de 0,4 s, et la clé qui cache les
+  créatures après leur passage s'insérait avant ses dernières positions. Invisible au rendu PC, qui s'arrête juste avant.
+- Tangage de la barque (idée d'Olivier, puis « la barque est vraiment trop fixe ») : un pivot porte la coque, la lanterne
+  et le héron, pas la caméra — la règle « jamais de roulis caméra » tient, la barque bouge sous le spectateur. Premier
+  essai : la coque disparue, restée à l'origine du monde (un parent « mobile » refuse des enfants « statiques »).
