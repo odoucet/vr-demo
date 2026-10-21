@@ -341,13 +341,16 @@ gbt += (bowh * 6.0 * (-2.0 * (d - 10.0) / 144.0) + sideh * 1.5 * 2.0 * (d - 9.0)
 wg += gbt.x * float2(cb, sb) + gbt.y * float2(-sb, cb);
 // houle de la créature des abysses (21/10) : bosse au-dessus d'elle et rides qui s'en éloignent, d'autant plus fortes
 // qu'elle est près de la surface (Ab : position, z en cm ; Af : elle s'éteint en s'éloignant)
-float2 dab = WP.xy - Ab.xy;
-float abr = max(length(dab), 1.0);
 float abk = saturate(1.0 + (Ab.z + 100.0) / 200.0) * saturate(Af);   // 1 au ras de la surface, 0 sous 3 m
-float abh = exp(-(abr / 350.0) * (abr / 350.0));
-float abw = sin(abr * 0.025 - T * 2.5) * exp(-abr / 900.0) * saturate(abr / 250.0);
-wh += abk * (12.0 * abh + 3.5 * abw);
-wg += abk * (12.0 * abh * (-2.0 * abr / (350.0 * 350.0)) + 3.5 * 0.025 * cos(abr * 0.025 - T * 2.5) * exp(-abr / 900.0) * saturate(abr / 250.0)) * dab / abr;
+[branch] if (abk > 0.001)                                           // seulement pendant son passage (coût GPU, 21/10)
+{
+    float2 dab = WP.xy - Ab.xy;
+    float abr = max(length(dab), 1.0);
+    float abh = exp(-(abr / 350.0) * (abr / 350.0));
+    float abw = sin(abr * 0.025 - T * 2.5) * exp(-abr / 900.0) * saturate(abr / 250.0);
+    wh += abk * (12.0 * abh + 3.5 * abw);
+    wg += abk * (12.0 * abh * (-2.0 * abr / (350.0 * 350.0)) + 3.5 * 0.025 * cos(abr * 0.025 - T * 2.5) * exp(-abr / 900.0) * saturate(abr / 250.0)) * dab / abr;
+}
 // grille fine : rectangle autour de la barque (repère barque, cm), fondu sur 1,5 m au bord (raccord avec la grille de 5 m)
 float pf = smoothstep(0.0, 150.0, min(min(lx + %(px0).1f, %(px1).1f - lx), %(py).1f - aly));
 """
@@ -763,7 +766,10 @@ MATS = {
 # progressive (paramètre de collection animé par la séquence). Additif, sans écriture de profondeur.
 FIREFLY_CODE_WPO = """float ph = UV.x * 6.2832;
 float3 drift = Amp * float3(sin(T * 0.61 + ph), cos(T * 0.47 + ph * 1.7), 0.6 * sin(T * 0.83 + UV.y * 6.2832));
-return drift + (Right.xyz * C.x + Up.xyz * C.y) * Size;"""
+// plus petites tout près de l'œil (21/10 : mesure au casque, la nuée de l'envol saturait le GPU — une luciole à 30 cm
+// couvrait une grande part de l'écran en lumière additive)
+float near = saturate(length(WP.xyz + drift - Cam.xyz) / 250.0);
+return drift + (Right.xyz * C.x + Up.xyz * C.y) * Size * (0.35 + 0.65 * near);"""
 FIREFLY_CODE_GLOW = """float d2 = dot(C, C);
 float b = 0.5 + 0.5 * sin(T * (1.1 + UV.y) + UV.x * 40.0);
 float blink = 0.2 + 0.8 * b * b;
@@ -775,7 +781,7 @@ return Col.rgb * (core + halo) * blink * saturate((Fade * 1.05 - UV.y) * 12.0); 
 def firefly_material(color=(4.0, 5.0, 1.2), amp_cm=30.0, name="Luciole", size_cm=14.0, fade="LucioleFade"):
     """Lucioles : particules lumineuses face à l'œil, animées entièrement dans le shader (rien sur le CPU)."""
     path = f"{GB}/M_GB_{name}"
-    digest = spec_digest("luciole-v4", color, amp_cm, size_cm, fade, FIREFLY_CODE_WPO, FIREFLY_CODE_GLOW, MPC_DIGEST)
+    digest = spec_digest("luciole-v5", color, amp_cm, size_cm, fade, FIREFLY_CODE_WPO, FIREFLY_CODE_GLOW, MPC_DIGEST)
     existing = eal.load_asset(path) if eal.does_asset_exist(path) else None
     if up_to_date(existing, digest):
         return existing
@@ -808,7 +814,11 @@ def firefly_material(color=(4.0, 5.0, 1.2), amp_cm=30.0, name="Luciole", size_cm
     fd.set_editor_property("collection", MPC)
     fd.set_editor_property("parameter_name", fade)
     wpo = custom_node(mat, FIREFLY_CODE_WPO, unreal.CustomMaterialOutputType.CMOT_FLOAT3,
-                      ["T", "UV", "C", "Amp", "Size", "Right", "Up"], -500, 300)
+                      ["T", "UV", "C", "Amp", "Size", "Right", "Up", "WP", "Cam"], -500, 300)
+    wp_ = mel.create_material_expression(mat, unreal.MaterialExpressionWorldPosition, -1000, 900)
+    wp_.set_editor_property("world_position_shader_offset", unreal.WorldPositionIncludedOffsets.WPT_EXCLUDE_ALL_SHADER_OFFSETS)
+    mel.connect_material_expressions(wp_, "", wpo, "WP")
+    mel.connect_material_expressions(mel.create_material_expression(mat, unreal.MaterialExpressionCameraPositionWS, -1000, 1000), "", wpo, "Cam")
     glow = custom_node(mat, FIREFLY_CODE_GLOW, unreal.CustomMaterialOutputType.CMOT_FLOAT3,
                        ["T", "UV", "C", "Col", "Fade"], -500, 0)
     for node in (wpo, glow):
@@ -1992,7 +2002,7 @@ if os.path.exists(SKY_PNG):
         eal.set_metadata_tag(sky_night_tex, "source_sha1", sky_night_digest)
         eal.save_loaded_asset(sky_night_tex)
     sky_digest = sky_digest + "-" + sky_night_digest
-    SKY_WATER_VERSION = "ciel-eau-v45"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
+    SKY_WATER_VERSION = "ciel-eau-v46"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
     sky_mat_path = f"{GB}/M_GB_CielPeint"
     sky_mat = eal.load_asset(sky_mat_path) if eal.does_asset_exist(sky_mat_path) else None
     rebuild_sky_water = not up_to_date(sky_mat, spec_digest(SKY_WATER_VERSION, sky_digest, MPC_DIGEST, WATER_CODE,

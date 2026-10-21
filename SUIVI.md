@@ -136,7 +136,10 @@ Article proposé (Still Wakes the Deep) inaccessible chez Epic (403) ; d'après 
 - ✅ **Bête volante qui « tombe » au fondu final** : sa trajectoire dépassait la fin de séquence, la clé « cachée sous le
   terrain » s'insérait avant ses dernières positions (plongée de 100 m dans la dernière seconde). Corrigé.
 - 🎬 **Vidéo 4K tout à fond** : `review/iter-059/animatic-hd.mp4` (785 Mo, 3840×2160, 8 échantillons par image, son).
-- ⚠ Mesure au casque impossible cette nuit (pièce trop sombre, le système demande d'allumer).
+- 📊 **Mesure de 3 h 30 (casque posé, suivi revenu en cours de route)** : S4-S5 à 72, mais **S6 décrochait à 65 i/s (58
+  au pire) de 2:40 à 3:06**, pendant l'envol des lucioles. Test A/B en direct : les réglages de textures ne coûtent rien de
+  mesurable, la transparence ~2 ms. Allègements : lucioles plus petites tout près de l'œil, houle de la bête calculée
+  seulement pendant son passage → **S6 à 72,5 i/s (min 71)**, S7 à 72. S2-S3 non mesurés (suivi perdu). À confirmer casque porté.
 
 ### Retours au casque du 20/10 au soir
 
