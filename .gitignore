@@ -57,4 +57,4 @@ assets/textures/sprites/**/*_masque.png
 assets/textures/sprites/**/essai_*.png
 
 # Animatics vidéo : lourds et régénérables (pipeline/review/animatic.py) ; la planche-animatic.jpg reste versionnée.
-review/**/animatic.mp4
+review/**/animatic*.mp4
