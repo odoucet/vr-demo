@@ -524,3 +524,7 @@ autonome. `SUIVI.md` dit où en est le projet ; ce fichier raconte comment on y 
 - Tangage de la barque (idée d'Olivier, puis « la barque est vraiment trop fixe ») : un pivot porte la coque, la lanterne
   et le héron, pas la caméra — la règle « jamais de roulis caméra » tient, la barque bouge sous le spectateur. Premier
   essai : la coque disparue, restée à l'origine du monde (un parent « mobile » refuse des enfants « statiques »).
+- Nettoyage du dépôt (demandé par Olivier) : les vidéos de rendu poussées en LFS au fil des jours — dont 2,4 Go de vidéos 4K
+  commitées par erreur, la règle d'exclusion ne couvrant pas leur nom — pesaient près de la moitié du stockage. Historique
+  réécrit en local (après sauvegarde complète), dépôt GitHub supprimé et recréé, puis repoussé : 3,9 Go au lieu de ~7,3.
+  Réécrire seul n'aurait rien libéré côté GitHub, qui garde les objets LFS tant que le dépôt existe.
