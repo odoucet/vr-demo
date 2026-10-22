@@ -528,3 +528,15 @@ autonome. `SUIVI.md` dit où en est le projet ; ce fichier raconte comment on y 
   commitées par erreur, la règle d'exclusion ne couvrant pas leur nom — pesaient près de la moitié du stockage. Historique
   réécrit en local (après sauvegarde complète), dépôt GitHub supprimé et recréé, puis repoussé : 3,9 Go au lieu de ~7,3.
   Réécrire seul n'aurait rien libéré côté GitHub, qui garde les objets LFS tant que le dépôt existe.
+
+## 22-23/10 — démarrage, tangage, bête des abysses
+
+- Le noir du début : Olivier voit la scène « se construire petit à petit » avant le noir, alors que tous mes démarrages
+  filmés au casque étaient propres. Hypothèse retenue : au premier lancement, chaque objet attend ses shaders, la sphère de
+  fondu aussi, et le décor apparaît pièce par pièce tant qu'elle n'est pas prête. Parade : tout ce qui se dessine est caché
+  pendant 4 secondes. Le test a demandé d'effacer le cache de shaders du casque pour reproduire un premier lancement.
+- Tangage « imperceptible » : la séquence tournait bien la barque de 4°, mais avec la caméra fixe (règle de confort : jamais
+  de roulis), seul le plat-bord bouge, à peine. Amplifié à 9° au passage de la bête.
+- La bête « n'a aucun effet sur l'eau » : sa vague tombait juste en dehors de la grille d'eau en relief qui suit la barque.
+- Une régression de fluidité au gué, cherchée par essais en direct au casque : ni l'eau ni les textures, mais le pont
+  resté à sa version la plus fine trop loin — en VR, un objet de 42 m paraît « grand à l'écran » bien plus longtemps.
