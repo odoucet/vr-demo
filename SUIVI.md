@@ -134,8 +134,8 @@ Article proposé (Still Wakes the Deep) inaccessible chez Epic (403) ; d'après 
 - ✅ **Bête des abysses sans effet sur l'eau** : sa vague tombait hors de la grille d'eau en relief (6 m autour de la barque,
   la bête remonte à 7 m) ; grille élargie à 9 m, rides plus fortes. **À juger** (si ça ne suffit pas : on la garde sous l'eau).
 - ✅ **Fluidité** : régression mesurée au gué et sous l'arche (64 i/s) ; le pont restait à 300 k triangles jusqu'à plus de 60 m
-  en VR (essai au casque : +2,75 ms en le faisant passer plus tôt aux versions allégées) → seuils relevés. Remesure en cours
-  (casque posé, suivi intermittent).
+  en VR (essai au casque : +2,75 ms en le faisant passer plus tôt aux versions allégées) → seuils relevés. **Remesuré (casque
+  posé, 1 h 15) : gué 71,7 i/s (10,9 ms GPU, 13,5 avant), arche 71,3, toute la balade entre 71 et 72 en moyenne.**
 - ❓ **Bug de texture à droite juste avant la traversée du troupeau** : pas trouvé (captures éditeur et casque posé, regard à
   droite de 1:20 à 1:50). Les formes vertes arrondies au pied du pont sont les bêtes qui attendent. **Une capture (bouton
   Meta + gâchette) ou un repère précis m'aiderait.**
