@@ -120,6 +120,28 @@ Article proposé (Still Wakes the Deep) inaccessible chez Epic (403) ; d'après 
 11. **Héron** : arrivée par la gauche, taille, pattes sur le rebord ; son cri et ses ailes.
 12. **Plancher de la barque** (ta texture).
 
+### Retours au casque du 22/10 au soir — corrigés, APK prêt (non installé : casque hors limites à la demande d'Olivier)
+
+- ✅ **Tangage** un peu plus marqué (roulis ~0,8°), et **~6° quand la bête remonte** (calé sur sa remontée).
+- ✅ **Bête des abysses** : remontée plus lente et plus haute (le dos sort ~70 cm), le corps se cabre en montant et pique en
+  replongeant ; **houle** bien plus forte (bosse 25 cm, rides 10 cm) ; écartée à 7 m pendant la remontée (une nageoire
+  traversait le plancher). Vérifié sur extrait rendu.
+- ✅ **Fleurs fixes sur l'eau** : chacune a son mouvement de flotteur (se soulève, s'incline, pivote), montée bornée à 12 cm.
+- ✅ **Bande verte qui traverse des arbres** (à droite avant le pont) : bandes de lisière ramenées au bord du terrain, au
+  milieu de la forêt ; retirées (5 sur 15).
+- ✅ **Hibou à 10 cm du tronc** (sortie du pont) : posé plus bas sur sa souche et avancé de 20 cm vers le parcours (la souche
+  est gonflée par son relief, le hibou restait derrière) ; souches exclues de la répartition des buissons. **À vérifier.**
+- ✅ **Lucioles de l'envol** : restent ~16 s autour de la barque, puis montent en 70 s (50 avant). Vérifié sur extrait.
+- ✅ **Fleurs blanches du lac** : plus aucune (nénuphars blancs et plantes lumineuses blanches retirés du lac).
+- ✅ **Bête volante qui s'écroule avant le noir** : la correction de la veille ajoutait encore une clé « cachée » 0,1 s avant
+  la fin ; plus de clé de fin pour elle. Vérifié sur extrait.
+- ❓ **Noir du début** : selon Olivier, la scène « se construit petit à petit » avant le noir. Au casque (essais du 22/10), le
+  démarrage filmé est noir 10 s puis fondu — mais avec le cache de shaders déjà rempli. Piste : au premier lancement après
+  une installation, chaque objet n'apparaît qu'une fois son shader compilé ; si la sphère de fondu arrive après le décor, on
+  voit le décor se monter. Fait sans risque : écran de chargement noir (`bShowLaunchImage=False`, fond `black`). Options si
+  ça persiste : compiler les shaders avant d'afficher (`r.PSOPrecache.ProxyCreationWhenPSOReady=0` : risque d'à-coups),
+  ou un cache de shaders livré avec l'APK. **À revoir au prochain essai (premier lancement après installation).**
+
 ### Retours au casque du 21/10 (nuit) — corrigés, APK installé ~1 h 45
 
 - ✅ Barque nette au casque (profil de textures), « très abouti », nuit et lucioles « top », fluide.

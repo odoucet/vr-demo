@@ -200,8 +200,12 @@ def main():
             for side in (-1, 1):
                 off = side * (p["width_m"] / 2 + lateral * rng.uniform(0.9, 1.1))
                 x, y = p["x"] - math.sin(h0) * off, p["y"] + math.cos(h0) * off
-                x = min(max(x, b["x0"] + 4), b["x1"] - 4)
-                y = min(max(y, b["y0"] + 4), b["y1"] - 4)
+                cx_ = min(max(x, b["x0"] + 4), b["x1"] - 4)
+                cy_ = min(max(y, b["y0"] + 4), b["y1"] - 4)
+                # ramenée au bord du terrain, la bande se retrouvait au milieu de la forêt, devant des arbres plus lointains
+                # qu'elle coupait (22/10, à droite avant le pont : « une grande surface verte qui traverse des arbres »)
+                clamped = math.hypot(cx_ - x, cy_ - y) > 1.0
+                x, y = cx_, cy_
                 if math.hypot(x - lake["x"], y - lake["y"]) < lake["radius_m"] + 25 or path_dist(x, y) < 70:
                     continue
                 z, _d = F.at(x, y)
@@ -209,8 +213,10 @@ def main():
                 yaw = math.degrees(math.atan2(p["y"] - y, p["x"] - x)) + rng.uniform(-12, 12)
                 cell = cells[rng.integers(len(cells))]
                 # collines et second anneau plus sombres et plus bleutés par la brume : ils reculent
-                add("lisieres", "fixe", [x, y, (z or 0) - 4.0, height * rng.uniform(0.85, 1.15), cell, yaw,
-                                          rng.uniform(0.6, 0.72) if (cell == 2 or lateral > 80) else rng.uniform(0.85, 1.0)])
+                h_ = height * rng.uniform(0.85, 1.15)
+                br_ = rng.uniform(0.6, 0.72) if (cell == 2 or lateral > 80) else rng.uniform(0.85, 1.0)
+                if not clamped:
+                    add("lisieres", "fixe", [x, y, (z or 0) - 4.0, h_, cell, yaw, br_])
 
     # un seul anneau, loin : à ~60 m, les bandes se voyaient comme des panneaux plats là où la forêt s'ouvre (gué, lac)
     strip_ring(120.0, 36.0, [0, 1, 2], 45, 10)
@@ -359,7 +365,9 @@ def main():
         if any(math.hypot(x - px, y - py) < r + pr for px, py, pr in pads):
             continue
         pads.append((x, y, r))
-        add("eau", "sol", [x, y, 0.02 + 0.006 * (len(pads) % 5), size, cell, rng.uniform(0, 360), rng.uniform(0.85, 1.05)])
+        rot_, bright_ = rng.uniform(0, 360), rng.uniform(0.85, 1.05)
+        if not (cell == 0 and math.hypot(x - lake["x"], y - lake["y"]) < lake["radius_m"] + 5):   # pas de fleur blanche sur le lac
+            add("eau", "sol", [x, y, 0.02 + 0.006 * (len(pads) % 5), size, cell, rot_, bright_])
     # Lac (S7, 200-240 s) : il paraissait vide jusqu'à la nuée finale ; nénuphars en fleurs le long du passage de la
     # barque, dont les fleurs s'allument la nuit (éclat > 1,5, comme la famille « nuit »)
     lake_path = [q for q in s if q["t"] >= 196]
@@ -380,9 +388,10 @@ def main():
         glow = cell in (0, 2, 5) and rng.uniform() < 0.7
         rot_ = rng.uniform(0, 360)
         bright_ = rng.uniform(1.9, 2.3) if glow else rng.uniform(0.85, 1.0)
-        if glow and cell == 0:               # fleur blanche : la lueur la saturait en blanc pur (21/10), lueur divisée par ~3
-            bright_ = 1.5 + (bright_ - 1.5) * 0.3
-        add("eau", "sol", [x, y, 0.02 + 0.006 * (len(pads) % 5), size, cell, rot_, bright_])
+        # pas de nénuphar à fleur blanche sur le lac (22/10, Olivier : « c'est le choix des fleurs qui n'est pas bon, il faut
+        # juste ne pas en mettre à cet endroit » ; même avec moins de lueur, elles restaient blanches) ; tirages gardés
+        if cell != 0:
+            add("eau", "sol", [x, y, 0.02 + 0.006 * (len(pads) % 5), size, cell, rot_, bright_])
 
     # --- Faune des berges (sujets posés, aux moments du parcours où on les voit bien) ----------------------------
     def bank_spot(t, side, off):
@@ -420,7 +429,13 @@ def main():
     for t, side in ((150, -1), (172, 1)):                            # chouettes sur une souche (nuit)
         x, y, z = bank_spot(t, side, rng.uniform(2.0, 3.5))
         add("fourres", "debout", [x, y, z - 0.05, 1.0, 6, 0, 0.9])
-        add("faune", "debout", [x, y, z + 0.62, 0.42, 6, 0, 0.95])
+        # sur le dessus de la souche (à 57 % de sa hauteur, mesuré dans l'image), avancée de 20 cm vers le parcours : la
+        # souche est gonflée vers l'œil par sa carte de relief, le hibou (plan plat) restait derrière et semblait flotter à
+        # côté d'un tronc (22/10)
+        p_ = min(s, key=lambda q: math.hypot(q["x"] - x, q["y"] - y))
+        dx_, dy_ = p_["x"] - x, p_["y"] - y
+        n_ = math.hypot(dx_, dy_) or 1.0
+        add("faune", "debout", [x + dx_ / n_ * 0.2, y + dy_ / n_ * 0.2, z - 0.05 + 0.55, 0.42, 6, 0, 0.95])
         sounds[f"chouette-{t}"] = [x, y, z + 0.8]
     for t in (58, 84, 110, 190):                                     # tortues au ras de l'eau
         x, y, z = bank_spot(t, rng.choice([-1, 1]), rng.uniform(-0.2, 0.3))
@@ -452,6 +467,8 @@ def main():
         size_, bright_ = rng.uniform(h1, h2), rng.uniform(2.1, 2.6)
         if cell in WHITE_NIGHT:              # sujets blancs : la lueur les rendait blanc pur (« trop blancs », 20/10)
             bright_ = 1.5 + (bright_ - 1.5) * 0.35
+            if math.hypot(x - lake["x"], y - lake["y"]) < lake["radius_m"] + 10:
+                continue                     # et aucun au bord du lac (22/10)
         add("nuit", "debout", [x, y, z - 0.03, size_, cell, 0, bright_])
 
     # champignons et mousses lumineux au pied de la tête et dans ses creux (ils s'allument à la tombée de la nuit, S6)
@@ -535,6 +552,9 @@ def main():
         gx, gy = int(inst[0] // 6), int(inst[1] // 6)
         near = {img for (x, y, img) in (q for dx in (-1, 0, 1) for dy in (-1, 0, 1) for q in grid.get((gx + dx, gy + dy), []))
                 if math.hypot(x - inst[0], y - inst[1]) < R}
+        if (base, cell) == ("fourres", 6):   # souches : jamais permutées (22/10 : la souche du hibou devenait un tronc couché,
+            grid.setdefault((gx, gy), []).append((inst[0], inst[1], (base, cell)))   # plus bas, il flottait à côté)
+            continue
         cands = [(base, cell)] + ([(pairs[base], cell)] if pairs[base] in have else [])
         if (base, cell) not in special:
             lo, hi = size_range(base, cell)

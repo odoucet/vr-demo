@@ -240,12 +240,25 @@ for label in list(by_label):
     elif label.startswith(("GB_Lisiere", "GB_Collines")):
         visible_between(label, FOG_LIFT_S, DURATION + 1)
 
-transform_track(by_label["GB_Abysses"], creature_keys(CREA["abysses"]), interp=SMOOTH)
+# la créature des abysses se cabre en remontant et pique en replongeant (22/10) : tangage d'après la pente de sa trajectoire
+_ab = creature_keys(CREA["abysses"])
+transform_track(by_label["GB_Abysses"], _ab, interp=SMOOTH)
+_abb = next((b for b in seq.get_bindings() if b.get_display_name() == "GB_Abysses"), None)
+if _abb is not None:
+    _pc = [t_ for t_ in _abb.get_tracks() if isinstance(t_, unreal.MovieScene3DTransformTrack)][0].get_sections()[0].get_all_channels()[4]
+    _raw = CREA["abysses"]
+    for _i in range(1, len(_raw) - 1):
+        _ta, _xa, _ya, _za, _ = _raw[_i - 1]
+        _tb, _xb, _yb, _zb, _ = _raw[_i + 1]
+        _hd = max(math.hypot(_xb - _xa, _yb - _ya), 0.05)
+        _pc.add_key(frame(_raw[_i][0]), max(-25.0, min(25.0, math.degrees(math.atan2(_zb - _za, _hd)))) * 1.3, interpolation=SMOOTH)
 visible_between("GB_Abysses_Modele", CREA["abysses"][0][0], CREA["abysses"][-1][0])
 for i, keys in enumerate(CREA["troupeau"]):
     transform_track(by_label[f"GB_Troupeau{i}"], creature_keys(keys), interp=SMOOTH)
     visible_between(f"GB_Troupeau{i}_Modele", keys[0][0], keys[-1][0])
-transform_track(by_label["GB_Volante"], creature_keys(CREA["volante"]), interp=SMOOTH)
+# pas de clé « cachée » après son passage (22/10 : ajoutée 0,1 s avant la fin, elle la faisait encore s'écrouler juste avant
+# le noir) : elle reste dans le ciel jusqu'au bout
+transform_track(by_label["GB_Volante"], creature_keys(CREA["volante"], hide_after=False), interp=SMOOTH)
 visible_between("GB_Volante_Modele", CREA["volante"][0][0], CREA["volante"][-1][0])
 
 # Envol des lucioles : à la modulation (sequencer.yaml, « lucioles-envol »), le nuage sort de l'eau à 10 m devant
@@ -257,13 +270,23 @@ hidden = (x0, y0, -3000.0)
 # Montée en spirale large et irrégulière (retour d'Olivier : trajectoire trop droite) ; chaque luciole ajoute en
 # plus ses propres boucles (matériau M_GB_LucioleEnvol, WPO de 2,6 m).
 swarm = [(0.0, hidden, yaw0), (t_env - 0.5, hidden, yaw0)]
-for k in range(0, 51, 2):
-    u = k / 50.0
-    ease = u * u * (3 - 2 * u)
-    cx, cy = x0 + (x1 - x0) * 1.6 * ease, y0 + (y1 - y0) * 1.6 * ease
+# 22/10 (« elles peuvent être un petit peu plus lentes pour rester un tout petit peu plus longtemps autour du joueur ») :
+# sortent de l'eau devant la barque, restent ~16 s autour d'elle (le centre suit la barque, à hauteur d'homme), puis
+# montent plus lentement vers la trouée (70 s au lieu de 50)
+HOVER, RISE = 16, 70
+for k in range(0, RISE + 1, 2):
+    (bx, by, _), _yaw = rel(t_env + k, 3.0, 0.0, 0.0)            # autour de la barque, un peu devant
     ang = k * 0.32 + math.sin(k * 0.17) * 0.8
-    rad = 600.0 + 900.0 * ease
-    z = -150.0 + 9000.0 * ease ** 1.3
+    if k <= HOVER:
+        lift = min(k / 6.0, 1.0)
+        cx, cy, rad, z = bx, by, 350.0 + 100.0 * lift, -150.0 + 300.0 * lift
+    else:
+        u = (k - HOVER) / (RISE - HOVER)
+        ease = u * u * (3 - 2 * u)
+        tx, ty = x0 + (x1 - x0) * 1.6, y0 + (y1 - y0) * 1.6           # même point d'arrivée qu'avant
+        cx, cy = bx + (tx - bx) * ease, by + (ty - by) * ease
+        rad = 450.0 + 1050.0 * ease
+        z = 150.0 + 8850.0 * ease ** 1.4
     swarm.append((t_env + k, (cx + math.cos(ang) * rad, cy + math.sin(ang) * rad, z), yaw0 + k * 4.0))
 swarm.append((DURATION, swarm[-1][1][:2] + (12000.0,), swarm[-1][2]))
 transform_track(by_label["GB_Lucioles"], swarm, scale=(1.0, 1.0, 1.0), interp=SMOOTH)
@@ -281,7 +304,7 @@ visible_between("GB_Lucioles", t_env - 0.5, DURATION + 1)
 # périodes de 3 à 7 s non multiples, jamais répétitive) + roulis amorti ~3,5° au passage de la créature. Sur le pivot
 # GB_Tangage (coque, plancher, lanterne, héron) ; la caméra n'y est pas attachée : jamais de roulis caméra.
 if "GB_Tangage" in by_label:
-    _t1 = MARKS["abysses-passage"]["t"] - 1.0
+    _t1 = MARKS["abysses-passage"]["t"] + 1.5          # calé sur la remontée de la bête (creatures.py, ABYSS_BREACH)
     _ch = seq.add_possessable(by_label["GB_Tangage"]).add_track(unreal.MovieScene3DTransformTrack).add_section()
     _ch.set_range(0, end)
     _cs = _ch.get_all_channels()
@@ -291,10 +314,12 @@ if "GB_Tangage" in by_label:
     while _t <= DURATION:
         _u = _t - _t1
         _env = (math.exp(-max(_u, 0.0) / 4.5) if _u >= 0 else math.exp(-(_u / 1.5) ** 2))
-        _roll = 0.45 * math.sin(2 * math.pi * _t / 5.3) + 0.2 * math.sin(2 * math.pi * _t / 3.1 + 1.3) \
-            + 3.5 * _env * math.sin(2 * math.pi * _u / 3.2)
-        _pitch = 0.22 * math.sin(2 * math.pi * _t / 6.7 + 0.7) + 0.1 * math.sin(2 * math.pi * _t / 4.3 + 2.1) \
-            + 1.2 * _env * math.sin(2 * math.pi * _u / 2.6 + 1.1)
+        # 22/10 : « on peut la faire un tout petit peu plus tanguer » (0,45 → 0,8°) ; au passage de la bête, « on attend que
+        # le bateau tangue beaucoup plus » (3,5 → 6°)
+        _roll = 0.8 * math.sin(2 * math.pi * _t / 5.3) + 0.35 * math.sin(2 * math.pi * _t / 3.1 + 1.3) \
+            + 6.0 * _env * math.sin(2 * math.pi * _u / 3.4)
+        _pitch = 0.4 * math.sin(2 * math.pi * _t / 6.7 + 0.7) + 0.18 * math.sin(2 * math.pi * _t / 4.3 + 2.1) \
+            + 2.0 * _env * math.sin(2 * math.pi * _u / 2.8 + 1.1)
         _cs[3].add_key(frame(_t), _roll, interpolation=SMOOTH)
         _cs[4].add_key(frame(_t), _pitch, interpolation=SMOOTH)
         _t += 0.5 if abs(_u) > 20.0 else 0.2

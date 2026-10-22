@@ -62,6 +62,8 @@ def main():
         # passe à ~5 m à droite de la barque (retour d'Olivier : juste dessous, on ne la voyait plus, cachée par la
         # coque) puis rejoint l'axe du chenal en filant devant ; léger serpentement
         side = -5.0 * float(np.interp(t, [t0 - 14, t0 - 6, t0 + 6, t0 + 12], [0.3, 1.0, 1.0, 0.2]))
+        if ABYSS_BREACH:      # 22/10 : en remontant, la pointe d'une nageoire (7 m de large) traversait le plancher → 7 m
+            side -= 2.0 * math.exp(-((t - (t0 + 3.0)) / 3.5) ** 2)
         wiggle = side + 0.8 * math.sin(t * 0.35)
         x, y = x - math.sin(math.radians(h)) * wiggle, y + math.cos(math.radians(h)) * wiggle
         bed = ground(x, y)
@@ -73,7 +75,9 @@ def main():
         # affleure (21/10, idée d'Olivier : « légèrement monter, dépasser la surface et replonger, qu'on la voie bien ») :
         # le dos perce la surface (~40 cm) juste après son passage sous la barque, devant à droite, puis replonge
         if ABYSS_BREACH:
-            depth += 1.1 * math.exp(-((t - (t0 + 2.5)) / 2.2) ** 2)
+            # 22/10 (« son mouvement n'est pas naturel ») : remontée plus lente et plus haute (le dos sort ~70 cm), le corps
+            # se cabre en montant et pique en replongeant (tangage calculé dans animatic.py d'après la pente de la trajectoire)
+            depth += 1.4 * math.exp(-((t - (t0 + 3.0)) / 3.2) ** 2)
         out["abysses"].append([round(float(t), 2), round(x, 3), round(y, 3), round(float(depth), 3), round(h, 2)])
 
     # --- Troupeau : sentier forêt droite → gué → forêt gauche, à 1,8 m/s, hauteur sur le terrain --------------

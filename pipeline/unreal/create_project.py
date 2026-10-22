@@ -98,7 +98,10 @@ bBuildForArm64=True
 bFullScreen=True
 Orientation=Landscape
 bPackageDataInsideApk=True
-ExtraApplicationSettings=<meta-data android:name="com.oculus.supportedDevices" android:value="quest2|questpro|quest3|quest3s" />
+; écran de chargement noir (22/10 : Unreal copiait son logo dans vr_splash.png, que le Quest affichait dans un ciel gris clair
+; avant le noir du début — « le noir arrive quelques secondes après seulement »)
+bShowLaunchImage=False
+ExtraApplicationSettings=<meta-data android:name="com.oculus.supportedDevices" android:value="quest2|questpro|quest3|quest3s" /><meta-data android:name="com.oculus.ossplash.background" android:value="black" />
 
 ; Exécution Python à distance : les scripts du pipeline tournent dans l'éditeur ouvert (qui héberge aussi
 ; le MCP) au lieu d'un headless concurrent. Limitée à la machine locale.

@@ -348,8 +348,10 @@ float abk = saturate(1.0 + (Ab.z + 100.0) / 200.0) * saturate(Af);   // 1 au ras
     float abr = max(length(dab), 1.0);
     float abh = exp(-(abr / 350.0) * (abr / 350.0));
     float abw = sin(abr * 0.025 - T * 2.5) * exp(-abr / 900.0) * saturate(abr / 250.0);
-    wh += abk * (12.0 * abh + 3.5 * abw);
-    wg += abk * (12.0 * abh * (-2.0 * abr / (350.0 * 350.0)) + 3.5 * 0.025 * cos(abr * 0.025 - T * 2.5) * exp(-abr / 900.0) * saturate(abr / 250.0)) * dab / abr;
+    // 22/10 (« ça n'a aucun effet sur les vagues ») : bosse 25 cm, rides 10 cm (12 et 3,5 avant ; 35 cm : l'eau et les
+    // nénuphars montaient au niveau du plat-bord)
+    wh += abk * (25.0 * abh + 10.0 * abw);
+    wg += abk * (25.0 * abh * (-2.0 * abr / (350.0 * 350.0)) + 10.0 * 0.025 * cos(abr * 0.025 - T * 2.5) * exp(-abr / 900.0) * saturate(abr / 250.0)) * dab / abr;
 }
 // grille fine : rectangle autour de la barque (repère barque, cm), fondu sur 1,5 m au bord (raccord avec la grille de 5 m)
 float pf = smoothstep(0.0, 150.0, min(min(lx + %(px0).1f, %(px1).1f - lx), %(py).1f - aly));
@@ -486,7 +488,16 @@ return float4(col, op);""") % (WATER_FMT := {"lantx": LANTERN_LOCAL[0], "lanty":
 WAVE_WPO_CODE = (WAVE_CORE + "return float3(0.0, 0.0, wh * pf);") % WATER_FMT
 # nénuphars et fleurs posés sur l'eau : suivent les vagues partout (21/10 : hors de la grille fine qui suit la barque, ils
 # restaient fixes alors que les reflets ondulaient) ; au-delà, amplitude réduite (l'eau y reste un plan : pas de plongée)
-FLOAT_WPO_CODE = (WAVE_CORE + "return float3(0.0, 0.0, wh * lerp(0.6, 1.0, pf));") % WATER_FMT
+# 22/10 (« des fleurs qui restent fixes sur la surface ») : 1 à 2 cm de houle ne se voyaient pas ; chaque fleur a en plus son
+# propre mouvement de flotteur (Ctr : centre de l'instance) — se soulève (±2,5 cm), s'incline selon la pente des vagues et
+# d'elle-même (±3 cm au bord), pivote lentement (±2°)
+FLOAT_WPO_CODE = (WAVE_CORE + """float3 off = WP.xyz - Ctr.xyz;
+float fph = frac(sin(dot(Ctr.xy, float2(0.0131, 0.0173))) * 43758.5453) * 6.2832;
+float ang = 0.035 * sin(T * 0.4 + fph);
+float2 rot = float2(off.x * cos(ang) - off.y * sin(ang), off.x * sin(ang) + off.y * cos(ang)) - off.xy;
+float tilt = dot(off.xy, wg * 0.6) + 0.035 * sin(T * 0.9 + fph * 1.3) * off.x + 0.03 * cos(T * 0.8 + fph) * off.y;
+float bob = 2.5 * sin(T * 1.1 + fph) + clamp(wh * lerp(0.6, 1.0, pf), -12.0, 12.0);   // jamais au-dessus du plat-bord
+return float3(rot.x, rot.y, bob + tilt);""") % WATER_FMT
 
 
 BRUSH_PNG = os.path.join(ROOT, "assets", "textures", "pinceau.png")
@@ -1190,7 +1201,13 @@ def sprite_material(relief=False):
     fb = mel.create_material_expression(mat, unreal.MaterialExpressionCollectionParameter, -1300, 2000)
     fb.set_editor_property("collection", MPC)
     fb.set_editor_property("parameter_name", "Barque")
-    flo = custom_node(mat, FLOAT_WPO_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["WP", "T", "B", "Ab", "Af"], -1000, 2000)
+    flo = custom_node(mat, FLOAT_WPO_CODE, unreal.CustomMaterialOutputType.CMOT_FLOAT3, ["WP", "T", "B", "Ab", "Af", "Ctr"], -1000, 2000)
+    zero_ = mel.create_material_expression(mat, unreal.MaterialExpressionConstant3Vector, -1500, 2400)
+    ctr_ = mel.create_material_expression(mat, unreal.MaterialExpressionTransformPosition, -1300, 2400)
+    ctr_.set_editor_property("transform_source_type", unreal.MaterialPositionTransformSource.TRANSFORMPOSSOURCE_LOCAL)
+    ctr_.set_editor_property("transform_type", unreal.MaterialPositionTransformSource.TRANSFORMPOSSOURCE_WORLD)
+    mel.connect_material_expressions(zero_, "", ctr_, "")
+    mel.connect_material_expressions(ctr_, "", flo, "Ctr")
     for pin, src in (("WP", wwp), ("T", mel.create_material_expression(mat, unreal.MaterialExpressionTime, -1300, 2100)), ("B", fb)):
         mel.connect_material_expressions(src, "", flo, pin)
     for pin, pname, y in (("Ab", "AbyssPos", 2200), ("Af", "AbyssFade", 2300)):
@@ -2002,7 +2019,7 @@ if os.path.exists(SKY_PNG):
         eal.set_metadata_tag(sky_night_tex, "source_sha1", sky_night_digest)
         eal.save_loaded_asset(sky_night_tex)
     sky_digest = sky_digest + "-" + sky_night_digest
-    SKY_WATER_VERSION = "ciel-eau-v46"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
+    SKY_WATER_VERSION = "ciel-eau-v48"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
     sky_mat_path = f"{GB}/M_GB_CielPeint"
     sky_mat = eal.load_asset(sky_mat_path) if eal.does_asset_exist(sky_mat_path) else None
     rebuild_sky_water = not up_to_date(sky_mat, spec_digest(SKY_WATER_VERSION, sky_digest, MPC_DIGEST, WATER_CODE,
