@@ -1,0 +1,4 @@
+Essais A/B à t = 118 s (temps GPU de l'application, moyenne sur 6 s)
+
+r.StaticMeshLODDistanceScale 3         réf 13.51 ms (64.0 i/s) → 10.76 ms (70.8 i/s)  gain +2.75 ms
+r.ForceLOD 1                           réf 11.01 ms (71.8 i/s) → 10.96 ms (71.0 i/s)  gain +0.05 ms

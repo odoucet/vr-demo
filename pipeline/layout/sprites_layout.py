@@ -100,6 +100,12 @@ def main():
         return bool((np.hypot(rocks[:, 0] - x, rocks[:, 1] - y) < rocks[:, 2] * 1.1 + r).any())
 
     def add(name, mode, inst):
+        # plantes de berge debout dans plus de 25 cm d'eau (23/10 : des touffes d'iris en relief « restent fixes sur la
+        # surface » pendant que l'eau ondule) : écartées ; add ne tire rien au hasard, le reste du décor ne bouge pas
+        if mode in ("debout", "relief") and name.split("@")[0] in ("buissons", "fourres", "buissons2", "fourres2"):
+            zt = F.at(inst[0], inst[1])[0]
+            if zt is not None and zt < -0.25:
+                return
         if mode in ("debout", "touffe") and name.split("@")[0] not in ("feuillages", "lisieres") and in_rock(inst[0], inst[1], inst[3] * 0.25):
             return
         if name == "faune" and in_herd_path(inst[0], inst[1], 6.0):   # le troupeau passerait au travers

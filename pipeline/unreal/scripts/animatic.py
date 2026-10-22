@@ -316,10 +316,12 @@ if "GB_Tangage" in by_label:
         _env = (math.exp(-max(_u, 0.0) / 4.5) if _u >= 0 else math.exp(-(_u / 1.5) ** 2))
         # 22/10 : « on peut la faire un tout petit peu plus tanguer » (0,45 → 0,8°) ; au passage de la bête, « on attend que
         # le bateau tangue beaucoup plus » (3,5 → 6°)
-        _roll = 0.8 * math.sin(2 * math.pi * _t / 5.3) + 0.35 * math.sin(2 * math.pi * _t / 3.1 + 1.3) \
-            + 6.0 * _env * math.sin(2 * math.pi * _u / 3.4)
-        _pitch = 0.4 * math.sin(2 * math.pi * _t / 6.7 + 0.7) + 0.18 * math.sin(2 * math.pi * _t / 4.3 + 2.1) \
-            + 2.0 * _env * math.sin(2 * math.pi * _u / 2.8 + 1.1)
+        # 23/10 : « j'ai pas l'impression que ma barque tangue plus » — la vue ne bouge pas avec elle (jamais de roulis
+        # caméra), on ne perçoit que le plat-bord qui monte et descend : roulis permanent 1,6° (0,8), 9° à la bête (6)
+        _roll = 1.6 * math.sin(2 * math.pi * _t / 5.3) + 0.6 * math.sin(2 * math.pi * _t / 3.1 + 1.3) \
+            + 9.0 * _env * math.sin(2 * math.pi * _u / 3.4)
+        _pitch = 0.8 * math.sin(2 * math.pi * _t / 6.7 + 0.7) + 0.3 * math.sin(2 * math.pi * _t / 4.3 + 2.1) \
+            + 3.0 * _env * math.sin(2 * math.pi * _u / 2.8 + 1.1)
         _cs[3].add_key(frame(_t), _roll, interpolation=SMOOTH)
         _cs[4].add_key(frame(_t), _pitch, interpolation=SMOOTH)
         _t += 0.5 if abs(_u) > 20.0 else 0.2
@@ -527,6 +529,31 @@ if STEMS:
         sec.set_sound(wave)
         sec.set_range(frame(MUSIC_OFFSET).value, end)
         sec.get_all_channels()[0].set_default(10 ** (st["volume_db"] / 20.0))
+
+# Démarrage (23/10, « au début, la scène se construit petit à petit avant le noir ») : au premier lancement, chaque objet
+# n'apparaît qu'une fois ses shaders compilés (préchargement des PSO), la sphère de fondu comprise — le décor se montait
+# à vue tant qu'elle n'était pas prête. Tout ce qui se dessine est caché pendant les 4 premières secondes (le fondu
+# d'ouverture commence à 4,5 s) : les shaders se compilent pendant ce temps (préchargés à l'enregistrement des
+# composants, visibles ou non), on ne voit que du noir. Sauf la sphère de fondu et ce qui a déjà sa piste de visibilité.
+T_SHOW = 4.0
+_has_vis = {str(b.get_display_name()) for b in seq.get_bindings()
+            if any(isinstance(t, unreal.MovieSceneVisibilityTrack) for t in b.get_tracks())}
+_hidden_n = 0
+for _a in actors.get_all_level_actors():
+    _lbl = _a.get_actor_label()
+    if _lbl in _has_vis or _lbl in ("GB_Fondu", "SequenceAnimatic") or not _a.get_components_by_class(unreal.PrimitiveComponent):
+        continue
+    if isinstance(_a, (unreal.CameraActor, unreal.Pawn)):
+        continue
+    by_label.setdefault(_lbl, _a)
+    _vb = next((b for b in seq.get_bindings() if str(b.get_display_name()) == _lbl), None) or seq.add_possessable(_a)
+    _vs = _vb.add_track(unreal.MovieSceneVisibilityTrack).add_section()
+    _vs.set_range(0, end)
+    _vc = _vs.get_all_channels()[0]
+    _vc.add_key(frame(0), False)
+    _vc.add_key(frame(T_SHOW), True)
+    _hidden_n += 1
+unreal.log(f"Démarrage : {_hidden_n} acteurs cachés jusqu'à {T_SHOW} s")
 
 # Lecture automatique en jeu (PIE / casque).
 for a in actors.get_all_level_actors():

@@ -120,6 +120,27 @@ Article proposé (Still Wakes the Deep) inaccessible chez Epic (403) ; d'après 
 11. **Héron** : arrivée par la gauche, taille, pattes sur le rebord ; son cri et ses ailes.
 12. **Plancher de la barque** (ta texture).
 
+### Retours au casque du 23/10 (nuit) — corrigés, APK installé ~1 h 30
+
+- ✅ **Noir du début** (« la scène se construit avant le noir ») : tout ce qui se dessine est caché pendant les 4 premières
+  secondes (sauf la sphère de fondu) ; les shaders se compilent derrière. Démarrage à froid filmé au casque (cache de
+  shaders effacé) : noir dès le lancement, puis fondu d'ouverture, rien d'autre. **À confirmer au casque.**
+- ✅ **Nénuphars qui bougeaient trop** : retour à la seule houle (le mouvement de flotteur propre à chacun est retiré).
+- ✅ **« Fleurs 3D » fixes sur l'eau** : les touffes d'iris et de joncs en relief plantées dans plus de 25 cm d'eau (elles
+  restaient immobiles pendant que l'eau ondule) sont retirées ; celles du bord restent. **À vérifier : si ce n'était pas ça,
+  une capture m'aidera.**
+- ✅ **Tangage imperceptible** : il fonctionnait (4° mesurés dans la séquence), mais la vue ne bouge pas avec la barque
+  (jamais de roulis caméra) ; amplifié : 1,6° en permanence, **9° quand la bête remonte**. Vérifié sur extrait rendu.
+- ✅ **Bête des abysses sans effet sur l'eau** : sa vague tombait hors de la grille d'eau en relief (6 m autour de la barque,
+  la bête remonte à 7 m) ; grille élargie à 9 m, rides plus fortes. **À juger** (si ça ne suffit pas : on la garde sous l'eau).
+- ✅ **Fluidité** : régression mesurée au gué et sous l'arche (64 i/s) ; le pont restait à 300 k triangles jusqu'à plus de 60 m
+  en VR (essai au casque : +2,75 ms en le faisant passer plus tôt aux versions allégées) → seuils relevés. Remesure en cours
+  (casque posé, suivi intermittent).
+- ❓ **Bug de texture à droite juste avant la traversée du troupeau** : pas trouvé (captures éditeur et casque posé, regard à
+  droite de 1:20 à 1:50). Les formes vertes arrondies au pied du pont sont les bêtes qui attendent. **Une capture (bouton
+  Meta + gâchette) ou un repère précis m'aiderait.**
+- 📷 Les captures casque montrent un rectangle noir à partir de la 2ᵉ : c'est la notification « capture enregistrée ».
+
 ### Retours au casque du 22/10 au soir — corrigés, APK prêt (non installé : casque hors limites à la demande d'Olivier)
 
 - ✅ **Tangage** un peu plus marqué (roulis ~0,8°), et **~6° quand la bête remonte** (calé sur sa remontée).

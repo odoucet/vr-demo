@@ -285,8 +285,9 @@ with open(os.path.join(ROOT, "pipeline", "layout", "water_map.json"), encoding="
 with open(os.path.join(ROOT, "assets", "textures", "stats.json"), encoding="utf-8") as _f:
     TEX_MEAN_EAU = json.load(_f).get("tex-eau", 0.25)     # luminance moyenne de l'eau peinte d'Olivier (textures.py)
 # Grille d'eau fine attachée à la barque (repère barque, cm) : 13 m derrière, 7 m devant, 6 m de chaque côté
-PATCH_RECT = {"px0": 1300.0, "px1": 700.0, "py": 600.0}
-PATCH_CELL = 12.5
+# 23/10 : 9 m de chaque côté (6 avant) — la créature remonte à 7 m de la barque, sa vague tombait hors de la grille fine
+PATCH_RECT = {"px0": 1300.0, "px1": 700.0, "py": 900.0}
+PATCH_CELL = 15.0
 # Relief de l'eau et sillage (20/10) : bloc commun au shader de l'eau (reflets) et au déplacement de la grille fine qui
 # suit la barque (WAVE_WPO_CODE). Entrées : WP (position monde, cm), T, B (barque : x, y, lacet).
 WAVE_CORE = """// lac : courant presque nul ; fondu sur ~25 m autour de son rivage (20/10 : la bascule par la carte faisait une ligne)
@@ -350,13 +351,22 @@ float abk = saturate(1.0 + (Ab.z + 100.0) / 200.0) * saturate(Af);   // 1 au ras
     float abw = sin(abr * 0.025 - T * 2.5) * exp(-abr / 900.0) * saturate(abr / 250.0);
     // 22/10 (« ça n'a aucun effet sur les vagues ») : bosse 25 cm, rides 10 cm (12 et 3,5 avant ; 35 cm : l'eau et les
     // nénuphars montaient au niveau du plat-bord)
-    wh += abk * (25.0 * abh + 10.0 * abw);
-    wg += abk * (25.0 * abh * (-2.0 * abr / (350.0 * 350.0)) + 10.0 * 0.025 * cos(abr * 0.025 - T * 2.5) * exp(-abr / 900.0) * saturate(abr / 250.0)) * dab / abr;
+    wh += abk * (25.0 * abh + 16.0 * abw);
+    wg += abk * (25.0 * abh * (-2.0 * abr / (350.0 * 350.0)) + 16.0 * 0.025 * cos(abr * 0.025 - T * 2.5) * exp(-abr / 900.0) * saturate(abr / 250.0)) * dab / abr;
 }
 // grille fine : rectangle autour de la barque (repère barque, cm), fondu sur 1,5 m au bord (raccord avec la grille de 5 m)
 float pf = smoothstep(0.0, 150.0, min(min(lx + %(px0).1f, %(px1).1f - lx), %(py).1f - aly));
 """
 WATER_CODE = ("""float3 v = -normalize(Dir.xyz);                       // de la caméra vers le point d'eau
+#if !PATCH
+// sous la grille fine, la grande grille s'arrête AVANT tout calcul (23/10 : elle calculait la houle puis s'effaçait ; avec
+// la grille fine élargie à 9 m, le gué et l'arche perdaient ~1,5 ms au Quest)
+{
+    float2 rel0 = WP.xy - B.xy;
+    float lx0 = dot(rel0, float2(cos(B.z), sin(B.z))), ly0 = dot(rel0, float2(-sin(B.z), cos(B.z)));
+    if (min(min(lx0 + %(px0).1f, %(px1).1f - lx0), %(py).1f - abs(ly0)) > 150.0) return float4(0.0, 0.0, 0.0, 0.0);
+}
+#endif
 """ + WAVE_CORE + """#if !PATCH
 if (pf > 0.995) return float4(0.0, 0.0, 0.0, 0.0);         // la grille fine prend le relais : pas de calcul inutile
 #endif
@@ -488,16 +498,9 @@ return float4(col, op);""") % (WATER_FMT := {"lantx": LANTERN_LOCAL[0], "lanty":
 WAVE_WPO_CODE = (WAVE_CORE + "return float3(0.0, 0.0, wh * pf);") % WATER_FMT
 # nénuphars et fleurs posés sur l'eau : suivent les vagues partout (21/10 : hors de la grille fine qui suit la barque, ils
 # restaient fixes alors que les reflets ondulaient) ; au-delà, amplitude réduite (l'eau y reste un plan : pas de plongée)
-# 22/10 (« des fleurs qui restent fixes sur la surface ») : 1 à 2 cm de houle ne se voyaient pas ; chaque fleur a en plus son
-# propre mouvement de flotteur (Ctr : centre de l'instance) — se soulève (±2,5 cm), s'incline selon la pente des vagues et
-# d'elle-même (±3 cm au bord), pivote lentement (±2°)
-FLOAT_WPO_CODE = (WAVE_CORE + """float3 off = WP.xyz - Ctr.xyz;
-float fph = frac(sin(dot(Ctr.xy, float2(0.0131, 0.0173))) * 43758.5453) * 6.2832;
-float ang = 0.035 * sin(T * 0.4 + fph);
-float2 rot = float2(off.x * cos(ang) - off.y * sin(ang), off.x * sin(ang) + off.y * cos(ang)) - off.xy;
-float tilt = dot(off.xy, wg * 0.6) + 0.035 * sin(T * 0.9 + fph * 1.3) * off.x + 0.03 * cos(T * 0.8 + fph) * off.y;
-float bob = 2.5 * sin(T * 1.1 + fph) + clamp(wh * lerp(0.6, 1.0, pf), -12.0, 12.0);   // jamais au-dessus du plat-bord
-return float3(rot.x, rot.y, bob + tilt);""") % WATER_FMT
+# 23/10 : le mouvement de flotteur propre à chaque nénuphar (22/10) était beaucoup trop fort (« remet comme avant ») : retour
+# à la seule houle, bornée à ±12 cm (jamais au-dessus du plat-bord). Ctr reste câblé (inutilisé).
+FLOAT_WPO_CODE = (WAVE_CORE + "float ctr_ = Ctr.x * 0.0;\nreturn float3(0.0, 0.0, clamp(wh * lerp(0.6, 1.0, pf), -12.0, 12.0) + ctr_);") % WATER_FMT
 
 
 BRUSH_PNG = os.path.join(ROOT, "assets", "textures", "pinceau.png")
@@ -2019,7 +2022,7 @@ if os.path.exists(SKY_PNG):
         eal.set_metadata_tag(sky_night_tex, "source_sha1", sky_night_digest)
         eal.save_loaded_asset(sky_night_tex)
     sky_digest = sky_digest + "-" + sky_night_digest
-    SKY_WATER_VERSION = "ciel-eau-v48"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
+    SKY_WATER_VERSION = "ciel-eau-v50"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
     sky_mat_path = f"{GB}/M_GB_CielPeint"
     sky_mat = eal.load_asset(sky_mat_path) if eal.does_asset_exist(sky_mat_path) else None
     rebuild_sky_water = not up_to_date(sky_mat, spec_digest(SKY_WATER_VERSION, sky_digest, MPC_DIGEST, WATER_CODE,
@@ -2527,7 +2530,8 @@ def projection(pid, flip=0.0):
 # TRELLIS) puis assemblées ; décalage en travers et rotation propre à chaque figure (TRELLIS les a remises de face)
 ARCH_FIGURES = {"gauche": (0.24, float(os.environ.get("BARQUE_ROT_G", "180"))), "droite": (-0.26, float(os.environ.get("BARQUE_ROT_D", "270")))}   # trouvés par essais (19/10)
 statues = None if ARCH_VARIANT == "deux" else import_glb(f"arche-statues/{ARCH_VARIANT}-s42", f"/Game/Assets/ArcheStatues_{ARCH_VARIANT}", 300000, smooth=True,
-                     lods=((0.33, 0.6), (0.1, 0.25)), max_tex=4096)
+                     lods=((0.33, 1.6), (0.1, 0.7)), max_tex=4096)   # 23/10 : seuils relevés (0,6/0,25) — en VR le pont, 42 m de
+                     # large, restait à 300 k triangles jusqu'à plus de 60 m (gué à 64 i/s ; essai au casque : +2,75 ms)
 # TRELLIS : forme remaillée à 1536 (image_to_3d --remesh 1536 --smooth 5) ; vu de près, le détail compte (retour du 19/10) ;
 # niveaux de détail : 300 k dessous, 100 k à l'approche, 30 k de loin (gué : 63 i/s avec 300 k partout)
 racine = None if (statues is not None or ARCH_VARIANT == "deux") else import_glb("racine/trellis2-s42", "/Game/Assets/Racine", 30000)
