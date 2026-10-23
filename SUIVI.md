@@ -120,6 +120,20 @@ Article proposé (Still Wakes the Deep) inaccessible chez Epic (403) ; d'après 
 11. **Héron** : arrivée par la gauche, taille, pattes sur le rebord ; son cri et ses ailes.
 12. **Plancher de la barque** (ta texture).
 
+### ⏸ En attente du go d'Olivier (23/10) — retours sur la version de la nuit
+
+- ✅ Validés : noir du début, nénuphars, tangage (« mieux »), fluidité (« très fluide, pas de décrochage »), lac.
+- 🔜 **Bête des abysses : la garder sous l'eau** (« pas très naturel, tant pis ») → `ABYSS_BREACH = False` dans
+  `creatures.py` ; le tangage fort à son passage et sa houle seront à revoir avec elle (moins forts sans la remontée ?).
+- 🔜 **Fleurs 3D fixes sur l'eau** (arrondies, plusieurs couleurs, pas des sprites) : très probablement les fleurs de
+  nénuphar en volume du tout premier décor (`vegetation.py`, « Fleurs de nénuphar (S3) » : 6 pétales + cœur, entre 0:48
+  et 1:32), fondues dans les maillages de végétation, donc fixes. Correction prévue : les retirer (les nénuphars peints
+  les remplacent).
+- 🔜 **Raccourci de capture sur le bouton A** (demande d'Olivier, pour montrer le bug de texture et les fleurs) : capture
+  système déclenchée par l'appli quand on appuie sur A.
+- ❓ Bug de texture à droite juste avant la traversée du troupeau : à montrer avec le raccourci.
+- Rien d'autre en cours ; dernière version installée au casque (23/10 ~1 h 30), vidéo 4K `review/iter-064/animatic-hd.mp4`.
+
 ### Retours au casque du 23/10 (nuit) — corrigés, APK installé ~1 h 30
 
 - ✅ **Noir du début** (« la scène se construit avant le noir ») : tout ce qui se dessine est caché pendant les 4 premières
