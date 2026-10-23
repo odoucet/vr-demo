@@ -563,3 +563,13 @@ autonome. `SUIVI.md` dit où en est le projet ; ce fichier raconte comment on y 
   pistes ont été nombreuses (troupeau, bois mort, statue, feuillages) tant que je raisonnais sur l'aspect ; c'est un rendu
   de l'éditeur au même instant, avec masquage des acteurs par dichotomie, qui l'a trouvé en sept rendus. Leçon : un
   objet plat se vérifie sur toute son étendue, et une capture datée vaut mieux qu'une description.
+
+## 23/10 — plan de l'article
+
+- Olivier demande un plan détaillé pour un grand article sur le projet, avec ses images et vidéos. Tout le dépôt est
+  balayé (journal, suivi, 132 commits, 67 itérations de revue, 19 animatics, explorations, mesures) : `ARTICLE.md`.
+- Quatre angles proposés ; recommandé : « l'agent qui ne pouvait pas mettre le casque », le récit des sens qui manquent
+  à l'agent (stéréo, échelle, confort, son) et des instruments et de l'humain qui les remplacent. Décision laissée à
+  Olivier (D20), avec format, public et place de la référence de style.
+- Le visuel le plus fort existe déjà sans qu'on l'ait cherché : les captures casque aux dix mêmes instants de la balade,
+  de iter-012 à iter-067, donnent un time-lapse de l'évolution.
