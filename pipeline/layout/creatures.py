@@ -47,7 +47,7 @@ def main():
         return (a["x"] + f * (b["x"] - a["x"]), a["y"] + f * (b["y"] - a["y"]),
                 a["heading_deg"] + f * (b["heading_deg"] - a["heading_deg"]))
 
-    ABYSS_BREACH = True       # 21/10 : à juger au casque (False : reste sous l'eau, comme avant)
+    ABYSS_BREACH = False      # 23/10 (Olivier : « pas très naturel son déplacement… gardons-la sous l'eau ») ; True : affleure
     out = {"units": "m", "abysses": [], "troupeau": [], "volante": []}
 
     # --- Abysses : avance relative de -24 m (derrière) à +20 m (devant) entre 54 s et 84 s, puis plongée --------
@@ -67,7 +67,9 @@ def main():
         wiggle = side + 0.8 * math.sin(t * 0.35)
         x, y = x - math.sin(math.radians(h)) * wiggle, y + math.cos(math.radians(h)) * wiggle
         bed = ground(x, y)
-        depth = min(max(-2.0, bed + 1.2), -1.6)                 # près de la surface, sans jamais l'effleurer
+        # près de la surface sans l'effleurer : le dos est ~1,3 m au-dessus du centre (affleurement du 22/10) ; 23/10
+        # (« laisse-la sous l'eau, pas loin de la surface ») : dos ~30 cm sous l'eau (-1,6 m ; -2,0 avant)
+        depth = min(max(-1.6, bed + 1.2), -1.5)
         if t < t0 - 12:                                         # avant : sous le fond, invisible, puis remonte
             depth = np.interp(t, [t0 - 22, t0 - 12], [bed - 3.0, depth])
         if t > t0 + 4:                                          # s'enfonce doucement en s'éloignant

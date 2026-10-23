@@ -1,7 +1,7 @@
 # Suivi — La barque des lucioles
 
 **Fichier unique de suivi.** Tenu par l'agent, lu par Olivier. Classé par criticité.
-Mis à jour : 2026-10-20
+Mis à jour : 2026-10-23
 
 Légende : 🔴 bloque un jalon, aucun contournement · 🟠 j'avance avec un contournement · 🟢 mineur
 
@@ -120,19 +120,25 @@ Article proposé (Still Wakes the Deep) inaccessible chez Epic (403) ; d'après 
 11. **Héron** : arrivée par la gauche, taille, pattes sur le rebord ; son cri et ses ailes.
 12. **Plancher de la barque** (ta texture).
 
-### ⏸ En attente du go d'Olivier (23/10) — retours sur la version de la nuit
+### Retours du 23/10 matin — corrigés après le go d'Olivier, APK installé à 9 h 35
 
 - ✅ Validés : noir du début, nénuphars, tangage (« mieux »), fluidité (« très fluide, pas de décrochage »), lac.
-- 🔜 **Bête des abysses : la garder sous l'eau** (« pas très naturel, tant pis ») → `ABYSS_BREACH = False` dans
-  `creatures.py` ; le tangage fort à son passage et sa houle seront à revoir avec elle (moins forts sans la remontée ?).
-- 🔜 **Fleurs 3D fixes sur l'eau** (arrondies, plusieurs couleurs, pas des sprites) : très probablement les fleurs de
-  nénuphar en volume du tout premier décor (`vegetation.py`, « Fleurs de nénuphar (S3) » : 6 pétales + cœur, entre 0:48
-  et 1:32), fondues dans les maillages de végétation, donc fixes. Correction prévue : les retirer (les nénuphars peints
-  les remplacent).
-- 🔜 **Raccourci de capture sur le bouton A** (demande d'Olivier, pour montrer le bug de texture et les fleurs) : capture
-  système déclenchée par l'appli quand on appuie sur A.
-- ❓ Bug de texture à droite juste avant la traversée du troupeau : à montrer avec le raccourci.
-- Rien d'autre en cours ; dernière version installée au casque (23/10 ~1 h 30), vidéo 4K `review/iter-064/animatic-hd.mp4`.
+- **Bête des abysses gardée sous l'eau, près de la surface** (« pas très naturel… gardons-la sous l'eau » ; « laisse-la
+  sous l'eau, pas loin de la surface ») : `ABYSS_BREACH = False` (`creatures.py`), centre à -1,6 m au lieu de -2 m, dos
+  ~30 cm sous l'eau. Houle et tangage à son passage **doublés** (« je n'ai pas vu de fort tangage… tu peux même doubler
+  pour voir ») : bosse 50 cm et rides 32 cm (`greybox.py`, WAVE_CORE), roulis de la barque 18° et tangage 6°
+  (`animatic.py`). Si c'est trop : revenir à 9° / 3° et 25 / 16.
+- **Fleurs 3D fixes retirées** : les fleurs de nénuphar en volume du premier décor (`vegetation.py`, 6 pétales + cœur,
+  deux couleurs, 0:48-1:32), fondues dans les maillages de végétation. Le reste du décor n'a pas bougé (tirages
+  aléatoires conservés). Si Olivier en voit encore : les montrer avec le bouton A.
+- **Capture au bouton A** (manette droite) : l'appli enregistre l'image de l'œil gauche (1680 × 1760) et l'instant de la
+  balade. Récupération : `python pipeline/unreal/quest_captures.py` → `review/casque-A/<date>/A-<instant>s.jpg`.
+  Mécanisme : action d'entrée « Capture » (`DefaultInput.ini`, via `create_project.py` : OpenXR ne remonte une touche
+  que si elle est liée à une action) + `BP_Recentrage` (Tick → A pressé → commande `shot` + temps dans le journal).
+- ❓ Bug de texture à droite juste avant la traversée du troupeau : à montrer avec le bouton A.
+- Vérifié au casque (posé) : barque qui penche nettement de 1:02 à 1:10 (`review/iter-065/planche-casque.jpg`) ; capture
+  `shot` au Quest et récupération testées. **Non testable sans toi : l'appui réel sur A** (si rien ne se passe, l'action
+  OpenXR n'est pas créée : me le dire, je passerai par un autre mécanisme).
 
 ### Retours au casque du 23/10 (nuit) — corrigés, APK installé ~1 h 30
 

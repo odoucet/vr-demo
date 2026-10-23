@@ -207,6 +207,9 @@ def main():
                     P.rock(chunk(px, py), px, py, max(z, -0.3), rs, rng, COL["rocher"])
 
     # --- Fleurs de nénuphar (S3) et roseaux du lac (S7) -----------------------------------------------------------
+    # 23/10 : fleurs retirées (Olivier : « fleurs arrondies… en plusieurs couleurs… bien des formes 3D », fixes sur l'eau
+    # qui ondule) ; tirages gardés dans un paquet jeté, pour que le reste du décor ne change pas de place
+    discard = P.Bundle()
     for p in s:
         h0 = math.radians(p["heading_deg"])
         nx, ny = -math.sin(h0), math.cos(h0)
@@ -214,7 +217,7 @@ def main():
             off = rng.choice([-1, 1]) * rng.uniform(2.2, p["width_m"] / 2 - 0.4)
             px, py = p["x"] + nx * off, p["y"] + ny * off
             col = COL["fleurs"][1] if rng.uniform() < 0.7 else COL["fleurs"][0]
-            m = chunk(px, py)
+            m = discard
             for k in range(6):                                      # pétales en couronne autour d'un cœur
                 a = 2 * math.pi * k / 6
                 P.blob(m, [px + math.cos(a) * 0.09, py + math.sin(a) * 0.09, 0.1], [0.09, 0.05, 0.05],

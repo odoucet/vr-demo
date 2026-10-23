@@ -540,3 +540,19 @@ autonome. `SUIVI.md` dit où en est le projet ; ce fichier raconte comment on y 
 - La bête « n'a aucun effet sur l'eau » : sa vague tombait juste en dehors de la grille d'eau en relief qui suit la barque.
 - Une régression de fluidité au gué, cherchée par essais en direct au casque : ni l'eau ni les textures, mais le pont
   resté à sa version la plus fine trop loin — en VR, un objet de 42 m paraît « grand à l'écran » bien plus longtemps.
+
+## 23/10 matin (suite) — bête sous l'eau, fleurs fantômes, capture au bouton A
+
+- Bête des abysses : après deux essais d'affleurement (« pas très naturel »), Olivier tranche : sous l'eau, « pas loin de
+  la surface ». Elle passe à 1,6 m de profondeur au lieu de 2 m, dos à ~30 cm sous la surface. Sur le tangage, sa remarque
+  remet les choses à plat : « je n'ai pas vu de fort tangage quand la bête remonte » — le 9° que je craignais trop fort
+  passait inaperçu, caméra fixe oblige. Doublé « pour voir » : 18° de roulis, houle de la bête à 50 cm.
+- Les « fleurs 3D fixes sur l'eau » : Olivier précise « arrondies, en plusieurs couleurs, pas des sprites ». Ce sont des
+  restes du tout premier décor en volume — six pétales et un cœur, fondus dans les maillages de végétation, donc immobiles
+  quand l'eau ondule autour. Retirées en gardant les tirages aléatoires, pour que rien d'autre ne bouge dans le décor.
+- Montrer un défaut au casque reste le maillon faible de la relecture (Olivier : « j'ai essayé de faire des screenshots
+  mais pas très pratique »). Il demande un raccourci sur le bouton A. Deux pièges : la commande de capture du moteur
+  n'avait jamais été essayée au Quest (elle marche : l'image de l'œil gauche, en pleine définition), et OpenXR ne remonte
+  une touche que si elle est liée à une action d'entrée déclarée dans la configuration — un Blueprint qui écoute la
+  touche ne suffit pas. Chaque capture est datée par le temps de jeu écrit dans le journal de l'appli, pour savoir à quel
+  instant de la balade elle a été prise.

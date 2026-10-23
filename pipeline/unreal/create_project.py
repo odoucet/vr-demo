@@ -196,6 +196,22 @@ def write(path, text):
     return True
 
 
+# Capture au bouton A (BP_Recentrage, greybox.py) : OpenXR ne remonte que les touches liées à une action d'entrée.
+# DefaultInput.ini est écrit par l'éditeur (pas par ce script) : seule cette ligne y est garantie.
+CAPTURE_MAPPING = ('+ActionMappings=(ActionName="Capture",bShift=False,bCtrl=False,bAlt=False,bCmd=False,'
+                   'Key=OculusTouch_Right_A_Click)')
+
+
+def input_ini(path):
+    text = path.read_text(encoding="utf-8")
+    if CAPTURE_MAPPING in text:
+        return None
+    head = "[/Script/Engine.InputSettings]"
+    text = text.replace(head + "\n", head + "\n" + CAPTURE_MAPPING + "\n", 1) if head + "\n" in text \
+        else text.rstrip("\n") + f"\n\n{head}\n{CAPTURE_MAPPING}\n"
+    return text
+
+
 def extra_cvars():
     """Variables console propres à une variante d'APK (BARQUE_EXTRA_CVARS="a=1;b=2"), ex. la démo « HD »."""
     pairs = [kv.strip() for kv in os.environ.get("BARQUE_EXTRA_CVARS", "").split(";") if kv.strip()]
@@ -224,6 +240,10 @@ def main():
         (base / "Config" / "DefaultEditorPerProjectUserSettings.ini", EDITOR_USER_INI),
         (base / "Config" / "DefaultDeviceProfiles.ini", DEVICE_PROFILES_INI),
     ] if write(p, t)]
+    ini = base / "Config" / "DefaultInput.ini"
+    if ini.exists() and (text := input_ini(ini)) is not None:
+        ini.write_text(text, encoding="utf-8", newline="\r\n")
+        changed.append(str(ini.relative_to(ROOT)))
     (base / "Content").mkdir(exist_ok=True)
     print("Écrits : " + (", ".join(changed) if changed else "rien (déjà à jour)"))
 

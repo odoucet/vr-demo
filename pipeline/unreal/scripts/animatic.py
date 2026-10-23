@@ -304,7 +304,7 @@ visible_between("GB_Lucioles", t_env - 0.5, DURATION + 1)
 # périodes de 3 à 7 s non multiples, jamais répétitive) + roulis amorti ~3,5° au passage de la créature. Sur le pivot
 # GB_Tangage (coque, plancher, lanterne, héron) ; la caméra n'y est pas attachée : jamais de roulis caméra.
 if "GB_Tangage" in by_label:
-    _t1 = MARKS["abysses-passage"]["t"] + 1.5          # calé sur la remontée de la bête (creatures.py, ABYSS_BREACH)
+    _t1 = MARKS["abysses-passage"]["t"] + 1.5          # juste après son passage sous la barque (creatures.py)
     _ch = seq.add_possessable(by_label["GB_Tangage"]).add_track(unreal.MovieScene3DTransformTrack).add_section()
     _ch.set_range(0, end)
     _cs = _ch.get_all_channels()
@@ -318,10 +318,12 @@ if "GB_Tangage" in by_label:
         # le bateau tangue beaucoup plus » (3,5 → 6°)
         # 23/10 : « j'ai pas l'impression que ma barque tangue plus » — la vue ne bouge pas avec elle (jamais de roulis
         # caméra), on ne perçoit que le plat-bord qui monte et descend : roulis permanent 1,6° (0,8), 9° à la bête (6)
+        # 23/10 (2e retour) : bête gardée sous l'eau, « je n'ai pas vu de fort tangage… tu peux même doubler pour voir » :
+        # 18° de roulis et 6° de tangage à son passage (9 et 3)
         _roll = 1.6 * math.sin(2 * math.pi * _t / 5.3) + 0.6 * math.sin(2 * math.pi * _t / 3.1 + 1.3) \
-            + 9.0 * _env * math.sin(2 * math.pi * _u / 3.4)
+            + 18.0 * _env * math.sin(2 * math.pi * _u / 3.4)
         _pitch = 0.8 * math.sin(2 * math.pi * _t / 6.7 + 0.7) + 0.3 * math.sin(2 * math.pi * _t / 4.3 + 2.1) \
-            + 3.0 * _env * math.sin(2 * math.pi * _u / 2.8 + 1.1)
+            + 6.0 * _env * math.sin(2 * math.pi * _u / 2.8 + 1.1)
         _cs[3].add_key(frame(_t), _roll, interpolation=SMOOTH)
         _cs[4].add_key(frame(_t), _pitch, interpolation=SMOOTH)
         _t += 0.5 if abs(_u) > 20.0 else 0.2

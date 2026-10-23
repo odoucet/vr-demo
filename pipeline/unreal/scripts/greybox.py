@@ -350,9 +350,9 @@ float abk = saturate(1.0 + (Ab.z + 100.0) / 200.0) * saturate(Af);   // 1 au ras
     float abh = exp(-(abr / 350.0) * (abr / 350.0));
     float abw = sin(abr * 0.025 - T * 2.5) * exp(-abr / 900.0) * saturate(abr / 250.0);
     // 22/10 (« ça n'a aucun effet sur les vagues ») : bosse 25 cm, rides 10 cm (12 et 3,5 avant ; 35 cm : l'eau et les
-    // nénuphars montaient au niveau du plat-bord)
-    wh += abk * (25.0 * abh + 16.0 * abw);
-    wg += abk * (25.0 * abh * (-2.0 * abr / (350.0 * 350.0)) + 16.0 * 0.025 * cos(abr * 0.025 - T * 2.5) * exp(-abr / 900.0) * saturate(abr / 250.0)) * dab / abr;
+    // nénuphars montaient au niveau du plat-bord). 23/10 : bête gardée sous l'eau (abk ~0,6 au lieu de 1) → doublés, 50 et 32
+    wh += abk * (50.0 * abh + 32.0 * abw);
+    wg += abk * (50.0 * abh * (-2.0 * abr / (350.0 * 350.0)) + 32.0 * 0.025 * cos(abr * 0.025 - T * 2.5) * exp(-abr / 900.0) * saturate(abr / 250.0)) * dab / abr;
 }
 // grille fine : rectangle autour de la barque (repère barque, cm), fondu sur 1,5 m au bord (raccord avec la grille de 5 m)
 float pf = smoothstep(0.0, 150.0, min(min(lx + %(px0).1f, %(px1).1f - lx), %(py).1f - aly));
@@ -2022,7 +2022,7 @@ if os.path.exists(SKY_PNG):
         eal.set_metadata_tag(sky_night_tex, "source_sha1", sky_night_digest)
         eal.save_loaded_asset(sky_night_tex)
     sky_digest = sky_digest + "-" + sky_night_digest
-    SKY_WATER_VERSION = "ciel-eau-v50"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
+    SKY_WATER_VERSION = "ciel-eau-v51"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
     sky_mat_path = f"{GB}/M_GB_CielPeint"
     sky_mat = eal.load_asset(sky_mat_path) if eal.does_asset_exist(sky_mat_path) else None
     rebuild_sky_water = not up_to_date(sky_mat, spec_digest(SKY_WATER_VERSION, sky_digest, MPC_DIGEST, WATER_CODE,
@@ -2715,12 +2715,15 @@ ppv.set_editor_property("settings", settings)
 # au niveau du sol) au lieu de « Stage » (centre de la zone du Quest) : le spectateur est toujours sur le banc,
 # quelle que soit la zone de jeu (retour d'Olivier : on se retrouvait derrière la barque). Blueprint écrit par
 # script avec les outils Blueprint du plugin EditorToolset (catégories localisées de l'éditeur).
+CAPTURE_KEY = "OculusTouch_Right_A_Click"     # liée à l'action « Capture » dans DefaultInput.ini (create_project.py)
+
+
 def recentering_blueprint():
     """BP_Recentrage : BeginPlay → origine LocalFloor → attente 1 s (pose de tête valide) → recentrage position et
     cap (la hauteur reste celle du sol : hauteur assise réelle). Le spectateur est sur le banc, face à la proue,
     quelle que soit la zone de jeu ou le dernier recentrage du Quest."""
     from editor_toolset.toolsets.blueprint import BlueprintTools as BT
-    path, version = "/Game/Look/BP_Recentrage", "recentrage-v2"
+    path, version = "/Game/Look/BP_Recentrage", "recentrage-v3"
     bp = eal.load_asset(path) if eal.does_asset_exist(path) else None
     if bp is not None and eal.get_metadata_tag(bp, "source_sha1") == version:
         return bp
@@ -2745,6 +2748,27 @@ def recentering_blueprint():
     BT.connect_pins(pin(origin, "then", True), pin(delay, "execute"))
     BT.set_pin_value(pin(delay, "Duration"), "1.0")
     BT.connect_pins(pin(delay, "then", True), pin(reset, "execute"))      # sortie « Completed » nommée « then »
+    # Capture au bouton A (23/10, Olivier : « rajoute un raccourci sur le bouton A pour prendre une capture ») : Tick →
+    # A vient d'être pressé ? → commande « shot » (image d'un œil, 1680 × 1760, dans Saved/Screenshots/Android de
+    # l'appli, récupérée par quest_captures.py) + temps de jeu dans le journal (repérer l'instant de la balade)
+    tick = BT._get_node_info(next(n for n in BT.find_nodes(g) if "Tick" in str(BT._get_node_info(n).type_id)))
+    pc = node("GetPlayerController", 300)
+    just = node("WasInputKeyJustPressed", 600)
+    branch = node("Branche", 900)
+    shot = node("ExecuteConsoleCommand", 1200)
+    gt = node("GetGameTimeinSeconds", 1200)
+    tostr = node("ToString(Float)", 1500)
+    log = node("PrintString", 1800)
+    BT.connect_pins(pin(tick, "then", True), pin(branch, "execute"))
+    BT.connect_pins(pin(pc, "ReturnValue", True), pin(just, "self"))
+    BT.set_pin_value(pin(just, "Key"), CAPTURE_KEY)
+    BT.connect_pins(pin(just, "ReturnValue", True), pin(branch, "Condition"))
+    BT.connect_pins(pin(branch, "then", True), pin(shot, "execute"))
+    BT.set_pin_value(pin(shot, "Command"), "shot")
+    BT.connect_pins(pin(shot, "then", True), pin(log, "execute"))
+    BT.connect_pins(pin(gt, "ReturnValue", True), pin(tostr, "InDouble"))
+    BT.connect_pins(pin(tostr, "ReturnValue", True), pin(log, "InString"))
+    BT.set_pin_value(pin(log, "bPrintToScreen"), "false")             # rien à l'écran (il serait sur la capture)
     BT.compile_blueprint(bp)
     eal.set_metadata_tag(bp, "source_sha1", version)
     eal.save_loaded_asset(bp)
