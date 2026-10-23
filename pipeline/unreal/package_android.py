@@ -1,8 +1,7 @@
 """Empaquette le projet en APK Quest (Android arm64, textures ASTC), via RunUAT BuildCookRun.
 
-    python pipeline/unreal/package_android.py                 # Development → builds/android/
-    python pipeline/unreal/package_android.py --config Shipping
-    python pipeline/unreal/package_android.py --variant greybox   # J2 : greybox jouable, paquet distinct
+    python pipeline/unreal/package_android.py                     # version de travail (Development) → builds/android_greybox/
+    python pipeline/unreal/package_android.py --variant finale    # version finale (Shipping) → builds/android_finale/
     python pipeline/unreal/package_android.py --variant exp --cvars "r.Mobile.EarlyZPass=1"   # essai de réglage
 
 Journal complet : builds/android/package.log. L'APK et son script d'installation sont archivés dans
@@ -20,11 +19,13 @@ from unreal.setup_android import ENV as ANDROID_ENV  # noqa: E402
 
 RUNUAT = from_windows(CONFIG["unreal"]["root"]) / "Engine/Build/BatchFiles/RunUAT.bat"
 OUT_ROOT = ROOT / "builds"
-# Variantes : carte de démarrage et nom de paquet distincts, pour installer plusieurs tests côte à côte.
+# Variantes : carte de démarrage, nom de paquet et nom affiché distincts, pour installer plusieurs versions côte à côte.
+# (nom, paquet, dossier[, variables console]) ; la configuration (Development / Shipping) vient de CONFIGS ou de --config.
 VARIANTS = {
-    "j1": ("/Game/Maps/J1_Spike.J1_Spike", "com.odoucet.barque", "android"),
+    # version de travail : console (mesures adb, quest_ab.py), journal, capture au bouton A (quest_captures.py)
     "greybox": ("/Game/Maps/Barque_Greybox.Barque_Greybox", "com.odoucet.barque.greybox", "android_greybox"),
-    "j1b": ("/Game/Maps/J1b_StereoLayer.J1b_StereoLayer", "com.odoucet.barque.j1b", "android_j1b"),
+    # version finale (23/10) : Shipping, sans console ni journal, plus légère ; même contenu
+    "finale": ("/Game/Maps/Barque_Greybox.Barque_Greybox", "com.odoucet.barque", "android_finale"),
     # Démo « HD » demandée par Olivier (comparer beaucoup plus de polygones à ~25 i/s) : arbres fins gardés bien plus
     # loin, pas de culling des arbres, MSAA 4x. Même contenu que greybox, autres réglages.
     "hd": ("/Game/Maps/Barque_Greybox.Barque_Greybox", "com.odoucet.barque.hd", "android_hd",
@@ -33,20 +34,24 @@ VARIANTS = {
     "exp": ("/Game/Maps/Barque_Greybox.Barque_Greybox", "com.odoucet.barque.exp", "android_exp", ""),
 }
 
+CONFIGS = {"finale": "Shipping"}
+APP_NAMES = {"finale": "La barque des lucioles", "greybox": "Barque (travail)"}
+
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--config", default="Development", choices=["Development", "Shipping"])
-    ap.add_argument("--variant", default="j1", choices=list(VARIANTS))
+    ap.add_argument("--config", default=None, choices=["Development", "Shipping"], help="défaut : celle de la variante")
+    ap.add_argument("--variant", default="greybox", choices=list(VARIANTS))
     ap.add_argument("--cvars", default="", help='variables ajoutées à celles de la variante, "a=1;b=2"')
     args = ap.parse_args()
+    args.config = args.config or CONFIGS.get(args.variant, "Development")
     default_map, package_name, out_name, *extra = VARIANTS[args.variant]
     extra = [";".join(x for x in (extra[0] if extra else "", args.cvars) if x)]
     OUT = OUT_ROOT / out_name
     OUT.mkdir(parents=True, exist_ok=True)
-    # Écrit la configuration de la variante, empaquette, puis restaure la configuration par défaut (J1).
+    # Écrit la configuration de la variante, empaquette, puis restaure la configuration par défaut (version de travail).
     env = dict(os.environ, BARQUE_DEFAULT_MAP=default_map, BARQUE_PACKAGE_NAME=package_name,
-               BARQUE_EXTRA_CVARS=extra[0])
+               BARQUE_APP_NAME=APP_NAMES.get(args.variant, f"Barque ({args.variant})"), BARQUE_EXTRA_CVARS=extra[0])
     subprocess.run([sys.executable, str(ROOT / "pipeline/unreal/create_project.py")], env=env, check=True)
     try:
         package(args, OUT)

@@ -1,0 +1,10 @@
+Mesure : finale-20261023-1112.log, 266 échantillons (1/s), chargement estimé à 0.0 s
+
+beat          FPS min  FPS moy  images perdues  GPU % max  CPU % max  GPU appli ms
+S1-NOIR             1     70.3             166         98        100       28921.2  ⚠
+S2-PONTON          71     72.5               8         97         32          11.2  ⚠
+S3-ABYSSE          68     72.4              15         88         33          10.8  ⚠
+S4-GUE             72     72.6               6         89         32          11.0
+S5-RACINES         67     72.1              30         97         32          11.4  ⚠
+S6-LUNE            69     72.4               6         86         32          10.1  ⚠
+S7-LAC             69     72.5               6         78         30           9.4  ⚠

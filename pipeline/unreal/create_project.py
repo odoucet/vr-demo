@@ -25,8 +25,7 @@ PLUGINS = [
     # Jeux d'outils exposés par le MCP (sans eux, il ne propose que la gestion des AgentSkills)
     "EditorToolset", "PCGToolset", "NiagaraToolsets", "ConfigSettingsToolset",
     "OpenXR",                                                # Quest 3 et PC VR
-    "MediaPlate", "ElectraPlayer",                           # sphère vidéo 360 (lointain)
-    "MovieRenderPipeline",                                   # rendus offline (360, fenêtre stéréo)
+    "MovieRenderPipeline",                                   # rendus offline (vidéo de l'animatic)
     "PCG", "GeometryScripting",                              # procédural
 ]
 # Simulation d'eau (Niagara Fluids, modèles « Shallow Water ») : activée par pipeline/tools.yaml (unreal: niagara_fluids:
@@ -36,7 +35,7 @@ if CONFIG["unreal"].get("niagara_fluids"):
 
 ENGINE_INI = """\
 [/Script/EngineSettings.GameMapsSettings]
-; Carte de démarrage du jeu : scène de test J1 tant que la démo n'existe pas
+; Carte de démarrage du jeu : la balade
 GameDefaultMap={default_map}
 
 [/Script/HardwareTargeting.HardwareTargetingSettings]
@@ -87,6 +86,7 @@ DefaultGraphicsRHI=DefaultGraphicsRHI_DX12
 
 [/Script/AndroidRuntimeSettings.AndroidRuntimeSettings]
 PackageName={package_name}
+ApplicationDisplayName={app_name}
 StoreVersion=1
 MinSDKVersion=32
 TargetSDKVersion=32
@@ -234,8 +234,9 @@ def main():
         (uproject, json.dumps(descriptor, indent="\t") + "\n"),
         # Variante d'empaquetage (package_android.py --variant) : carte de démarrage et nom de paquet.
         (base / "Config" / "DefaultEngine.ini", ENGINE_INI.format(
-            default_map=os.environ.get("BARQUE_DEFAULT_MAP", "/Game/Maps/J1_Spike.J1_Spike"),
-            package_name=os.environ.get("BARQUE_PACKAGE_NAME", "com.odoucet.barque")) + extra_cvars()),
+            default_map=os.environ.get("BARQUE_DEFAULT_MAP", "/Game/Maps/Barque_Greybox.Barque_Greybox"),
+            package_name=os.environ.get("BARQUE_PACKAGE_NAME", "com.odoucet.barque.greybox"),
+            app_name=os.environ.get("BARQUE_APP_NAME", "Barque (travail)")) + extra_cvars()),
         (base / "Config" / "DefaultGame.ini", GAME_INI.format(project_id=project_id)),
         (base / "Config" / "DefaultEditorPerProjectUserSettings.ini", EDITOR_USER_INI),
         (base / "Config" / "DefaultDeviceProfiles.ini", DEVICE_PROFILES_INI),

@@ -55,12 +55,12 @@ Musique fournie par Olivier (`audio/music/`). Le séquencier se cale sur la musi
 
 ## Architecture
 
-- **Hybride proche / lointain.** Proche (< ~10 m) : temps réel 6DoF. Lointain : vidéo stéréo 360
-  pré-rendue sur sphère, synchronisée sur la spline. La brume masque la zone intermédiaire et
-  sert de raccord : sa couleur doit être identique en temps réel et en offline.
-- **Horloge maître** : le temps média de la vidéo pilote le Level Sequence.
-- **Cibles** : Quest 3 standalone (proche léger + vidéo) ; PC VR (tout en temps réel) ; masters
-  vidéo 360 stéréo haut/bas ; passe « fenêtre » stéréo à plat pour anaglyphe / côte-à-côte.
+- **Tout en temps réel, 6DoF** (décision D19, 23/10). Le décor est en images peintes (sprites fixes) et en modèles 3D
+  légers, ce qui tient 72 i/s au Quest. Le lointain en vidéo 360 pré-rendue, prévu au départ, a été abandonné et retiré.
+  La brume masque le lointain.
+- **Horloge maître** : le Level Sequence (`LS_Animatic`), lancé au démarrage du niveau, calé sur la musique.
+- **Cibles** : Quest 3 standalone. Deux APK : version finale (Shipping, `--variant finale`) et version de travail
+  (Development : console, capture au bouton A). Vidéo 4K à plat de l'animatic. PC VR hors périmètre.
 
 ## Règle d'or : la scène comme du code
 
@@ -151,11 +151,11 @@ ce qui doit être vérifié au casque à chaque jalon.
 | ID | Livrable | Validation d'Olivier |
 |----|----------|----------------------|
 | J0 | Bible de style : palette par beat, barque, 3 créatures, arbre colossal | Choix des références |
-| J1 | Spike : sphère vidéo stéréo 360 + sync dans un APK Quest | Go/no-go au casque |
+| J1 | ~~Spike : sphère vidéo stéréo 360 + sync dans un APK Quest~~ (abandonné, D19) | — |
 | J2 | Greybox complet + animatic calé sur la musique | Timing et confort au casque |
 | J3 | Tranche verticale S4-GUE finalisée | Look et raccord proche/lointain |
 | J4 | Production de tous les beats + audio | Revues par captures |
-| J5 | Rendus offline lointain + intégration Quest et PC | Au casque |
+| J5 | Intégration Quest (version finale) + vidéo de l'animatic | Au casque |
 | J6 | Polish + déclinaisons 3D (VR180, anaglyphe, côte-à-côte) | Final |
 
 ## Arborescence
@@ -164,7 +164,7 @@ ce qui doit être vérifié au casque à chaque jalon.
 SUIVI.md             suivi unique : blocages, décisions attendues, état des jalons
 HISTORY.md           journal chronologique des étapes et décisions (pour l'article)
 PROMPTS.md           prompts Midjourney et Suno
-pipeline/            scripts (build.py, layout/, unreal/, blender/, comfy/, review/, audio/, spike/)
+pipeline/            scripts (build.py, layout/, unreal/, blender/, comfy/, review/, audio/, style/)
 assets/manifest.yaml traçabilité de chaque asset généré
 refs/inbox/          dépôts d'Olivier (Midjourney, croquis)
 refs/approved/       bible de style validée

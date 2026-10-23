@@ -354,6 +354,13 @@ float abk = saturate(1.0 + (Ab.z + 100.0) / 200.0) * saturate(Af);   // 1 au ras
     wh += abk * (50.0 * abh + 32.0 * abw);
     wg += abk * (50.0 * abh * (-2.0 * abr / (350.0 * 350.0)) + 32.0 * 0.025 * cos(abr * 0.025 - T * 2.5) * exp(-abr / 900.0) * saturate(abr / 250.0)) * dab / abr;
 }
+// sous le plancher, l'eau reste 30 cm plus bas (23/10, version finale au casque : flaque sur l'avant du plancher au passage
+// de la bête). Le plancher (3,30 × 1,41 m, plus haut que la flottaison) déborde du masque « pas d'eau dans la coque », qui
+// suit la flottaison et s'effile vers l'étrave ; roulis 18° + tangage 6° : son avant plongeait sous la surface. Sous la
+// coque, invisible ; dehors (df > 0), rien ne change.
+float wxf = 74.0 * pow(max(1.0 - (lx / 172.0) * (lx / 172.0), 0.0), 0.6);
+float df = abs(lx) < 172.0 ? abs(ly) - wxf : length(float2(abs(lx) - 172.0, ly));
+wh = lerp(wh, min(wh, -30.0), 1.0 - smoothstep(-8.0, 0.0, df));
 // grille fine : rectangle autour de la barque (repère barque, cm), fondu sur 1,5 m au bord (raccord avec la grille de 5 m)
 float pf = smoothstep(0.0, 150.0, min(min(lx + %(px0).1f, %(px1).1f - lx), %(py).1f - aly));
 """
@@ -2022,7 +2029,7 @@ if os.path.exists(SKY_PNG):
         eal.set_metadata_tag(sky_night_tex, "source_sha1", sky_night_digest)
         eal.save_loaded_asset(sky_night_tex)
     sky_digest = sky_digest + "-" + sky_night_digest
-    SKY_WATER_VERSION = "ciel-eau-v51"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
+    SKY_WATER_VERSION = "ciel-eau-v52"   # à incrémenter si le code des matériaux du ciel ou de l'eau change
     sky_mat_path = f"{GB}/M_GB_CielPeint"
     sky_mat = eal.load_asset(sky_mat_path) if eal.does_asset_exist(sky_mat_path) else None
     rebuild_sky_water = not up_to_date(sky_mat, spec_digest(SKY_WATER_VERSION, sky_digest, MPC_DIGEST, WATER_CODE,

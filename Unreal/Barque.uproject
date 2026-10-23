@@ -37,14 +37,6 @@
 			"Enabled": true
 		},
 		{
-			"Name": "MediaPlate",
-			"Enabled": true
-		},
-		{
-			"Name": "ElectraPlayer",
-			"Enabled": true
-		},
-		{
 			"Name": "MovieRenderPipeline",
 			"Enabled": true
 		},

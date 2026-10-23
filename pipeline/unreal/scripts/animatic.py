@@ -385,7 +385,7 @@ if mpc is not None:
     for t, (bx, by, _), yaw in boat_keys:
         msec.add_color_parameter_key("Barque", frame(t), unreal.LinearColor(bx, by, math.radians(yaw), 1.0))   # lacet en z : l'alpha n'était pas transmis
 
-# Brume par beat (pipeline/style/ambiance.json, partagé avec le rendu offline du lointain) : couleur et densité
+# Brume par beat (pipeline/style/ambiance.json) : couleur et densité
 # tenues pendant le beat, fondu de fondu_s centré sur le début de chaque beat.
 with open(os.path.join(ROOT, "pipeline", "style", "ambiance.json"), encoding="utf-8") as f:
     AMBIANCE = json.load(f)

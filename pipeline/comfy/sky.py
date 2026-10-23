@@ -8,7 +8,7 @@
 
 Prompt : section « Ciel et lointain » de PROMPTS.md (bloc de style commun). Le panorama est rendu
 raccordable (fondu circulaire des bords gauche/droit) pour se refermer sur la sphère du ciel. Substitut :
-le skydome final viendra du pipeline de rendu du lointain (CLAUDE.md). Idempotent par graine.
+ciel définitif de la démo (tout en temps réel, D19). Idempotent par graine.
 Agrandissement : modèle 4x (Remacri, net sur les aplats peints) puis réduction à 4096×2048, la taille maximale
 raisonnable sur Quest. L'image est prolongée de chaque côté par son bord opposé avant l'agrandissement pour que
 le raccord gauche/droite reste continu.

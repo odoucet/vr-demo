@@ -2,6 +2,7 @@
 
     python pipeline/unreal/quest_shots.py --iter 12           # → review/iter-012/casque/*.jpg + planche-casque.jpg
     python pipeline/unreal/quest_shots.py --iter 12 --times 30 112
+    python pipeline/unreal/quest_shots.py --iter 12 --package com.odoucet.barque     # version finale
 
 Lance l'APK greybox, puis à chaque instant demande une capture à l'outil de capture du Quest (vue de l'œil,
 telle qu'affichée au casque, sans les approximations du rendu PC). Le casque doit « voir » quelqu'un (objet
@@ -40,15 +41,17 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--iter", type=int, required=True)
     ap.add_argument("--times", type=float, nargs="+", default=TIMES)
+    ap.add_argument("--package", default=PKG, help="paquet lancé (version finale : com.odoucet.barque)")
     args = ap.parse_args()
+    pkg = args.package
     out_dir = ROOT / "review" / f"iter-{args.iter:03d}" / "casque"
     out_dir.mkdir(parents=True, exist_ok=True)
     if "Asleep" in adb("shell", "dumpsys", "power").stdout:     # réveil seulement si endormi (sinon ouvre le menu)
         adb("shell", "input", "keyevent", "KEYCODE_WAKEUP")
     adb("shell", "cmd", "media_session", "volume", "--stream", "3", "--set", "1")   # volume bas (Olivier, 18/10)
     adb("shell", "am", "broadcast", "-a", "com.oculus.vrpowermanager.prox_close")
-    adb("shell", "am", "force-stop", PKG)
-    adb("shell", "am", "start", "-n", f"{PKG}/com.epicgames.unreal.GameActivity")
+    adb("shell", "am", "force-stop", pkg)
+    adb("shell", "am", "start", "-n", f"{pkg}/com.epicgames.unreal.GameActivity")
     t0 = time.time()
     shots = []
     for t in sorted(args.times):
@@ -59,7 +62,7 @@ def main():
         for _ in range(30):
             time.sleep(0.3)
             name = latest()
-            if name and name != before and PKG in name:
+            if name and name != before and pkg in name:
                 break
         else:
             print(f"  {t:g} s : pas de capture (application au premier plan ?)")
@@ -70,7 +73,7 @@ def main():
         shots.append((t, dest))
         print(f"  {t:g} s → {dest.relative_to(ROOT)}", flush=True)
     adb("shell", "am", "broadcast", "-a", "com.oculus.vrpowermanager.automation_disable")
-    adb("shell", "am", "force-stop", PKG)
+    adb("shell", "am", "force-stop", pkg)
     # planche de toutes les captures du dossier (une reprise partielle remplace ses images sans perdre les autres)
     shots = sorted((int(q.stem.rstrip("s")), q) for q in out_dir.glob("*s.jpg"))
     w = 480

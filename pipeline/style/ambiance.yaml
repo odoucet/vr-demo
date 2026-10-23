@@ -1,6 +1,6 @@
 # Ambiance par beat (réglages d'Olivier ou de l'agent ; les couleurs de brume sont mesurées sur les références).
-# pipeline/style/ambiance.py → pipeline/style/ambiance.json, lu tel quel par le temps réel (Unreal) et le rendu
-# offline du lointain : la brume sert de raccord proche / lointain, sa couleur doit être identique des deux côtés.
+# pipeline/style/ambiance.py → pipeline/style/ambiance.json, lu tel quel par Unreal (brume et ciel de chaque beat, dans le
+# casque comme dans la vidéo de l'animatic).
 #
 # luminance : luminance linéaire de la brume (la teinte vient de la référence du beat).
 # densite   : densité de l'ExponentialHeightFog (Unreal), à reprendre à l'identique dans le rendu offline.

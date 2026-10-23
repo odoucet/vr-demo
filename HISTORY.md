@@ -573,3 +573,21 @@ autonome. `SUIVI.md` dit où en est le projet ; ce fichier raconte comment on y 
   Olivier (D20), avec format, public et place de la référence de style.
 - Le visuel le plus fort existe déjà sans qu'on l'ait cherché : les captures casque aux dix mêmes instants de la balade,
   de iter-012 à iter-067, donnent un time-lapse de l'évolution.
+
+## 23/10 — version finale
+
+- Olivier : « bah là on a fini en vrai… Tu vois des choses à améliorer ? », puis « tu peux mettre une version finale dans
+  le casque aussi… On peut virer ce pré-rendu lointain 360 inutile ».
+- Le lointain en vidéo 360 stéréo était au cœur de l'architecture prévue au départ (CLAUDE.md : proche en temps réel,
+  lointain pré-rendu sur une sphère, brume pour le raccord). Il n'a jamais servi : dès que le décor est passé en images
+  peintes (18-19/10), toute la balade a tenu 72 i/s en temps réel, et le spike J1 n'a jamais été validé au casque. Retiré
+  avec ses scènes de test, 3,4 Go de vidéos et deux plugins. Effet de bord découvert en route : l'appli de travail passe de 719 à 414 Mo
+  (la finale, en Shipping, à 369) — très probablement la vidéo de test du spike, rangée dans le dossier « Movies » que
+  le moteur embarque d'office dans chaque APK.
+- La version finale a encore servi de relecture : la passe de captures sur toute la balade a montré une flaque d'eau sur
+  l'avant du plancher au passage de la bête. Conséquence directe du « tu peux même doubler pour voir » du matin : à 18° de
+  roulis et 6° de tangage, le plancher, plus large que la coque à la flottaison que suit le masque de l'eau, plongeait
+  sous la surface. Le premier rendu de l'éditeur, une seconde trop tard, ne montrait rien ; une série toutes les demi-
+  secondes l'a trouvée. Correctif : sous le plancher, l'eau reste 30 cm plus bas — invisible, et sans creux autour de la
+  coque.
+- SUIVI.md, devenu un journal de 820 lignes au fil des séances, ramené à l'état final (le détail reste dans git et ici).

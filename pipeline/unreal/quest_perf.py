@@ -1,7 +1,7 @@
 """Mesure de performance au casque : fréquence d'image et charge CPU/GPU du Quest, beat par beat.
 
     python pipeline/unreal/quest_perf.py --variant greybox            # lance l'APK installé, mesure 260 s
-    python pipeline/unreal/quest_perf.py --variant j1 --duration 65
+    python pipeline/unreal/quest_perf.py --variant finale            # version finale (télémétrie système, sans console)
     python pipeline/unreal/quest_perf.py --parse review/perf/greybox-20261019-1030.log --load-s 9
 
 Quest branché en USB, débogage accepté, APK déjà installé (package_android.py / Install_Barque-arm64.bat).
@@ -28,7 +28,7 @@ sys.path.insert(0, str(PIPELINE))
 from tools import CONFIG, from_windows  # noqa: E402
 
 OUT = ROOT / "review" / "perf"
-PACKAGES = {"j1": "com.odoucet.barque", "greybox": "com.odoucet.barque.greybox", "j1b": "com.odoucet.barque.j1b",
+PACKAGES = {"greybox": "com.odoucet.barque.greybox", "finale": "com.odoucet.barque",
             "hd": "com.odoucet.barque.hd", "exp": "com.odoucet.barque.exp"}
 ACTIVITY = "com.epicgames.unreal.GameActivity"
 LINE = re.compile(r"FPS=(\d+)/(\d+).*?Early=(\d+).*?Stale=(\d+).*?App=([\d.]+)ms.*?GPU%=([\d.]+).*?CPU%=([\d.]+)")
