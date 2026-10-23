@@ -556,3 +556,10 @@ autonome. `SUIVI.md` dit où en est le projet ; ce fichier raconte comment on y 
   une touche que si elle est liée à une action d'entrée déclarée dans la configuration — un Blueprint qui écoute la
   touche ne suffit pas. Chaque capture est datée par le temps de jeu écrit dans le journal de l'appli, pour savoir à quel
   instant de la balade elle a été prise.
+
+- Premier usage du bouton A : trois captures d'Olivier, nommées par l'instant de la balade. Le « bug de texture » était
+  une bande de lisière — un plan peint de 160 m de large — dont seul le centre avait été vérifié loin du parcours. Le
+  défaut avait déjà été signalé et « corrigé » le 22/10, mais seulement pour l'un des deux anneaux de bandes. Les fausses
+  pistes ont été nombreuses (troupeau, bois mort, statue, feuillages) tant que je raisonnais sur l'aspect ; c'est un rendu
+  de l'éditeur au même instant, avec masquage des acteurs par dichotomie, qui l'a trouvé en sept rendus. Leçon : un
+  objet plat se vérifie sur toute son étendue, et une capture datée vaut mieux qu'une description.

@@ -120,6 +120,17 @@ Article proposé (Still Wakes the Deep) inaccessible chez Epic (403) ; d'après 
 11. **Héron** : arrivée par la gauche, taille, pattes sur le rebord ; son cri et ses ailes.
 12. **Plancher de la barque** (ta texture).
 
+### Retours du 23/10 (3e essai) — bug de texture trouvé et corrigé, APK installé à 10 h 36
+
+- ✅ Validés (« pas loin d'être parfait ! ») : vagues, tangage doublé, bête volante, fleurs 3D retirées.
+- ✅ **Bouton A : ça marche.** Trois captures d'Olivier (`review/casque-A/20261023/`, 1:27, 1:35, 1:58).
+- **Bug de texture à droite avant le gué : corrigé.** Une bande de lisière peinte de la couronne du lac (40 m de haut,
+  donc 160 m de large) avait son centre à 95 m du parcours, mais son extrémité venait jusqu'à la berge du gué. Vue
+  presque par la tranche, elle devenait un aplat vert-gris (mipmap grossière) derrière les iris, puis de longues pointes
+  à 1:58 en passant à ~9 m. Trouvé par élimination dans l'éditeur (rendu au même instant, groupes d'acteurs masqués
+  par dichotomie). `sprites_layout.py` teste maintenant toute la largeur des bandes (≥ 50 m du parcours) : 2 bandes
+  retirées, rien d'autre ne bouge. Vérifié : aplat disparu à 1:27, plus de pointes à 1:58, pas de trou autour du lac.
+
 ### Retours du 23/10 matin — corrigés après le go d'Olivier, APK installé à 9 h 35
 
 - ✅ Validés : noir du début, nénuphars, tangage (« mieux »), fluidité (« très fluide, pas de décrochage »), lac.

@@ -200,6 +200,17 @@ def main():
         add(fam, "debout", [x, y, z - 0.05, rng.uniform(h1, h2), cell, 0, rng.uniform(0.8, 1.0)])
 
     # --- Lisières et collines peintes : deux anneaux de bandes tournées vers la rivière -------------------------
+    strip_meta = json.loads((SPRITES / "lisieres.json").read_text(encoding="utf-8"))
+
+    def band_dist(x, y, yaw, h, cell):
+        """Distance au parcours du point le plus proche de la bande (pas seulement de son centre) : une bande de 40 m de
+        haut fait 160 m de large. 23/10 (bouton A, 1:27 et 1:58) : une bande de la couronne du lac, centre à 95 m du
+        parcours, venait jusqu'à la berge du gué ; vue par la tranche, aplat vert et longues pointes à droite."""
+        it = strip_meta["items"][int(cell)]
+        half = h * (it["u1"] - it["u0"]) * strip_meta["cell"][0] / ((it["v1"] - it["v0"]) * strip_meta["cell"][1]) / 2
+        ux, uy = -math.sin(math.radians(yaw)), math.cos(math.radians(yaw))      # le long de la bande
+        return min(path_dist(x + ux * half * f, y + uy * half * f) for f in np.linspace(-1, 1, 17))
+
     def strip_ring(lateral, height, cells, step, shift):
         for k, p in enumerate(s[int(shift)::step]):
             h0 = math.radians(p["heading_deg"])
@@ -221,7 +232,7 @@ def main():
                 # collines et second anneau plus sombres et plus bleutés par la brume : ils reculent
                 h_ = height * rng.uniform(0.85, 1.15)
                 br_ = rng.uniform(0.6, 0.72) if (cell == 2 or lateral > 80) else rng.uniform(0.85, 1.0)
-                if not clamped:
+                if not clamped and band_dist(x, y, yaw, h_, cell) >= 50:
                     add("lisieres", "fixe", [x, y, (z or 0) - 4.0, h_, cell, yaw, br_])
 
     # un seul anneau, loin : à ~60 m, les bandes se voyaient comme des panneaux plats là où la forêt s'ouvre (gué, lac)
@@ -235,7 +246,9 @@ def main():
                 continue
             z, _d = F.at(x, y)
             yaw = math.degrees(math.atan2(lake["y"] - y, lake["x"] - x))
-            add("lisieres", "fixe", [x, y, (z or 0) - 4.0, height * rng.uniform(0.9, 1.1), cells[rng.integers(len(cells))], yaw, 0.7])
+            h_, cell = height * rng.uniform(0.9, 1.1), cells[rng.integers(len(cells))]
+            if band_dist(x, y, yaw, h_, cell) >= 50:
+                add("lisieres", "fixe", [x, y, (z or 0) - 4.0, h_, cell, yaw, 0.7])
 
     # --- Grands houppiers : enveloppe remplie de touffes peintes (arbre colossal, arbre de l'île) ---------------
     # touffes face à l'œil dans toutes les directions : le houppier paraît plein sous tous les angles, même par en dessous
