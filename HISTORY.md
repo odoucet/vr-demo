@@ -659,3 +659,15 @@ autonome. `SUIVI.md` dit où en est le projet ; ce fichier raconte comment on y 
   1600×900 : MetaSlider recadre les images au format du diaporama, et une bande de légende sous l'image aurait été
   coupée ; la légende est donc incrustée dans le cadre, en bas à gauche, bornée en largeur pour laisser visibles la
   lettre de la proue et le pont. Dans l'article, un code court `[metaslider id="REMPLACER-…"]` marque leur place.
+
+## 30/10 soir — une conclusion, et la vidéo 4K à refaire
+
+- Olivier : « peut être une réflexion finale en forme de conclusion ? » Ajoutée en dernière partie, « Le casque, c'était
+  moi » : la question de départ retournée (ce qu'il m'est resté à faire), la limite du casque, la méthode qui permet la
+  confiance, et une image de fin.
+- « l'export HD de la vidéo complète, il est à jour ? je pourrais l'ajouter sur Youtube » : non. La vidéo 4K
+  (`review/iter-064/animatic-hd.mp4`) date du 23/10 à 2 h 10, avant les corrections du matin : bête à 1,6 m, roulis
+  doublé (18°, houle de 50 cm), fleurs 3D retirées, bandes de lisière, eau sous le plancher. Les médias de l'article en
+  sont tirés : leurs légendes disaient « version finale », elles disent maintenant « version du 23 octobre ». Un
+  nouveau rendu demande l'éditeur ouvert et environ une heure de carte graphique ; ensuite, les scripts de
+  `pipeline/article/` refont tous les médias de l'article à partir de lui.

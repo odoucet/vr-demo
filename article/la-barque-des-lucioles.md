@@ -4,7 +4,7 @@
 
 ![Le lac du final, la nuit : un héron blanc posé à l'avant d'une barque en bois, des lucioles, un arbre sur une île et la lune.](/wp-content/uploads/2026/10/barque-01-heros.jpg)
 
-*Le lac, à 3 min 52 : le héron vient de se poser sur la barque. Image de la version finale, rendue sur PC.*
+*Le lac, à 3 min 52 : le héron vient de se poser sur la barque. Image de la version du 23 octobre, rendue sur PC.*
 
 Ces derniers mois, les IA ont fait un bond, et les MCP se sont multipliés. Un MCP, c'est un connecteur qui laisse une IA piloter un logiciel : Unreal Engine a maintenant le sien, Blender aussi, et on en trouve pour ComfyUI, l'outil de génération d'images que j'utilise. Sur le papier, une IA peut donc faire tourner seule les outils d'un studio de jeu vidéo. J'ai voulu voir ce que ça donne en vrai.
 
@@ -18,7 +18,7 @@ Tout ce qui illustre cet article sort du dépôt du projet : captures du casque
 
 [video mp4="/wp-content/uploads/2026/10/barque-02-bande-annonce.mp4" poster="/wp-content/uploads/2026/10/barque-02-bande-annonce-poster.jpg" width="1920" height="1080" preload="metadata"][/video]
 
-*La bande-annonce : huit plans de la version finale, rendue sur PC en 4K. Dans le casque, l'image est moins fine.*
+*La bande-annonce : huit plans de la version du 23 octobre, rendue sur PC en 4K. Dans le casque, l'image est moins fine.*
 
 ## Le terrain d'essai
 
@@ -30,7 +30,7 @@ Sept moments ponctuent les quatre minutes : le noir et le clapotis du départ, 
 
 ![La rivière vue de dessus avec ses sept moments, une vignette par moment, et la forme d'onde de la musique avec le début de chaque moment.](/wp-content/uploads/2026/10/barque-04-balade.jpg)
 
-*La balade vue de dessus, une image par moment (rendu PC de la version finale), et la musique sur laquelle tout est calé.*
+*La balade vue de dessus, une image par moment (rendu PC de la version du 23 octobre), et la musique sur laquelle tout est calé.*
 
 La musique commande tout. « Luminous Wonder » est un morceau que j'ai généré sur Suno. L'agent en a analysé la structure et repéré les frontières : la plus forte, une modulation, tombe à 2 min 38 dans la démo et ouvre la scène de la lune. Après le noir du début, chaque moment démarre sur une de ces frontières. Le séquencier suit la musique, jamais l'inverse.
 
@@ -384,3 +384,13 @@ Il y a eu des incidents, aucun grave : l'interface du Quest qui plante en boucl
 *Le lac, le 19 et le 23/10. La lanterne qui masquait le centre de l'image est descendue au fond de la barque, et le héron s'est posé.*
 
 Le 23 octobre, j'ai écrit à l'agent : « bah là on a fini en vrai… Tu vois des choses à améliorer ? » Dans son suivi, il en note trois : un audit automatique des plans vus par la tranche, la famille de défauts revenue deux fois ; une vidéo partageable sans casque ; et le premier jet de cet article. Il reste aussi 34 éléments générés en local en attendant mieux, tous en place dans la démo. Pour remplacer l'un d'eux, il suffit de déposer une image et de relancer le script concerné. C'était écrit dans le fichier de consignes dès le premier jour.
+
+## Le casque, c'était moi
+
+En lançant ce projet, je me demandais ce qu'une IA saurait faire seule. Au bout de six jours, la question qui m'intéresse est l'inverse : ce qu'il m'est resté à faire. Rien de technique. J'ai regardé au casque ce que l'agent ne pouvait pas voir, dit en une phrase ce qui n'allait pas, lancé quelques idées de mise en scène, et répondu oui ou non quand il demandait une installation. C'est un travail de directeur artistique.
+
+Pour quelqu'un qui crée seul, ce partage des rôles change l'échelle de ce qu'on peut tenter. Je ne maîtrise pas Unreal, et la démo existe quand même, avec un journal qui explique chacune de ses décisions. La limite est physique : tant que l'agent ne voit pas en relief et n'entend pas une voiture au fond d'une ambiance de lac, il faut quelqu'un dans le casque.
+
+La leçon de méthode vaut bien au-delà du jeu vidéo. Sans le fichier de suivi, les défauts réversibles et une scène qui se reconstruit d'une commande, je n'aurais pas laissé l'agent seul une nuit entière, encore moins vingt heures. Le modèle fait le travail ; ces quelques règles m'ont permis de lui faire confiance.
+
+La barque dérive toujours dans mon casque. Le héron s'y pose à 3 min 47, annoncé par un cri d'aigrette que l'agent n'a jamais entendu.

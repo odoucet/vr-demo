@@ -21,6 +21,9 @@ plan de l'article me va très bien »), article rédigé à sa voix, dans le sty
   MetaSlider dans `article/diaporamas/` (A/B/C des arbres, 3 diapositives ; le pont en sept versions, 7), légende
   incrustée ; `article/apercu.html` pour relire ; mode d'emploi dans `article/LISEZMOI.md`. Tout se régénère :
   `pipeline/article/` (maîtres dans `builds/article/`, puis `export_web.py`).
+- **Vidéo 4K pour YouTube** : la dernière (`review/iter-064/animatic-hd.mp4`, 23/10 2 h 10) précède les corrections
+  du 23/10 matin. À refaire : `python pipeline/review/animatic.py --iter 70 --hd` (éditeur ouvert, ~1 h de GPU), puis
+  repointer les médias de l'article sur iter-070 et relancer `pipeline/article/`. En attente du go d'Olivier.
 - **Attendu d'Olivier** : assembler les deux diaporamas dans MetaSlider et remplacer les deux
   `[metaslider id="REMPLACER-…"]` ; remplir l'unique `[À COMPLÉTER]` (temps passé, sessions au casque, coût) ;
   trancher le paragraphe sur le style (A4) ; vérifier les droits (Suno, Midjourney, modèles locaux) ; plateforme :
