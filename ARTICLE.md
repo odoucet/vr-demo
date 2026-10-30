@@ -126,7 +126,7 @@ enseignements de l'article, l'intro peut le laisser venir.
 
 | ID | Visuel | Source | État |
 |---|---|---|---|
-| 📐 S01 | **L'atelier : qui pilote quoi** — Olivier et l'agent ne se parlent qu'à travers des fichiers ; un canal par outil (MCP pour explorer, Python pour construire) ; les deux rejoignent le casque par des chemins différents | `pipeline/article/schemas/atelier.html` | ✅ prototype |
+| 📐 S01 | **L'atelier : qui pilote quoi** — la conversation pour les demandes et les retours, les fichiers pour la mémoire écrite ; un canal par outil (MCP pour explorer, Python pour construire) ; les deux rejoignent le casque par des chemins différents | `pipeline/article/schemas/atelier.html` | ✅ prototype |
 | 📐 S02 | **La partition** : les sept beats sur la forme d'onde de la musique, une vignette par beat, les repères sonores des créatures | `pipeline/sequencer.yaml`, `audio/music/Luminous Wonder.flac`, images de `iter-064` ; base : `review/music/structure.png` | à dessiner |
 | 📐 S03 | **La carte de la balade** : la rivière vue de dessus, 239 m à 1 m/s, les beats, les créatures, une vignette par lieu | `pipeline/layout/`, base : `review/layout/carte.png` | à redessiner |
 | 🖼 C02b | Extrait de `CLAUDE.md` (les règles d'or), composé proprement plutôt qu'en capture d'écran | `CLAUDE.md` | à composer |

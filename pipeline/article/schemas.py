@@ -21,6 +21,7 @@ SRC = Path(__file__).with_name("schemas")
 OUT = ROOT / "article" / "schemas"
 PROFILE = ROOT / "builds" / "navigateur"
 SCALE = 2
+TIMEOUT = 60
 
 
 def render(html):
@@ -30,11 +31,16 @@ def render(html):
     w, h = m.groups()
     out = OUT / f"{html.stem}.png"
     url = "file:///" + to_windows(html).replace("\\", "/")
-    subprocess.run([str(from_windows(CONFIG["navigateur"]["exe"])), "--headless=new", "--disable-gpu",
-                    "--hide-scrollbars", f"--user-data-dir={to_windows(PROFILE)}",
-                    f"--force-device-scale-factor={SCALE}", f"--window-size={w},{h}",
-                    f"--screenshot={to_windows(out)}", url],
-                   check=True, capture_output=True, text=True)
+    try:
+        subprocess.run([str(from_windows(CONFIG["navigateur"]["exe"])), "--headless=new", "--disable-gpu",
+                        "--hide-scrollbars", "--no-first-run", "--no-default-browser-check", "--disable-extensions",
+                        f"--user-data-dir={to_windows(PROFILE)}",
+                        f"--force-device-scale-factor={SCALE}", f"--window-size={w},{h}",
+                        f"--screenshot={to_windows(out)}", url],
+                       check=True, capture_output=True, text=True, timeout=TIMEOUT)
+    except subprocess.TimeoutExpired:
+        sys.exit(f"{html.name} : le navigateur n'a pas rendu en {TIMEOUT} s (processus resté ouvert sur le profil "
+                 f"{PROFILE.relative_to(ROOT)} ?)")
     print(f"{out.relative_to(ROOT)} ({int(w) * SCALE}×{int(h) * SCALE})")
 
 

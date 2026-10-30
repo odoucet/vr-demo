@@ -617,4 +617,7 @@ autonome. `SUIVI.md` dit où en est le projet ; ce fichier raconte comment on y 
   l'atelier, le graphique des commits, le montage. Impasses en route : un premier schéma en flèches courbes dont les
   traits barraient leurs propres étiquettes (refait en canaux droits) ; un bleu nuit refusé par l'outil de validation
   des couleurs (trop sombre, trop gris pour une donnée), remplacé par le bleu eau de la palette du projet ; des
-  étiquettes du graphique qui se chevauchaient dans les 35 premières heures (quatre rangs au lieu de trois).
+  étiquettes du graphique qui se chevauchaient dans les 35 premières heures (quatre rangs au lieu de trois). Et une
+  erreur de fond, vue en relisant le schéma après le premier envoi : il faisait passer tous les échanges par les
+  fichiers. Faux : les demandes et les retours d'Olivier arrivent par la conversation ; les fichiers en sont la mémoire
+  écrite. Corrigé avant de le montrer.

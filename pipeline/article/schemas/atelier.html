@@ -18,7 +18,7 @@
   .explore { stroke-dasharray: 7 6; }
 </style>
 <svg viewBox="0 0 1600 900" width="1600" height="900" role="img"
-     aria-label="L'atelier : Olivier et l'agent ne se parlent qu'à travers des fichiers ; l'agent pilote chaque outil par un script, explore Unreal par le MCP, et rejoint Olivier au casque par adb.">
+     aria-label="L'atelier : Olivier parle à l'agent dans la conversation, les fichiers gardent la mémoire écrite ; l'agent pilote chaque outil par un script, explore Unreal par le MCP, et rejoint Olivier au casque par adb.">
   <defs>
     <marker id="fl" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
       <path d="M0,0 L10,5 L0,10 z" fill="#1d2b3a"/>
@@ -40,19 +40,23 @@
   <text class="t" x="72" y="364">Suno</text><text class="m" x="72" y="390">la musique et ses stems</text>
   <text class="t" x="72" y="436">ses retours, ses accords</text><text class="m" x="72" y="462">installations, périmètre</text>
 
-  <!-- Fichiers partagés -->
-  <text class="h" x="428" y="190">Les fichiers</text>
-  <rect class="fichier" x="420" y="210" width="262" height="62" rx="8"/>
-  <text class="t" x="438" y="249">CLAUDE.md</text><text class="m" x="580" y="249">les règles</text>
-  <rect class="fichier" x="420" y="284" width="262" height="62" rx="8"/>
-  <text class="t" x="438" y="323">SUIVI.md</text><text class="m" x="580" y="323">l'état</text>
-  <rect class="fichier" x="420" y="358" width="262" height="62" rx="8"/>
-  <text class="t" x="438" y="397">HISTORY.md</text><text class="m" x="580" y="397">le journal</text>
-  <rect class="fichier" x="420" y="432" width="262" height="62" rx="8"/>
-  <text class="t" x="438" y="471">refs/, audio/</text><text class="m" x="580" y="471">les dépôts</text>
+  <!-- La conversation : le canal direct -->
+  <line class="lien" x1="371" y1="190" x2="744" y2="190" marker-end="url(#fl)" marker-start="url(#fl)"/>
+  <text class="fl" x="392" y="178">la conversation : demandes, retours</text>
 
-  <line class="lien" x1="371" y1="320" x2="416" y2="320" marker-end="url(#fl)" marker-start="url(#fl)"/>
-  <line class="lien" x1="686" y1="320" x2="744" y2="320" marker-end="url(#fl)" marker-start="url(#fl)"/>
+  <!-- Les fichiers : la mémoire écrite, partagée -->
+  <text class="h" x="428" y="252">La mémoire écrite</text>
+  <rect class="fichier" x="420" y="270" width="262" height="54" rx="8"/>
+  <text class="t" x="438" y="305">CLAUDE.md</text><text class="m" x="580" y="305">les règles</text>
+  <rect class="fichier" x="420" y="334" width="262" height="54" rx="8"/>
+  <text class="t" x="438" y="369">SUIVI.md</text><text class="m" x="580" y="369">l'état</text>
+  <rect class="fichier" x="420" y="398" width="262" height="54" rx="8"/>
+  <text class="t" x="438" y="433">HISTORY.md</text><text class="m" x="580" y="433">le journal</text>
+  <rect class="fichier" x="420" y="462" width="262" height="54" rx="8"/>
+  <text class="t" x="438" y="497">refs/, audio/</text><text class="m" x="580" y="497">les dépôts</text>
+
+  <line class="lien" x1="371" y1="394" x2="416" y2="394" marker-end="url(#fl)" marker-start="url(#fl)"/>
+  <line class="lien" x1="686" y1="394" x2="744" y2="394" marker-end="url(#fl)" marker-start="url(#fl)"/>
 
   <!-- Agent : une colonne haute, d'où partent tous les canaux -->
   <rect x="748" y="130" width="300" height="464" rx="14" fill="#133e66"/>
