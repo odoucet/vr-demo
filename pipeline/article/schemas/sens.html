@@ -1,0 +1,35 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Les sens de l'agent</title>
+<!-- Schéma de l'article : ce que l'agent pouvait juger seul, avec quoi, et ce qui restait à Olivier.
+     Page HTML seule (data-taille), rendue en PNG par pipeline/article/schemas.py. Texte ≥ 19 px. -->
+<style>
+  html, body { margin: 0; background: #f6f1e7; }
+  body { width: 1600px; height: 690px; box-sizing: border-box; padding: 34px 48px; font-family: "Segoe UI", "Noto Sans", sans-serif; color: #1d2b3a; }
+  h1 { font-size: 38px; margin: 0 0 6px; }
+  .sous { font-size: 22px; color: #5b6670; margin: 0 0 26px; }
+  table { width: 100%; border-collapse: collapse; }
+  th { font-size: 21px; text-align: left; color: #5b6670; font-weight: 600; padding: 0 18px 12px 0; border-bottom: 1.5px solid #1d2b3a; }
+  td { font-size: 20px; padding: 15px 18px 15px 0; border-bottom: 1px solid #dcd4c4; vertical-align: top; line-height: 1.3; }
+  td.quoi { font-weight: 700; width: 230px; }
+  td.agent { width: 640px; }
+  td.olivier { font-style: italic; }
+  .pastille { display: inline-block; width: 15px; height: 15px; border-radius: 50%; border: 2.5px solid #2a79a5; margin-right: 10px; vertical-align: -1px; }
+  .plein { background: #2a79a5; }
+  .demi { background: linear-gradient(90deg, #2a79a5 50%, transparent 50%); }
+  .legende { font-size: 19px; color: #5b6670; margin-top: 18px; }
+</style>
+<body data-taille="1600x690">
+  <h1>Ce que l'agent pouvait juger seul</h1>
+  <p class="sous">Il voit des images et lit des mesures. Le relief, le mouvement de la tête et l'oreille restaient à Olivier.</p>
+  <table>
+    <tr><th>À juger</th><th>Ce que l'agent avait</th><th>Ce qu'Olivier a vu au casque</th></tr>
+    <tr><td class="quoi">L'image</td><td class="agent"><span class="pastille plein"></span>captures de revue, rendus PC, vue du casque capturée par adb</td><td class="olivier">« le truc le plus moche ce sont les arbres »</td></tr>
+    <tr><td class="quoi">La fluidité</td><td class="agent"><span class="pastille plein"></span>images par seconde et temps de calcul au casque, essais A/B en direct</td><td class="olivier">« très fluide »</td></tr>
+    <tr><td class="quoi">Le son</td><td class="agent"><span class="pastille demi"></span>Whisper pour les voix, niveau des graves, enveloppes et spectres</td><td class="olivier">« on croit entendre une voiture qui démarre »</td></tr>
+    <tr><td class="quoi">Le confort</td><td class="agent"><span class="pastille demi"></span>des règles écrites : vitesse constante, jamais de roulis de la caméra</td><td class="olivier">« je n'ai pas vu de fort tangage quand la bête remonte »</td></tr>
+    <tr><td class="quoi">Le relief</td><td class="agent"><span class="pastille"></span>aucune vue en stéréo</td><td class="olivier">des « bandes verticales » quand on regarde à 90°</td></tr>
+    <tr><td class="quoi">La tête qui bouge</td><td class="agent"><span class="pastille"></span>des captures figées</td><td class="olivier">« les sprites qui bougent/tournent quand on bouge ou tourne la tête, c'est trop bizarre »</td></tr>
+  </table>
+  <p class="legende"><span class="pastille plein"></span>mesurable par l'agent &nbsp;&nbsp; <span class="pastille demi"></span>en partie &nbsp;&nbsp; <span class="pastille"></span>hors de sa portée</p>
+</body>

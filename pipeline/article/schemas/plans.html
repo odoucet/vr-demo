@@ -1,0 +1,111 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Les plans peints et les deux yeux</title>
+<!-- Schéma de l'article : pourquoi les plans peints face à l'œil faisaient des bandes, pourquoi les plans parallèles
+     à la vue tournaient avec la tête, et la solution retenue (HISTORY.md, 18/10 nuit et 19/10 matin).
+     Géométrie calculée (coordonnées locales de chaque panneau) : yeux en (180, 455) et (300, 455), écart exagéré ;
+     arbres A (205, 215) et B (275, 225), plans de 200 px perpendiculaires à la ligne œil → centre.
+     Œil gauche : A et B se croisent en (266, 221). Œil droit : B reste devant A sur tout leur recouvrement.
+     Entre x = 183 et x = 266, chaque œil voit donc un arbre différent devant : la bande. viewBox 1600×900. -->
+<style>
+  html, body { margin: 0; background: #f6f1e7; }
+  svg { display: block; font-family: "Segoe UI", "Noto Sans", sans-serif; }
+  .titre { font-size: 38px; font-weight: 700; fill: #1d2b3a; }
+  .sous { font-size: 22px; fill: #5b6670; }
+  .h { font-size: 24px; font-weight: 700; fill: #1d2b3a; }
+  .m { font-size: 19px; fill: #5b6670; }
+  .t { font-size: 19px; fill: #1d2b3a; }
+  .lettre { font-size: 22px; font-weight: 700; fill: #1d2b3a; }
+  .cadre { fill: #fffdf8; stroke: #dcd4c4; stroke-width: 1.5; }
+  .tete { fill: none; stroke: #1d2b3a; stroke-width: 2; }
+  .eau { stroke: #2a79a5; stroke-width: 5; stroke-linecap: round; }
+  .lanterne { stroke: #c8742b; stroke-width: 5; stroke-linecap: round; }
+  .visee-e { stroke: #2a79a5; stroke-width: 1.2; opacity: 0.4; }
+  .visee-l { stroke: #c8742b; stroke-width: 1.2; opacity: 0.4; }
+</style>
+<svg viewBox="0 0 1600 900" width="1600" height="900" role="img"
+     aria-label="Trois façons d'orienter les arbres peints, vues de dessus : face à chaque œil, ils se croisent différemment pour chaque œil ; parallèles à la vue, ils tournent avec la tête ; orientés une fois vers un point de la rivière, ils restent fixes et ne se croisent pas.">
+  <text class="titre" x="48" y="64">Pourquoi les arbres peints ne tournent plus</text>
+  <text class="sous" x="48" y="100">Vue de dessus : deux arbres peints, A et B, l'un derrière l'autre devant la barque (écart des yeux exagéré).</text>
+
+  <!-- 1. Face à chaque œil -->
+  <g transform="translate(40,130)">
+    <rect class="cadre" x="0" y="0" width="480" height="520" rx="14"/>
+    <text class="h" x="22" y="40">1. Face à chaque œil</text>
+    <rect x="182.6" y="150" width="83.6" height="140" fill="#c8742b" opacity="0.16"/>
+    <text class="m" x="224.4" y="140" text-anchor="middle">la bande</text>
+    <line class="visee-e" x1="180" y1="455" x2="205" y2="215"/>
+    <line class="visee-e" x1="180" y1="455" x2="275" y2="225"/>
+    <line class="visee-l" x1="300" y1="455" x2="205" y2="215"/>
+    <line class="visee-l" x1="300" y1="455" x2="275" y2="225"/>
+    <line class="eau" x1="105.5" y1="204.6" x2="304.5" y2="225.4"/>
+    <line class="eau" x1="182.6" y1="186.8" x2="367.4" y2="263.2"/>
+    <line class="lanterne" x1="112" y1="251.8" x2="298" y2="178.2"/>
+    <line class="lanterne" x1="175.6" y1="235.8" x2="374.4" y2="214.2"/>
+    <circle cx="266.2" cy="221.3" r="11" fill="none" stroke="#2a79a5" stroke-width="2.5"/>
+    <text class="lettre" x="80" y="236">A</text>
+    <text class="lettre" x="386" y="246">B</text>
+    <ellipse class="tete" cx="240" cy="470" rx="96" ry="38"/>
+    <circle cx="180" cy="455" r="9" fill="#2a79a5"/>
+    <circle cx="300" cy="455" r="9" fill="#c8742b"/>
+    <text class="t" x="134" y="477" text-anchor="end">œil gauche</text>
+    <text class="t" x="346" y="477">œil droit</text>
+  </g>
+  <text class="t" x="62" y="690">Chaque plan se tourne vers l'œil : il a</text>
+  <text class="t" x="62" y="716">donc deux orientations, une par œil.</text>
+  <text class="t" x="62" y="742">A et B se croisent pour l'œil gauche</text>
+  <text class="t" x="62" y="768">(cercle), pas pour le droit : une bande</text>
+  <text class="t" x="62" y="794">verticale qui scintille au casque.</text>
+
+  <!-- 2. Parallèles à la vue -->
+  <g transform="translate(560,130)">
+    <rect class="cadre" x="0" y="0" width="480" height="520" rx="14"/>
+    <text class="h" x="22" y="40">2. Parallèles à la vue</text>
+    <line class="eau" x1="105" y1="215" x2="305" y2="215"/>
+    <line class="eau" x1="175" y1="225" x2="375" y2="225"/>
+    <line class="eau" x1="114.4" y1="257.3" x2="295.6" y2="172.7" stroke-dasharray="10 9" opacity="0.6"/>
+    <line class="eau" x1="184.4" y1="267.3" x2="365.6" y2="182.7" stroke-dasharray="10 9" opacity="0.6"/>
+    <text class="lettre" x="80" y="222">A</text>
+    <text class="lettre" x="386" y="232">B</text>
+    <text class="m" x="300" y="128">la tête tourne,</text>
+    <text class="m" x="300" y="152">les plans aussi</text>
+    <ellipse class="tete" cx="240" cy="470" rx="96" ry="38"/>
+    <g transform="rotate(-25 240 470)" opacity="0.5">
+      <ellipse class="tete" cx="240" cy="470" rx="96" ry="38" stroke-dasharray="8 7"/>
+    </g>
+    <circle cx="180" cy="455" r="9" fill="#1d2b3a"/>
+    <circle cx="300" cy="455" r="9" fill="#1d2b3a"/>
+    <path d="M372,438 A110,110 0 0 0 318,388" fill="none" stroke="#1d2b3a" stroke-width="2"/>
+    <path d="M318,388 l13,-1 l-7,11 z" fill="#1d2b3a"/>
+  </g>
+  <text class="t" x="582" y="690">Tous les plans parallèles à la vue :</text>
+  <text class="t" x="582" y="716">plus de croisement, les deux yeux</text>
+  <text class="t" x="582" y="742">voient la même chose. Mais les plans</text>
+  <text class="t" x="582" y="768">pivotent quand on tourne la tête,</text>
+  <text class="t" x="582" y="794">« trop bizarre » au casque.</text>
+
+  <!-- 3. Fixés au placement -->
+  <g transform="translate(1080,130)">
+    <rect class="cadre" x="0" y="0" width="480" height="520" rx="14"/>
+    <text class="h" x="22" y="40">3. Fixés au placement</text>
+    <line x1="150" y1="500" x2="150" y2="80" stroke="#2a79a5" stroke-width="2" stroke-dasharray="3 8" stroke-linecap="round"/>
+    <text class="m" x="140" y="100" text-anchor="end">la rivière</text>
+    <line x1="250" y1="230" x2="150" y2="330" stroke="#5b6670" stroke-width="1.2" stroke-dasharray="5 5"/>
+    <line x1="310" y1="250" x2="150" y2="410" stroke="#5b6670" stroke-width="1.2" stroke-dasharray="5 5"/>
+    <circle cx="150" cy="330" r="6" fill="#5b6670"/>
+    <circle cx="150" cy="410" r="6" fill="#5b6670"/>
+    <line class="eau" x1="179.3" y1="159.3" x2="320.7" y2="300.7"/>
+    <line class="eau" x1="239.3" y1="179.3" x2="380.7" y2="320.7"/>
+    <text class="lettre" x="188" y="146">A</text>
+    <text class="lettre" x="392" y="342">B</text>
+    <text class="m" x="236" y="430">les points visés</text>
+    <ellipse class="tete" cx="150" cy="470" rx="58" ry="36"/>
+    <circle cx="125" cy="455" r="8" fill="#1d2b3a"/>
+    <circle cx="175" cy="455" r="8" fill="#1d2b3a"/>
+  </g>
+  <text class="t" x="1102" y="690">Chaque plan regarde, une fois pour</text>
+  <text class="t" x="1102" y="716">toutes, le point de la rivière d'où on</text>
+  <text class="t" x="1102" y="742">le voit à 45° devant. Deux voisins</text>
+  <text class="t" x="1102" y="768">visent presque le même point : ils</text>
+  <text class="t" x="1102" y="794">restent parallèles et ne bougent plus.</text>
+</svg>

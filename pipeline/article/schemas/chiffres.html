@@ -1,0 +1,35 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Six jours en chiffres</title>
+<!-- Schéma de l'article : les chiffres du projet en tuiles (relevés le 30/10, ARTICLE.md §5).
+     Page HTML seule (data-taille), rendue en PNG par pipeline/article/schemas.py. -->
+<style>
+  html, body { margin: 0; background: #f6f1e7; }
+  body { width: 1600px; height: 730px; box-sizing: border-box; padding: 34px 48px; font-family: "Segoe UI", "Noto Sans", sans-serif; color: #1d2b3a; }
+  h1 { font-size: 38px; margin: 0 0 6px; }
+  .sous { font-size: 22px; color: #5b6670; margin: 0 0 28px; }
+  .grille { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+  .tuile { background: #fffdf8; border: 1.5px solid #dcd4c4; border-radius: 14px; padding: 20px 24px; height: 156px; box-sizing: border-box; }
+  .v { font-size: 52px; font-weight: 600; line-height: 1.05; }
+  .v small { font-size: 28px; font-weight: 600; }
+  .l { font-size: 19px; color: #5b6670; margin-top: 8px; line-height: 1.3; }
+  .agent .v { color: #133e66; }
+</style>
+<body data-taille="1600x730">
+  <h1>Six jours en chiffres</h1>
+  <p class="sous">Du 17/10, 14 h (création du dépôt), au 23/10, 11 h 45 (version finale dans le casque).</p>
+  <div class="grille">
+    <div class="tuile agent"><div class="v">134</div><div class="l">commits, tous co-signés par l'agent</div></div>
+    <div class="tuile agent"><div class="v">58</div><div class="l">scripts Python, 10&nbsp;199 lignes ; build.py reconstruit tout</div></div>
+    <div class="tuile agent"><div class="v">69</div><div class="l">itérations de revue</div></div>
+    <div class="tuile agent"><div class="v">186</div><div class="l">captures de la vue du casque, prises par adb</div></div>
+    <div class="tuile agent"><div class="v">19</div><div class="l">animatics de 4 minutes, dont 3 en 4K</div></div>
+    <div class="tuile agent"><div class="v">114</div><div class="l">images peintes générées en local, ~7&nbsp;800 posées dans la scène</div></div>
+    <div class="tuile agent"><div class="v">28</div><div class="l">modèles 3D reconstruits à partir d'une image</div></div>
+    <div class="tuile agent"><div class="v">17</div><div class="l">sons Freesound (CC0), choisis sans les écouter</div></div>
+    <div class="tuile"><div class="v">72 <small>i/s</small></div><div class="l">dans le Quest 3, sur chacun des sept moments</div></div>
+    <div class="tuile"><div class="v">34</div><div class="l">substituts encore en place, sur 57 assets tracés</div></div>
+    <div class="tuile"><div class="v">1</div><div class="l">RTX 3090 partagée par Unreal, ComfyUI et Blender</div></div>
+    <div class="tuile"><div class="v">37 <small>h</small></div><div class="l">la plus longue pause sans commit (21-22/10)</div></div>
+  </div>
+</body>

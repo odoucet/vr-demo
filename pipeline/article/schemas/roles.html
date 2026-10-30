@@ -1,0 +1,42 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Qui a fait quoi</title>
+<!-- Schéma de l'article : la part d'Olivier, de l'agent et des outils, tâche par tâche (HISTORY.md, manifeste).
+     Page HTML seule (data-taille), rendue en PNG par pipeline/article/schemas.py. Texte ≥ 19 px. -->
+<style>
+  html, body { margin: 0; background: #f6f1e7; }
+  body { width: 1600px; height: 880px; box-sizing: border-box; padding: 34px 48px; font-family: "Segoe UI", "Noto Sans", sans-serif; color: #1d2b3a; }
+  h1 { font-size: 38px; margin: 0 0 6px; }
+  .sous { font-size: 22px; color: #5b6670; margin: 0 0 22px; }
+  table { width: 100%; border-collapse: collapse; }
+  th { font-size: 21px; text-align: left; color: #5b6670; font-weight: 600; padding: 0 16px 10px 0; border-bottom: 1.5px solid #1d2b3a; }
+  th.c, td.c { text-align: center; width: 150px; }
+  td { font-size: 20px; padding: 11px 16px 11px 0; border-bottom: 1px solid #dcd4c4; vertical-align: middle; }
+  td.outil { color: #5b6670; }
+  .p { display: inline-block; width: 20px; height: 20px; border-radius: 50%; vertical-align: -3px; }
+  .o { background: #c8742b; border: 3px solid #c8742b; }
+  .oo { border: 3px solid #c8742b; }
+  .a { background: #2a79a5; border: 3px solid #2a79a5; }
+  .aa { border: 3px solid #2a79a5; }
+  .legende { font-size: 19px; color: #5b6670; margin-top: 16px; }
+</style>
+<body data-taille="1600x880">
+  <h1>Qui a fait quoi</h1>
+  <p class="sous">Tâche par tâche, d'après le journal et le manifeste des assets.</p>
+  <table>
+    <tr><th>Tâche</th><th class="c">Olivier</th><th class="c">L'agent</th><th>Outils</th></tr>
+    <tr><td>L'idée, la vision, le périmètre</td><td class="c"><span class="p o"></span></td><td class="c"><span class="p aa"></span></td><td class="outil"></td></tr>
+    <tr><td>Les images de référence</td><td class="c"><span class="p o"></span></td><td class="c"><span class="p aa"></span></td><td class="outil">Midjourney (prompts écrits par l'agent)</td></tr>
+    <tr><td>La musique</td><td class="c"><span class="p o"></span></td><td class="c"><span class="p aa"></span></td><td class="outil">Suno (prompt écrit par l'agent)</td></tr>
+    <tr><td>Le code, la scène Unreal, les APK</td><td class="c"></td><td class="c"><span class="p a"></span></td><td class="outil">Claude Code, Unreal Engine 5.8</td></tr>
+    <tr><td>Les décors peints (114 images)</td><td class="c"></td><td class="c"><span class="p a"></span></td><td class="outil">Z-Image Turbo, BiRefNet (en local)</td></tr>
+    <tr><td>Les modèles 3D</td><td class="c"><span class="p oo"></span></td><td class="c"><span class="p a"></span></td><td class="outil">TRELLIS.2, Pixal3D, Blender (en local)</td></tr>
+    <tr><td>Les sons</td><td class="c"></td><td class="c"><span class="p a"></span></td><td class="outil">Freesound (CC0), Whisper</td></tr>
+    <tr><td>Les mesures, le débogage</td><td class="c"></td><td class="c"><span class="p a"></span></td><td class="outil">adb, profileur du Quest</td></tr>
+    <tr><td>Les essais au casque, le ressenti</td><td class="c"><span class="p o"></span></td><td class="c"><span class="p aa"></span></td><td class="outil">Quest 3</td></tr>
+    <tr><td>Les choix artistiques</td><td class="c"><span class="p o"></span></td><td class="c"><span class="p aa"></span></td><td class="outil">propositions de l'agent : forêt A/B/C, concepts de statues</td></tr>
+    <tr><td>Les idées de mise en scène (pont, héron, tangage)</td><td class="c"><span class="p o"></span></td><td class="c"><span class="p aa"></span></td><td class="outil"></td></tr>
+    <tr><td>Les installations, les accords</td><td class="c"><span class="p o"></span></td><td class="c"></td><td class="outil"></td></tr>
+  </table>
+  <p class="legende"><span class="p o"></span> / <span class="p a"></span> l'a fait &nbsp;&nbsp;&nbsp; <span class="p oo"></span> / <span class="p aa"></span> y a contribué</p>
+</body>

@@ -1,0 +1,92 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Une itération</title>
+<!-- Schéma de l'article : la boucle de l'agent (rapide, seul) et celle d'Olivier (au casque, à son rythme).
+     Rendu en PNG par pipeline/article/schemas.py. viewBox 1600×900, texte ≥ 19 px. -->
+<style>
+  html, body { margin: 0; background: #f6f1e7; }
+  svg { display: block; font-family: "Segoe UI", "Noto Sans", sans-serif; }
+  .titre { font-size: 38px; font-weight: 700; fill: #1d2b3a; }
+  .sous { font-size: 22px; fill: #5b6670; }
+  .h { font-size: 23px; font-weight: 700; fill: #1d2b3a; }
+  .t { font-size: 21px; fill: #1d2b3a; }
+  .m { font-size: 19px; fill: #5b6670; }
+  .fl { font-size: 19px; fill: #1d2b3a; font-style: italic; }
+  .etape { fill: #fffdf8; stroke: #133e66; stroke-width: 2; }
+  .lien { stroke: #1d2b3a; stroke-width: 2; fill: none; }
+</style>
+<svg viewBox="0 0 1600 900" width="1600" height="900" role="img"
+     aria-label="Une itération : l'agent lit l'état, change un script, reconstruit, vérifie et commite, puis recommence ; Olivier teste l'APK à son rythme et ses retours repartent dans l'état.">
+  <defs>
+    <marker id="fl" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1d2b3a"/>
+    </marker>
+    <marker id="flo" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#c8742b"/>
+    </marker>
+  </defs>
+
+  <text class="titre" x="48" y="64">Une itération, de la demande au commit</text>
+  <text class="sous" x="48" y="100">En bleu, la boucle que l'agent répète seul ; en orange, celle d'Olivier, au casque, quand il a le temps.</text>
+
+  <!-- La boucle d'Olivier, au-dessus -->
+  <rect x="520" y="132" width="560" height="96" rx="14" fill="#fffdf8" stroke="#c8742b" stroke-width="2.5"/>
+  <text class="h" x="546" y="172">Olivier, à son rythme</text>
+  <text class="m" x="546" y="204">met le casque, fait ses retours, donne ses accords</text>
+  <path class="lien" d="M1405,296 L1405,180 L1084,180" marker-end="url(#flo)" style="stroke: #c8742b"/>
+  <text class="fl" x="1110" y="168">l'APK dans le casque</text>
+  <path class="lien" d="M516,180 L185,180 L185,296" marker-end="url(#flo)" style="stroke: #c8742b"/>
+  <text class="fl" x="210" y="168">ses retours, dans la conversation</text>
+
+  <!-- Les cinq étapes -->
+  <rect class="etape" x="60" y="300" width="250" height="130" rx="12"/>
+  <text class="h" x="82" y="342">1. Lire l'état</text>
+  <text class="m" x="82" y="374">SUIVI.md : retours,</text>
+  <text class="m" x="82" y="400">décisions, blocages</text>
+
+  <rect class="etape" x="365" y="300" width="250" height="130" rx="12"/>
+  <text class="h" x="387" y="342">2. Changer un script</text>
+  <text class="m" x="387" y="374">dans pipeline/, jamais</text>
+  <text class="m" x="387" y="400">de geste à la main</text>
+
+  <rect class="etape" x="670" y="300" width="250" height="130" rx="12"/>
+  <text class="h" x="692" y="342">3. Reconstruire</text>
+  <text class="m" x="692" y="374">build.py, Unreal piloté</text>
+  <text class="m" x="692" y="400">en Python, l'APK</text>
+
+  <rect class="etape" x="975" y="300" width="250" height="130" rx="12"/>
+  <text class="h" x="997" y="342">4. Vérifier</text>
+  <text class="m" x="997" y="374">captures, rendu PC,</text>
+  <text class="m" x="997" y="400">mesures au casque</text>
+
+  <rect class="etape" x="1280" y="300" width="250" height="130" rx="12"/>
+  <text class="h" x="1302" y="342">5. Commiter</text>
+  <text class="m" x="1302" y="374">un commit, SUIVI.md</text>
+  <text class="m" x="1302" y="400">et HISTORY.md à jour</text>
+
+  <line class="lien" x1="312" y1="365" x2="361" y2="365" marker-end="url(#fl)"/>
+  <line class="lien" x1="617" y1="365" x2="666" y2="365" marker-end="url(#fl)"/>
+  <line class="lien" x1="922" y1="365" x2="971" y2="365" marker-end="url(#fl)"/>
+  <line class="lien" x1="1227" y1="365" x2="1276" y2="365" marker-end="url(#fl)"/>
+
+  <!-- Le défaut réversible : jamais d'attente -->
+  <rect x="140" y="500" width="440" height="104" rx="12" fill="#fffdf8" stroke="#133e66" stroke-width="1.5" stroke-dasharray="7 6"/>
+  <text class="t" x="162" y="538">Une décision manque ?</text>
+  <text class="m" x="162" y="566">défaut réversible appliqué, noté dans</text>
+  <text class="m" x="162" y="590">SUIVI.md, et on continue (D1 à D20)</text>
+  <line class="lien" x1="185" y1="432" x2="185" y2="496" marker-end="url(#fl)"/>
+  <line class="lien" x1="490" y1="498" x2="490" y2="434" marker-end="url(#fl)"/>
+
+  <!-- Tester petit -->
+  <rect x="736" y="500" width="420" height="104" rx="12" fill="#fffdf8" stroke="#b9b0a0" stroke-width="1.2"/>
+  <text class="t" x="758" y="538">Avant une série</text>
+  <text class="m" x="758" y="566">deux ou trois essais courts, vérifiés</text>
+  <text class="m" x="758" y="590">(règle née des 30 musiques du jour 1)</text>
+  <line x1="946" y1="368" x2="946" y2="500" stroke="#b9b0a0" stroke-width="1.5"/>
+
+  <!-- Retour au début : la boucle de l'agent -->
+  <path class="lien" d="M1405,432 L1405,690 L30,690 L30,365 L56,365" marker-end="url(#fl)" style="stroke: #133e66"/>
+  <text class="fl" x="560" y="724">l'itération suivante : 69 en six jours, sans attendre personne</text>
+
+  <text class="m" x="48" y="866">Les deux boucles ne s'attendent pas : l'agent avance pendant qu'Olivier dort ou travaille, et lit ses retours au tour suivant.</text>
+</svg>

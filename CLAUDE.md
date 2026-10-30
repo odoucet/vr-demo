@@ -166,7 +166,7 @@ HISTORY.md           journal chronologique des étapes et décisions (pour l'art
 PROMPTS.md           prompts Midjourney et Suno
 ARTICLE.md           plan de l'article sur le processus (storyboard, visuels)
 pipeline/            scripts (build.py, layout/, unreal/, blender/, comfy/, review/, audio/, style/, article/)
-article/             visuels de l'article : schémas, graphiques, montages (vidéos hors dépôt)
+article/             l'article en Markdown et ses médias prêts pour WordPress (wp-content/uploads/AAAA/MM/, vidéos hors dépôt)
 assets/manifest.yaml traçabilité de chaque asset généré
 refs/inbox/          dépôts d'Olivier (Midjourney, croquis)
 refs/approved/       bible de style validée

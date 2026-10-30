@@ -1,19 +1,16 @@
-# Montages vidéo de l'article, remontés depuis les animatics de review/ (pipeline/article/montage.py).
+# Montages vidéo de l'article, remontés depuis les animatics et les captures de review/ (pipeline/article/montage.py).
 #
 # Toutes les animatics suivent la même trajectoire de caméra (barque à vitesse constante, séquence calée sur la
-# musique) : un même instant de la balade se retrouve, au même cadrage, dans chaque version. Un montage « versions »
-# fait donc avancer la barque sans coupure tout en changeant de version à chaque segment : le décor se construit
-# pendant qu'on le regarde.
-#
-# fenetre : [début, fin] en secondes de balade ; versions : dans l'ordre chronologique, segments de durée égale ;
-# date : rendu de la version (heure de Paris) ; audio : animatic dont on garde la bande-son, continue sur la fenêtre ;
-# pose : instant de la planche fixe qui accompagne la vidéo.
+# musique) : un même instant de la balade se retrouve, au même cadrage, dans chaque version.
+# Temps en secondes de balade. date : rendu de la version (heure de Paris).
 
+# Le passage du pont : la barque avance sans coupure, le décor change de version toutes les 6 s.
 pont-versions:
+  type: versions
   titre: "Le même passage, sept versions"
   fenetre: [98, 140]
   audio: review/iter-064/animatic-hd.mp4
-  pose: 112
+  pose: 112            # instant de la planche fixe qui accompagne la vidéo
   versions:
     - src: review/iter-031/animatic.mp4
       date: "2026-10-19 11:50"
@@ -36,3 +33,75 @@ pont-versions:
     - src: review/iter-064/animatic-hd.mp4
       date: "2026-10-23 02:10"
       quoi: "version du 23/10, rendue en 4K"
+
+# Bande-annonce : huit plans de l'animatique finale, sur la musique à partir de la modulation (2:17,8 du morceau,
+# la plus forte frontière, puis le sommet et la retombée de l'outro).
+bande-annonce:
+  type: extraits
+  src: review/iter-064/animatic-hd.mp4
+  plans:                     # [début, fin]
+    - [13, 18]               # la brume du départ, le ponton
+    - [29, 34]               # les roseaux qui frôlent la barque
+    - [69.5, 74.5]           # la lueur de la bête, sous l'eau à droite
+    - [115, 121]             # le pont aux statues
+    - [123, 129]             # le passage dessous
+    - [164, 170]             # l'envol des lucioles, la lune
+    - [184, 190]             # la créature devant la lune
+    - [222, 231]             # le héron se pose sur la barque
+  fondu: 0.6
+  musique: 137.8             # secondes dans le morceau
+  titre: ["La barque des lucioles", "une balade VR construite par une IA"]
+  fin: "Quest 3 · temps réel · octobre 2026"
+
+# Le lac du final, avant / après : la lanterne du 19/10 masque le centre de l'image ; le 23/10, le héron se pose.
+volet-lac:
+  type: volet
+  fenetre: [214, 232]
+  balayage: [3, 14]          # le volet traverse l'image entre ces deux instants du montage
+  avant:
+    src: review/iter-034/animatic.mp4
+    date: "2026-10-19 12:12"
+    quoi: "avant"
+  apres:
+    src: review/iter-064/animatic-hd.mp4
+    date: "2026-10-23 02:10"
+    quoi: "après"
+
+# L'eau refaite dans la nuit du 19 au 20/10 : les rides orientées contre le réseau de crêtes sans direction.
+eau-avant-apres:
+  type: cote
+  fenetre: [56, 70]
+  gauche:
+    src: review/iter-051/animatic.mp4
+    legende: "19/10, 20 h 48 : rides orientées"
+  droite:
+    src: review/iter-054/animatic.mp4
+    legende: "20/10, 0 h 43 : crêtes sans direction"
+  audio: droite
+
+# Le héron du final et son repère sonore (pipeline/audio/soundscape.yaml : cue-heron, sfx-heron-ailes).
+heron:
+  type: legendes
+  src: review/iter-064/animatic-hd.mp4
+  fenetre: [207, 234]
+  legendes:                  # [début, fin, texte]
+    - [210.2, 215.5, "un cri d'aigrette, au loin (Freesound, CC0)"]
+    - [221.5, 226.5, "le héron arrive par la gauche ; ses ailes freinent"]
+    - [227.0, 233.0, "il se pose sur le rebord de la barque"]
+
+# Captures réelles de la vue du casque, prises par adb, aux mêmes instants de la balade.
+casque-timelapse:
+  type: diaporama
+  taille: [1080, 1080]
+  image: 0.9                 # secondes par capture
+  fondu: 0.35
+  suites:
+    - titre: "0:30 · le départ"
+      instant: 030s
+      iterations: [12, 13, 18, 19, 21, 24, 25, 67, 69]
+    - titre: "1:52 · l'arche, puis le pont"
+      instant: 112s
+      iterations: [12, 13, 14, 16, 17, 19, 67]
+    - titre: "3:52 · le lac"
+      instant: 232s
+      iterations: [12, 19, 21, 27, 28, 67]

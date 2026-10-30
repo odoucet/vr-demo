@@ -621,3 +621,29 @@ autonome. `SUIVI.md` dit où en est le projet ; ce fichier raconte comment on y 
   erreur de fond, vue en relisant le schéma après le premier envoi : il faisait passer tous les échanges par les
   fichiers. Faux : les demandes et les retours d'Olivier arrivent par la conversation ; les fichiers en sont la mémoire
   écrite. Corrigé avant de le montrer.
+
+## 30/10 après-midi — l'article rédigé, prêt pour WordPress
+
+- Olivier : « le plan de l'article me va très bien. Prépare un répertoire dédié "article", dans lequel tu me le
+  fourniras au format markdown. Pour les images, si tu peux suivre les chemins Wordpress pour un upload ce mois ça me
+  fait gagner du temps […] Applique déjà les bonnes compressions sur les images/vidéos pour un usage web. » Pour le
+  style, il joint un skill d'écriture (avoid-ai-writing : pas de tirets cadratins, peu de gras, de la prose plutôt
+  que des listes, des faits précis plutôt que des formules).
+- Livré : `article/la-barque-des-lucioles.md` (~7 800 mots, à sa voix, ses phrases citées telles quelles) et
+  `article/wp-content/uploads/2026/10/`, le dossier tel que WordPress le crée pour un envoi d'octobre : 25 images,
+  6 vidéos, 6 affiches, 67 Mo. Les liens du Markdown pointent vers `/wp-content/uploads/2026/10/`. Un aperçu local
+  (`apercu.html`) remplace celui de VS Code, qui ne résout pas ces chemins. Tout sort de scripts : schémas en HTML/SVG
+  rendus par le navigateur, graphiques calculés depuis le dépôt (commits, essais A/B, ambiance du lac, tracé de la
+  rivière, stems), compositions, six montages vidéo, puis un export qui vérifie que l'article et la liste des médias
+  concordent ; il a d'ailleurs relevé un schéma oublié dans le texte.
+- Compression testée avant la série : à 3 Mb/s, la bande-annonce (lucioles, feuillage) est indiscernable de 4 Mb/s en
+  recadrage à 100 %, pour un quart de poids en moins ; aucune vidéo ne dépasse 17,4 Mo. Images à 2000 px au plus, sous
+  le seuil où WordPress les redimensionne.
+- Relire les sources une à une a évité plusieurs erreurs. Trois animatics sont tronquées (iter-031 s'arrête à 2:22,
+  iter-033 à 2:19, iter-059 à 1:49) : le script de montage refuse maintenant une fenêtre qui dépasse la vidéo. Le premier
+  graphique des essais A/B étiquetait « 2× → 1× » un essai fait avant l'adoption du 2×. Depth Anything n'avait pas « mal
+  lu » les images : il ne tournait pas. Les captures adb ne sont pas « l'œil gauche » (seule la capture au bouton A
+  l'est). Les deux images de héron gardent derrière elles un fond de feuillage que le jeu retire à l'affichage : écartées
+  de la planche. Une seconde capture montre la pièce d'Olivier (iter-049, 30 s) : ajoutée aux images à ne pas publier.
+- Impasses : le navigateur headless se bloquait de temps en temps sur son profil (un profil par schéma, délai et
+  nouvel essai) ; les expressions de position de ffmpeg cassaient sur leurs virgules (désormais entre guillemets).

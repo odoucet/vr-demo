@@ -1,8 +1,8 @@
 # Suivi — La barque des lucioles
 
 **Fichier unique de suivi.** Tenu par l'agent, lu par Olivier. Classé par criticité.
-Mis à jour : 2026-10-30 — **plan de l'article revu sur l'axe d'Olivier, trois premiers visuels.** Démo : version
-finale livrée au casque le 23/10.
+Mis à jour : 2026-10-30 — **article rédigé, médias prêts pour WordPress.** Démo : version finale livrée au casque
+le 23/10.
 
 Légende : 🔴 bloque, aucun contournement · 🟠 contourné · 🟢 mineur
 
@@ -13,18 +13,20 @@ ici à l'état final ; il reste lisible dans l'historique git (`git show 3c4edf0
 
 ## ▶ Article (30/10)
 
-Axe donné par Olivier : jusqu'où une IA peut-elle être autonome sur une petite démo VR, en tour d'horizon (autonomie ;
-assets et audio IA en octobre 2026 ; Unreal vu par un joueur). `ARTICLE.md` refait en storyboard : intro reformulée,
-chemin de fer en sept parties, ~40 visuels inventoriés (sources vérifiées, aperçus intégrés), vigilance mise à jour.
+Axe d'Olivier : jusqu'où une IA peut-elle être autonome sur une petite démo VR, en tour d'horizon. Plan validé (« le
+plan de l'article me va très bien »), article rédigé à sa voix, dans le style demandé (skill avoid-ai-writing).
 
-- **Prototypes** (charte et procédé à valider avant la série) : schéma `article/schemas/atelier.png`, graphique
-  `article/graphiques/commits.png`, montage `article/montages/pont-versions.mp4` (42 s : la barque avance sans coupure
-  pendant que le décor change de version) et sa planche `.jpg`. Scripts : `pipeline/article/`.
-- **Attendu d'Olivier** : validation du plan et des réponses provisoires (`ARTICLE.md` §1, §3), décisions A3-A9 (§6),
-  éléments 🎙 (captation au casque, photo, temps et coût, regard de joueur).
-- **Défauts appliqués** (réversibles) : charte papier / bleu eau / orange lanterne / Segoe UI (§4.4 : changer les
-  constantes et relancer les scripts) ; premier jet écrit par l'agent à la voix d'Olivier, avec `[à toi]` (A8).
-- **À ne jamais publier** : `review/iter-063/casque/008s.jpg` (la pièce d'Olivier en transparence, photos personnelles).
+- **Livré** : `article/la-barque-des-lucioles.md` (~7 800 mots) et `article/wp-content/uploads/2026/10/`, 37 médias
+  prêts à envoyer dans la médiathèque WordPress (25 images, 6 vidéos et leurs affiches, 67 Mo) ; `article/apercu.html`
+  pour relire ; mode d'emploi dans `article/LISEZMOI.md`. Tout se régénère : `pipeline/article/` (maîtres dans
+  `builds/article/`, puis `export_web.py`).
+- **Attendu d'Olivier** : remplir l'unique `[À COMPLÉTER]` (temps passé, sessions au casque, coût) ; trancher le
+  paragraphe sur le style (A4) ; vérifier les droits (Suno, Midjourney, modèles locaux) ; plateforme : WordPress (A7,
+  tranché par sa demande).
+- **Défauts appliqués** (réversibles) : vidéos H.264 plafonnées à 3 Mb/s (≤ 17,4 Mo chacune ; `export_web.py`) ;
+  images ≤ 2000 px (JPEG 82-88, PNG en palette) ; noms numérotés dans l'ordre d'apparition ; espaces insécables à la
+  française ; shortcodes `[video]` plutôt que des blocs Vidéo.
+- **À ne jamais publier** : `review/iter-063/casque/008s.jpg` et `review/iter-049/casque/030s.jpg` (la pièce d'Olivier).
 
 ## ▶ État final (23/10)
 
@@ -104,7 +106,8 @@ Aucun.
 1. **Audit automatique des plans vus par la tranche** : caméra qui tourne sur 360° toutes les 5 s le long du parcours
    (éditeur), zones anormalement uniformes repérées. Cette famille de défauts est revenue deux fois.
 2. **Vidéo partageable sans casque** : 360 stéréo ou côte-à-côte 3D (la vidéo 4K à plat existe).
-3. **Visuels puis premier jet de l'article** (D20) : par lots après validation de la charte (`ARTICLE.md` §9).
+3. **Visuels de l'article encore possibles** : vues tournantes des modèles 3D, décor vu de l'extérieur (rendus GPU),
+   captation vidéo au casque (à faire avec Olivier).
 
 ---
 
@@ -131,7 +134,7 @@ Chaque décision a un défaut réversible appliqué. Celles qui restent ouvertes
 | D17 | Nettoyage LFS | ✅ dépôt recréé le 21/10 (3,9 Go) ; sauvegarde `G:\barque-sauvegarde-git-20261021` à supprimer quand Olivier le souhaite |
 | D18 | Statues géantes | ✅ arche sculptée + tête couchée, en 3D |
 | D19 | Architecture proche / lointain | ✅ **tranché le 23/10 : tout en temps réel**, lointain vidéo 360 retiré |
-| D20 | Article | ✅ **axe tranché le 30/10** par Olivier : autonomie d'une IA, en tour d'horizon (Q1-Q3) ; plan v2 dans `ARTICLE.md`, décisions propres à l'article en §6 (A3-A9) |
+| D20 | Article | ✅ **rédigé le 30/10** sur l'axe d'Olivier (autonomie d'une IA, Q1-Q3) : `article/`, pour WordPress ; plan dans `ARTICLE.md` ; restent A4 (style) et le `[À COMPLÉTER]` |
 
 ## État des jalons
 

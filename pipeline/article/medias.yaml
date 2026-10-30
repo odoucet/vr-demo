@@ -1,0 +1,43 @@
+# Médias de l'article, dans l'ordre d'apparition (pipeline/article/export_web.py). Clé : nom du fichier publié.
+#   src      source relative au dépôt (maîtres dans builds/article/, ou captures de review/)
+#   largeur  largeur maximale en pixels (jamais d'agrandissement)
+#   qualite  qualité JPEG (défaut 82 ; 88 pour les graphiques à dégradés ou à vignettes)
+#   recadre  [gauche, haut, droite, bas] en fraction de la source
+#   affiche  vidéo : instant (s) de l'image d'attente, publiée sous <nom>-poster.jpg
+# Le format suit l'extension : .jpg photo ou capture, .png schéma à aplats, .mp4 vidéo.
+
+article: article/la-barque-des-lucioles.md
+mois: "2026/10"          # dossier d'upload WordPress (année/mois) ; le Markdown pointe vers /wp-content/uploads/<mois>/
+
+medias:
+  barque-01-heros.jpg:              {src: builds/article/compositions/heros.jpg, largeur: 2000}
+  barque-02-bande-annonce.mp4:      {src: builds/article/montages/bande-annonce.mp4, affiche: 17}
+  barque-03-atelier.png:            {src: builds/article/schemas/atelier.png, largeur: 1800}
+  barque-04-balade.jpg:             {src: builds/article/graphiques/balade.png, largeur: 2000, qualite: 88}
+  barque-05-commits.png:            {src: builds/article/graphiques/commits.png, largeur: 1800}
+  barque-06-pont-versions.mp4:      {src: builds/article/montages/pont-versions.mp4, affiche: 2}
+  barque-07-casque-timelapse.mp4:   {src: builds/article/montages/casque-timelapse.mp4, affiche: 0.4}
+  barque-08-iteration.png:          {src: builds/article/schemas/iteration.png, largeur: 1800}
+  barque-09-sens.png:               {src: builds/article/schemas/sens.png, largeur: 1800}
+  barque-10-casque-pose.jpg:        {src: review/iter-026/casque/062s.jpg, largeur: 1200}
+  barque-11-bouton-a.jpg:           {src: review/casque-A/20261023/A-0118.2s.jpg, largeur: 1400}
+  barque-12-roles.png:              {src: builds/article/schemas/roles.png, largeur: 1800}
+  barque-13-arbres-abc.jpg:         {src: builds/article/compositions/arbres-abc.jpg, largeur: 1440}
+  barque-14-images-peintes.jpg:     {src: builds/article/compositions/images-peintes.jpg, largeur: 2000}
+  barque-15-chaine-images.jpg:      {src: builds/article/compositions/chaine-sprites.jpg, largeur: 1920}
+  barque-16-reference-resultat.jpg: {src: builds/article/compositions/reference-resultat.jpg, largeur: 1672}
+  barque-17-barque-3d.jpg:          {src: review/3d/comparaison.jpg, recadre: [0, 0, 1, 0.5], largeur: 1536}
+  barque-18-statues.jpg:            {src: builds/article/compositions/statues.jpg, largeur: 2000}
+  barque-19-chaine-3d.jpg:          {src: builds/article/compositions/chaine-3d.jpg, largeur: 2000}
+  barque-20-pont-versions.jpg:      {src: builds/article/montages/pont-versions.jpg, largeur: 2000}
+  barque-21-son.png:                {src: builds/article/graphiques/son.png, largeur: 1800}
+  barque-22-lac.jpg:                {src: builds/article/graphiques/lac.png, largeur: 2000, qualite: 88}
+  barque-23-heron.mp4:              {src: builds/article/montages/heron.mp4, affiche: 21}
+  barque-24-filtre-pc.jpg:          {src: builds/article/compositions/filtre-pc.jpg, largeur: 1992}
+  barque-25-leviers.png:            {src: builds/article/graphiques/leviers.png, largeur: 1800}
+  barque-26-plans.png:              {src: builds/article/schemas/plans.png, largeur: 1800}
+  barque-27-eau.mp4:                {src: builds/article/montages/eau-avant-apres.mp4, affiche: 7}
+  barque-28-tangage.jpg:            {src: review/iter-068/casque/071s.jpg, largeur: 1200}
+  barque-29-avant-apres.jpg:        {src: builds/article/compositions/avant-apres.jpg, largeur: 1992}
+  barque-30-volet-lac.mp4:          {src: builds/article/montages/volet-lac.mp4, affiche: 8.5}
+  barque-31-chiffres.png:           {src: builds/article/schemas/chiffres.png, largeur: 1800}

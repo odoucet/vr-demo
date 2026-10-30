@@ -1,5 +1,8 @@
 # Article — plan de travail (v2, 30/10)
 
+> **Rédigé le 30/10** (plan validé par Olivier) : `article/la-barque-des-lucioles.md`, médias web dans
+> `article/wp-content/uploads/2026/10/`, mode d'emploi dans `article/LISEZMOI.md`. Ce plan reste la trace des choix.
+
 Deuxième passe : l'axe donné par Olivier le 30/10 (§1), l'intro reformulée (§2), le plan revu en **storyboard** (§3) :
 chaque partie liste sa matière et ses visuels, et les visuels qui existent déjà sont affichés ici (aperçu Markdown de
 VS Code : `Ctrl+Shift+V`). Trois prototypes de visuels ont été produits pour valider la charte avant la série (§4.6).
@@ -131,7 +134,7 @@ enseignements de l'article, l'intro peut le laisser venir.
 | 📐 S03 | **La carte de la balade** : la rivière vue de dessus, 239 m à 1 m/s, les beats, les créatures, une vignette par lieu | `pipeline/layout/`, base : `review/layout/carte.png` | à redessiner |
 | 🖼 C02b | Extrait de `CLAUDE.md` (les règles d'or), composé proprement plutôt qu'en capture d'écran | `CLAUDE.md` | à composer |
 
-<img src="article/schemas/atelier.png" width="80%">
+<img src="article/wp-content/uploads/2026/10/barque-03-atelier.png" width="80%">
 
 <img src="review/music/structure.png" width="49%"> <img src="review/layout/carte.png" width="44%">
 
@@ -153,11 +156,12 @@ enseignements de l'article, l'intro peut le laisser venir.
 | 🖼 C20 | Les 19 animatics au même instant (1:45), en planche | les 19 `animatic*.mp4` | à produire (`montage.py`) |
 | 🎬 V04 | Time-lapse des captures casque aux onze mêmes instants, iter-012 → iter-069, fondu enchaîné | `review/iter-0NN/casque/{030s…232s}.jpg` | à monter |
 
-<img src="article/graphiques/commits.png" width="80%">
+<img src="article/wp-content/uploads/2026/10/barque-05-commits.png" width="80%">
 
-<img src="article/montages/pont-versions.jpg" width="80%">
+<img src="article/wp-content/uploads/2026/10/barque-20-pont-versions.jpg" width="80%">
 
-*G01 et la planche fixe de V02. La vidéo : `article/montages/pont-versions.mp4` (hors dépôt, régénérable).*
+*G01 et la planche fixe de V02. La vidéo : `article/wp-content/uploads/2026/10/barque-06-pont-versions.mp4` (hors
+dépôt, régénérable).*
 
 ### 3. Q1 — L'autonomie, jusqu'où ? (~1 800 mots)
 
@@ -420,9 +424,14 @@ Tout visuel est régénérable par un script du dépôt, comme la scène : dépo
 
 | | Visuel | Fichier | Régénérer |
 |---|---|---|---|
-| 📐 S01 | L'atelier : qui pilote quoi | `article/schemas/atelier.png` | `python pipeline/article/schemas.py atelier` |
-| 📊 G01 | Six jours, 134 commits | `article/graphiques/commits.png` | `python pipeline/article/graphiques.py commits` |
-| 🎬 V02 | Le même passage, sept versions (42 s, avec la musique) + planche fixe | `article/montages/pont-versions.mp4` (hors dépôt), `.jpg` | `python pipeline/article/montage.py pont-versions` |
+| 📐 S01 | L'atelier : qui pilote quoi | maître `builds/article/schemas/atelier.png` | `python pipeline/article/schemas.py atelier` |
+| 📊 G01 | Six jours, 134 commits | maître `builds/article/graphiques/commits.png` | `python pipeline/article/graphiques.py commits` |
+| 🎬 V02 | Le même passage, sept versions (42 s, avec la musique) + planche fixe | maître `builds/article/montages/pont-versions.mp4` | `python pipeline/article/montage.py pont-versions` |
+
+Le 30/10, l'article a retenu 31 visuels (25 images, 6 vidéos ; liste : `pipeline/article/medias.yaml`). S02 et S03 sont
+fusionnés dans le graphique « balade ». Écartés : C02b et C04b (les règles et les décisions sont dans le texte), C13
+(licence de Hunyuan3D), C03, C04, C08 et C20 (redondants), G03, S11 (expliqué dans le texte). Non faits : V07, V08
+(rendus GPU), V09, V10 et les photos (à fournir). Versions web : `python pipeline/article/export_web.py`.
 
 Ce qu'ils testent : la charte (S01, G01), la lisibilité une fois réduits, et l'idée de montage propre à ce projet —
 toutes les animatics partagent la même caméra, donc **la barque avance sans coupure pendant que le décor se construit**.
