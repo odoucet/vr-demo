@@ -221,7 +221,7 @@ de lisière.*
 
 ### 4. Q2 — Assets et audio IA : ce qui marche en octobre 2026 (~1 800 mots)
 
-**4.1 Les images peintes, la grande réussite** — ★★★ le pivot du projet, en 24 h : « le truc le plus moche ce sont
+**4.1 Les images peintes, la grande réussite** — ★★★ le pivot du projet, en une nuit : « le truc le plus moche ce sont
 les arbres » (18/10, 20 h 40) → un APK où la forêt change toutes les 12 s (A arbres 3D, B arbres peints, C touffes) →
 « les arbres peints ça rend vachement bien ! » → mandat de 8 h → ~7 800 images peintes posées, 72 i/s (19/10, 0 h 38).
 Une image peinte de 2 triangles, générée dans le style, rend mieux qu'un arbre 3D de 2 700 triangles : c'est aussi la
@@ -446,7 +446,7 @@ Le même procédé donnera V03 (volet), V05 (eau) et C20 (19 versions).
   beat (mesure casque posé, à confirmer casque porté).
 - **Applis** : finale 369 Mo (Shipping), travail 414 Mo (719 avant le retrait de la vidéo de test du spike 360).
 - **Matériel** : un PC Windows + WSL2, une RTX 3090 24 Go, un Quest 3 en USB. Côté agent, aucun service payant
-  (hors l'abonnement Claude) ; côté Olivier : Midjourney et Suno.
+  (hors Claude lui-même) ; côté Olivier : Midjourney et Suno.
 - **Mandats d'autonomie** : 8 h (18/10, nuit), 6 h sans casque (19/10), « tu as 20 h devant toi » (19-20/10).
 - **À compléter par toi** : heures réellement passées, nombre de sessions au casque, coût.
 
