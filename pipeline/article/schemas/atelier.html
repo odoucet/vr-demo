@@ -1,0 +1,115 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>L'atelier</title>
+<!-- Schéma de l'article : qui pilote quoi, et par quel canal. Rendu en PNG par pipeline/article/schemas.py.
+     Taille : viewBox 1600×900, texte ≥ 19 px pour rester lisible une fois l'image réduite à ~800 px de large. -->
+<style>
+  html, body { margin: 0; background: #f6f1e7; }
+  svg { display: block; font-family: "Segoe UI", "Noto Sans", sans-serif; }
+  .titre { font-size: 38px; font-weight: 700; fill: #1d2b3a; }
+  .sous { font-size: 22px; fill: #5b6670; }
+  .h { font-size: 27px; font-weight: 700; fill: #1d2b3a; }
+  .t { font-size: 21px; fill: #1d2b3a; }
+  .m { font-size: 19px; fill: #5b6670; }
+  .fl { font-size: 19px; fill: #1d2b3a; font-style: italic; }
+  .carte { fill: #fffdf8; stroke: #1d2b3a; stroke-width: 1.5; }
+  .fichier { fill: #fffdf8; stroke: #b9b0a0; stroke-width: 1.2; }
+  .lien { stroke: #1d2b3a; stroke-width: 2; fill: none; }
+  .explore { stroke-dasharray: 7 6; }
+</style>
+<svg viewBox="0 0 1600 900" width="1600" height="900" role="img"
+     aria-label="L'atelier : Olivier et l'agent ne se parlent qu'à travers des fichiers ; l'agent pilote chaque outil par un script, explore Unreal par le MCP, et rejoint Olivier au casque par adb.">
+  <defs>
+    <marker id="fl" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1d2b3a"/>
+    </marker>
+    <marker id="flo" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#c8742b"/>
+    </marker>
+  </defs>
+
+  <text class="titre" x="48" y="64">L'atelier : qui pilote quoi</text>
+  <text class="sous" x="48" y="100">Un PC (Windows + WSL2), une RTX 3090, un Quest 3 branché en USB. Images, 3D et rendus : en local.</text>
+
+  <!-- Olivier -->
+  <rect x="48" y="150" width="320" height="340" rx="14" fill="#fffdf8" stroke="#c8742b" stroke-width="2.5"/>
+  <rect x="48" y="150" width="320" height="10" rx="5" fill="#c8742b"/>
+  <text class="h" x="72" y="206">Olivier</text>
+  <text class="m" x="72" y="236">directeur artistique</text>
+  <text class="t" x="72" y="292">Midjourney</text><text class="m" x="72" y="318">images de référence</text>
+  <text class="t" x="72" y="364">Suno</text><text class="m" x="72" y="390">la musique et ses stems</text>
+  <text class="t" x="72" y="436">ses retours, ses accords</text><text class="m" x="72" y="462">installations, périmètre</text>
+
+  <!-- Fichiers partagés -->
+  <text class="h" x="428" y="190">Les fichiers</text>
+  <rect class="fichier" x="420" y="210" width="262" height="62" rx="8"/>
+  <text class="t" x="438" y="249">CLAUDE.md</text><text class="m" x="580" y="249">les règles</text>
+  <rect class="fichier" x="420" y="284" width="262" height="62" rx="8"/>
+  <text class="t" x="438" y="323">SUIVI.md</text><text class="m" x="580" y="323">l'état</text>
+  <rect class="fichier" x="420" y="358" width="262" height="62" rx="8"/>
+  <text class="t" x="438" y="397">HISTORY.md</text><text class="m" x="580" y="397">le journal</text>
+  <rect class="fichier" x="420" y="432" width="262" height="62" rx="8"/>
+  <text class="t" x="438" y="471">refs/, audio/</text><text class="m" x="580" y="471">les dépôts</text>
+
+  <line class="lien" x1="371" y1="320" x2="416" y2="320" marker-end="url(#fl)" marker-start="url(#fl)"/>
+  <line class="lien" x1="686" y1="320" x2="744" y2="320" marker-end="url(#fl)" marker-start="url(#fl)"/>
+
+  <!-- Agent : une colonne haute, d'où partent tous les canaux -->
+  <rect x="748" y="130" width="300" height="464" rx="14" fill="#133e66"/>
+  <text x="772" y="186" font-size="31" font-weight="700" fill="#ffffff">Claude Code</text>
+  <text x="772" y="220" font-size="21" fill="#d6e2ee">Claude Opus 5.5, dans WSL2</text>
+  <text x="772" y="290" font-size="21" fill="#ffffff">58 scripts Python</text>
+  <text x="772" y="320" font-size="19" fill="#d6e2ee">build.py reconstruit tout</text>
+  <text x="772" y="390" font-size="21" fill="#ffffff">écrit le code, génère,</text>
+  <text x="772" y="420" font-size="21" fill="#ffffff">construit, compile,</text>
+  <text x="772" y="450" font-size="21" fill="#ffffff">installe, mesure</text>
+  <text x="772" y="530" font-size="19" fill="#d6e2ee">commite à chaque itération</text>
+
+  <!-- Outils : un canal droit par outil, étiqueté au-dessus de la flèche -->
+  <rect class="carte" x="1258" y="130" width="300" height="96" rx="12"/>
+  <text class="h" x="1280" y="172">Unreal Engine 5.8</text>
+  <text class="m" x="1280" y="204">la scène, les APK</text>
+  <line class="lien explore" x1="1050" y1="160" x2="1254" y2="160" marker-end="url(#fl)"/>
+  <text class="fl" x="1064" y="150">MCP : explorer</text>
+  <line class="lien" x1="1050" y1="200" x2="1254" y2="200" marker-end="url(#fl)"/>
+  <text class="fl" x="1064" y="226">Python : construire</text>
+
+  <rect class="carte" x="1258" y="250" width="300" height="96" rx="12"/>
+  <text class="h" x="1280" y="292">ComfyUI local</text>
+  <text class="m" x="1280" y="324">images, textures, 3D</text>
+  <line class="lien" x1="1050" y1="298" x2="1254" y2="298" marker-end="url(#fl)"/>
+  <text class="fl" x="1064" y="288">API HTTP</text>
+
+  <rect class="carte" x="1258" y="370" width="300" height="64" rx="12"/>
+  <text class="h" x="1280" y="412">Blender</text>
+  <text class="m" x="1400" y="412">nettoyage 3D</text>
+  <line class="lien" x1="1050" y1="402" x2="1254" y2="402" marker-end="url(#fl)"/>
+  <text class="fl" x="1064" y="392">bpy, sans fenêtre</text>
+
+  <rect class="carte" x="1258" y="450" width="300" height="64" rx="12"/>
+  <text class="h" x="1280" y="492">Freesound</text>
+  <text class="m" x="1440" y="492">sons CC0</text>
+  <line class="lien" x1="1050" y1="482" x2="1254" y2="482" marker-end="url(#fl)"/>
+  <text class="fl" x="1064" y="472">API</text>
+
+  <rect class="carte" x="1258" y="530" width="300" height="64" rx="12"/>
+  <text class="h" x="1280" y="572">GitHub</text>
+  <text class="m" x="1390" y="572">134 commits</text>
+  <line class="lien" x1="1050" y1="562" x2="1254" y2="562" marker-end="url(#fl)"/>
+  <text class="fl" x="1064" y="552">git</text>
+
+  <!-- Le casque : là où les deux se rejoignent -->
+  <rect x="1258" y="670" width="300" height="150" rx="14" fill="#fffdf8" stroke="#2a79a5" stroke-width="2.5"/>
+  <text class="h" x="1280" y="716">Quest 3</text>
+  <text class="m" x="1280" y="748">la balade, en temps réel</text>
+  <text class="m" x="1280" y="778">à 72 images par seconde</text>
+
+  <path class="lien" d="M898,596 L898,712 L1254,712" marker-end="url(#fl)"/>
+  <text class="fl" x="916" y="646">adb : installer, capturer la vue,</text>
+  <text class="fl" x="916" y="674">mesurer la fluidité</text>
+
+  <path class="lien" d="M208,492 L208,786 L1254,786" marker-end="url(#flo)" style="stroke: #c8742b"/>
+  <text class="fl" x="232" y="772">porte le casque, voit en relief, dit ce qui ne va pas</text>
+
+  <text class="m" x="48" y="866">Pointillé : le MCP d'Unreal sert à regarder ; tout ce qui modifie la scène passe par un script versionné.</text>
+</svg>

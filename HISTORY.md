@@ -591,3 +591,30 @@ autonome. `SUIVI.md` dit où en est le projet ; ce fichier raconte comment on y 
   secondes l'a trouvée. Correctif : sous le plancher, l'eau reste 30 cm plus bas — invisible, et sans creux autour de la
   coque.
 - SUIVI.md, devenu un journal de 820 lignes au fil des séances, ramené à l'état final (le détail reste dans git et ici).
+
+## 30/10 — l'axe de l'article, plan v2 et premiers visuels
+
+- Olivier donne l'axe, avec son intro : « j'ai voulu savoir à quel point une IA pouvait être autonome pour réaliser une
+  petite démo VR assez simple […] Audio IA, assets IA ... Qu'est ce qu'il est possible de faire en octobre 2026 ? Et
+  qu'est ce que j'ai appris sur l'Unreal Engine (que je ne maitrise pas du tout, si ce n'est côté gamer) ? », et
+  insiste : « un article assez graphique : des schémas, mais aussi […] des screenshots voir des vidéos à remonter ».
+- Le plan du 23/10 est réorganisé autour de ses trois questions. L'angle recommandé alors (« l'agent qui ne pouvait
+  pas mettre le casque ») devient la limite de la première ; l'annexe technique devient un chapitre construit sur ses
+  propres questions de joueur, relevées dans le journal. Le plan devient un storyboard : chaque partie liste ses
+  visuels, ceux qui existent sont affichés dans `ARTICLE.md`.
+- Inventaire relu image par image plutôt que par noms de fichiers. Trouvailles : la comparaison des arbres A/B/C au
+  casque existe (iter-022, étiquettes visibles à la proue), alors que le plan du 23/10 la croyait à refaire ; une
+  capture d'iter-063 montre la pièce d'Olivier en transparence, avec des photos personnelles (écartée pour toujours) ;
+  plusieurs captures portent un rectangle noir ; les instants fixes des passes complètes sont onze, pas dix ; un
+  chiffre du journal arrondi (résolution à 60 % : 0,6 ms dans le journal, 0,34 ms dans le fichier de mesure) ; les
+  hachages cités avant le 21/10 sont ceux d'avant la réécriture de l'historique.
+- Une idée de montage propre au projet : les 19 animatics suivent toutes la même caméra, donc un même instant se
+  compare d'une version à l'autre. En changeant de version toutes les 6 s sur une fenêtre continue, la barque avance
+  sans coupure pendant que le décor se construit (« le même passage, sept versions », 42 s, 19/10 11 h 50 → 23/10).
+  Les légendes de chaque version ont été vérifiées contre les commits : à 14 h 56, le pont était déjà le modèle
+  d'Olivier, mais avec la texture grise du substitut (le bug de réimport, corrigé à 16 h 33).
+- Trois prototypes pour valider la charte avant la série, tous par script (`pipeline/article/`) : le schéma de
+  l'atelier, le graphique des commits, le montage. Impasses en route : un premier schéma en flèches courbes dont les
+  traits barraient leurs propres étiquettes (refait en canaux droits) ; un bleu nuit refusé par l'outil de validation
+  des couleurs (trop sombre, trop gris pour une donnée), remplacé par le bleu eau de la palette du projet ; des
+  étiquettes du graphique qui se chevauchaient dans les 35 premières heures (quatre rangs au lieu de trois).

@@ -164,7 +164,9 @@ ce qui doit être vérifié au casque à chaque jalon.
 SUIVI.md             suivi unique : blocages, décisions attendues, état des jalons
 HISTORY.md           journal chronologique des étapes et décisions (pour l'article)
 PROMPTS.md           prompts Midjourney et Suno
-pipeline/            scripts (build.py, layout/, unreal/, blender/, comfy/, review/, audio/, style/)
+ARTICLE.md           plan de l'article sur le processus (storyboard, visuels)
+pipeline/            scripts (build.py, layout/, unreal/, blender/, comfy/, review/, audio/, style/, article/)
+article/             visuels de l'article : schémas, graphiques, montages (vidéos hors dépôt)
 assets/manifest.yaml traçabilité de chaque asset généré
 refs/inbox/          dépôts d'Olivier (Midjourney, croquis)
 refs/approved/       bible de style validée

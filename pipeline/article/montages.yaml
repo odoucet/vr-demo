@@ -1,0 +1,38 @@
+# Montages vidéo de l'article, remontés depuis les animatics de review/ (pipeline/article/montage.py).
+#
+# Toutes les animatics suivent la même trajectoire de caméra (barque à vitesse constante, séquence calée sur la
+# musique) : un même instant de la balade se retrouve, au même cadrage, dans chaque version. Un montage « versions »
+# fait donc avancer la barque sans coupure tout en changeant de version à chaque segment : le décor se construit
+# pendant qu'on le regarde.
+#
+# fenetre : [début, fin] en secondes de balade ; versions : dans l'ordre chronologique, segments de durée égale ;
+# date : rendu de la version (heure de Paris) ; audio : animatic dont on garde la bande-son, continue sur la fenêtre ;
+# pose : instant de la planche fixe qui accompagne la vidéo.
+
+pont-versions:
+  titre: "Le même passage, sept versions"
+  fenetre: [98, 140]
+  audio: review/iter-064/animatic-hd.mp4
+  pose: 112
+  versions:
+    - src: review/iter-031/animatic.mp4
+      date: "2026-10-19 11:50"
+      quoi: "barque d'origine, arche de racines, filtre peinture du rendu PC"
+    - src: review/iter-038/animatic.mp4
+      date: "2026-10-19 13:08"
+      quoi: "nouvelle barque d'Olivier en 3D, lanterne basse"
+    - src: review/iter-046/animatic.mp4
+      date: "2026-10-19 14:56"
+      quoi: "le pont d'Olivier remplace l'arche (texture grise du substitut : bug d'import)"
+    - src: review/iter-048/animatic.mp4
+      date: "2026-10-19 15:37"
+      quoi: "image d'Olivier projetée sur le modèle 3D"
+    - src: review/iter-051/animatic.mp4
+      date: "2026-10-19 20:48"
+      quoi: "imports corrigés : Nanite coupé, vraie texture"
+    - src: review/iter-054/animatic.mp4
+      date: "2026-10-20 00:43"
+      quoi: "eau refaite, sillage né à l'étrave"
+    - src: review/iter-064/animatic-hd.mp4
+      date: "2026-10-23 02:10"
+      quoi: "version du 23/10, rendue en 4K"

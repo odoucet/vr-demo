@@ -1,7 +1,8 @@
 # Suivi — La barque des lucioles
 
 **Fichier unique de suivi.** Tenu par l'agent, lu par Olivier. Classé par criticité.
-Mis à jour : 2026-10-23 — **version finale livrée au casque.**
+Mis à jour : 2026-10-30 — **plan de l'article revu sur l'axe d'Olivier, trois premiers visuels.** Démo : version
+finale livrée au casque le 23/10.
 
 Légende : 🔴 bloque, aucun contournement · 🟠 contourné · 🟢 mineur
 
@@ -9,6 +10,21 @@ Le suivi détaillé des séances du 17 au 23/10 (retours au casque un par un, me
 ici à l'état final ; il reste lisible dans l'historique git (`git show 3c4edf0:SUIVI.md`) et raconté dans `HISTORY.md`.
 
 ---
+
+## ▶ Article (30/10)
+
+Axe donné par Olivier : jusqu'où une IA peut-elle être autonome sur une petite démo VR, en tour d'horizon (autonomie ;
+assets et audio IA en octobre 2026 ; Unreal vu par un joueur). `ARTICLE.md` refait en storyboard : intro reformulée,
+chemin de fer en sept parties, ~40 visuels inventoriés (sources vérifiées, aperçus intégrés), vigilance mise à jour.
+
+- **Prototypes** (charte et procédé à valider avant la série) : schéma `article/schemas/atelier.png`, graphique
+  `article/graphiques/commits.png`, montage `article/montages/pont-versions.mp4` (42 s : la barque avance sans coupure
+  pendant que le décor change de version) et sa planche `.jpg`. Scripts : `pipeline/article/`.
+- **Attendu d'Olivier** : validation du plan et des réponses provisoires (`ARTICLE.md` §1, §3), décisions A3-A9 (§6),
+  éléments 🎙 (captation au casque, photo, temps et coût, regard de joueur).
+- **Défauts appliqués** (réversibles) : charte papier / bleu eau / orange lanterne / Segoe UI (§4.4 : changer les
+  constantes et relancer les scripts) ; premier jet écrit par l'agent à la voix d'Olivier, avec `[à toi]` (A8).
+- **À ne jamais publier** : `review/iter-063/casque/008s.jpg` (la pièce d'Olivier en transparence, photos personnelles).
 
 ## ▶ État final (23/10)
 
@@ -88,7 +104,7 @@ Aucun.
 1. **Audit automatique des plans vus par la tranche** : caméra qui tourne sur 360° toutes les 5 s le long du parcours
    (éditeur), zones anormalement uniformes repérées. Cette famille de défauts est revenue deux fois.
 2. **Vidéo partageable sans casque** : 360 stéréo ou côte-à-côte 3D (la vidéo 4K à plat existe).
-3. **Premier jet de l'article** à partir de `HISTORY.md` et du plan de `ARTICLE.md` (D20).
+3. **Visuels puis premier jet de l'article** (D20) : par lots après validation de la charte (`ARTICLE.md` §9).
 
 ---
 
@@ -115,7 +131,7 @@ Chaque décision a un défaut réversible appliqué. Celles qui restent ouvertes
 | D17 | Nettoyage LFS | ✅ dépôt recréé le 21/10 (3,9 Go) ; sauvegarde `G:\barque-sauvegarde-git-20261021` à supprimer quand Olivier le souhaite |
 | D18 | Statues géantes | ✅ arche sculptée + tête couchée, en 3D |
 | D19 | Architecture proche / lointain | ✅ **tranché le 23/10 : tout en temps réel**, lointain vidéo 360 retiré |
-| D20 | Article | plan dans `ARTICLE.md` (angle « l'agent qui ne pouvait pas mettre le casque ») ; à écrire |
+| D20 | Article | ✅ **axe tranché le 30/10** par Olivier : autonomie d'une IA, en tour d'horizon (Q1-Q3) ; plan v2 dans `ARTICLE.md`, décisions propres à l'article en §6 (A3-A9) |
 
 ## État des jalons
 
