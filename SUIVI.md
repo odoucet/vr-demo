@@ -21,10 +21,12 @@ plan de l'article me va très bien »), article rédigé à sa voix, dans le sty
   MetaSlider dans `article/diaporamas/` (A/B/C des arbres, 3 diapositives ; le pont en sept versions, 7), légende
   incrustée ; `article/apercu.html` pour relire ; mode d'emploi dans `article/LISEZMOI.md`. Tout se régénère :
   `pipeline/article/` (maîtres dans `builds/article/`, puis `export_web.py`).
-- **Vidéo 4K pour YouTube** : la dernière (`review/iter-064/animatic-hd.mp4`, 23/10 2 h 10) précède les corrections
-  du 23/10 matin. À refaire : `python pipeline/review/animatic.py --iter 70 --hd` (éditeur ouvert, ~1 h de GPU), puis
-  repointer les médias de l'article sur iter-070 et relancer `pipeline/article/`. En attente du go d'Olivier.
-- **Attendu d'Olivier** : assembler les deux diaporamas dans MetaSlider et remplacer les deux
+- **Vidéo 4K pour YouTube** : `review/iter-070/animatic-hd-5.1.mp4` (1,6 Go), la version finale rendue le 30/10 à
+  priorité basse (33 min), avec une piste stéréo puis une piste 5.1, comme le recommande YouTube. Son 5.1 seul :
+  `review/iter-070/animatic-5.1.flac`, spatialisé comme au casque (`pipeline/review/mix51.py`), vérifié par la mesure
+  seulement. Les médias de l'article sont refaits à partir de ce rendu.
+- **Attendu d'Olivier** : écouter le 5.1 (l'arrière est aussi présent que l'avant, comme au casque : un réglage s'il
+  le veut plus discret) ; assembler les deux diaporamas dans MetaSlider et remplacer les deux
   `[metaslider id="REMPLACER-…"]` ; remplir l'unique `[À COMPLÉTER]` (temps passé, sessions au casque, coût) ;
   trancher le paragraphe sur le style (A4) ; vérifier les droits (Suno, Midjourney, modèles locaux) ; plateforme :
   WordPress (A7, tranché par sa demande).
@@ -61,7 +63,8 @@ chargement, pendant le noir du début (non significatif). Casque posé : regard 
 - Captures automatiques au casque : `python pipeline/unreal/quest_shots.py --iter N [--package com.odoucet.barque]`.
 - Fluidité : `python pipeline/unreal/quest_perf.py --variant finale|greybox` ; essais A/B de réglages en direct :
   `quest_ab.py` (version de travail).
-- Vidéo 4K à plat : `python pipeline/review/animatic.py --hd` (dernière : `review/iter-064/animatic-hd.mp4`).
+- Vidéo 4K à plat : `python pipeline/review/animatic.py --hd` (dernière : `review/iter-070/animatic-hd.mp4`, version
+  finale, 30/10) ; son 5.1 et version YouTube : `python pipeline/review/mix51.py --iter 70`.
 
 ### Corrigé en dernier (23/10)
 

@@ -2,14 +2,16 @@
 #
 # Toutes les animatics suivent la même trajectoire de caméra (barque à vitesse constante, séquence calée sur la
 # musique) : un même instant de la balade se retrouve, au même cadrage, dans chaque version.
-# Temps en secondes de balade. date : rendu de la version (heure de Paris).
+# Temps en secondes de balade. date : état du projet que montre la version (heure de Paris).
+# La version finale est la vidéo 4K rendue le 30/10 (review/iter-070) de la démo telle que livrée le 23/10 à 11 h 45 :
+# un seul chemin, repris par l'ancre &finale ; compositions.py et graphiques.py ont le leur (FINALE).
 
 # Le passage du pont : la barque avance sans coupure, le décor change de version toutes les 6 s.
 pont-versions:
   type: versions
   titre: "Le même passage, sept versions"
   fenetre: [98, 140]
-  audio: review/iter-064/animatic-hd.mp4
+  audio: &finale review/iter-070/animatic-hd.mp4
   pose: 112            # instant de la planche fixe qui accompagne la vidéo
   versions:
     - src: review/iter-031/animatic.mp4
@@ -30,15 +32,15 @@ pont-versions:
     - src: review/iter-054/animatic.mp4
       date: "2026-10-20 00:43"
       quoi: "eau refaite, sillage né à l'étrave"
-    - src: review/iter-064/animatic-hd.mp4
-      date: "2026-10-23 02:10"
-      quoi: "version du 23/10, rendue en 4K"
+    - src: *finale
+      date: "2026-10-23 11:45"
+      quoi: "version finale, rendue en 4K"
 
 # Bande-annonce : huit plans de l'animatique finale, sur la musique à partir de la modulation (2:17,8 du morceau,
 # la plus forte frontière, puis le sommet et la retombée de l'outro).
 bande-annonce:
   type: extraits
-  src: review/iter-064/animatic-hd.mp4
+  src: *finale
   plans:                     # [début, fin]
     - [13, 18]               # la brume du départ, le ponton
     - [29, 34]               # les roseaux qui frôlent la barque
@@ -63,8 +65,8 @@ volet-lac:
     date: "2026-10-19 12:12"
     quoi: "avant"
   apres:
-    src: review/iter-064/animatic-hd.mp4
-    date: "2026-10-23 02:10"
+    src: *finale
+    date: "2026-10-23 11:45"
     quoi: "après"
 
 # L'eau refaite dans la nuit du 19 au 20/10 : les rides orientées contre le réseau de crêtes sans direction.
@@ -82,7 +84,7 @@ eau-avant-apres:
 # Le héron du final et son repère sonore (pipeline/audio/soundscape.yaml : cue-heron, sfx-heron-ailes).
 heron:
   type: legendes
-  src: review/iter-064/animatic-hd.mp4
+  src: *finale
   fenetre: [207, 234]
   legendes:                  # [début, fin, texte]
     - [210.2, 215.5, "un cri d'aigrette, au loin (Freesound, CC0)"]

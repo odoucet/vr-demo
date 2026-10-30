@@ -671,3 +671,19 @@ autonome. `SUIVI.md` dit où en est le projet ; ce fichier raconte comment on y 
   sont tirés : leurs légendes disaient « version finale », elles disent maintenant « version du 23 octobre ». Un
   nouveau rendu demande l'éditeur ouvert et environ une heure de carte graphique ; ensuite, les scripts de
   `pipeline/article/` refont tous les médias de l'article à partir de lui.
+
+## 30/10 fin d'après-midi — la vidéo 4K finale, et un son 5.1 comme au casque
+
+- Olivier : « lance le rendering en priority "idle". On peut avoir un fichier son en 5.1 ? »
+- Le rendu : l'éditeur lancé en priorité Idle, puis, toutes les 30 s, chaque processus d'Unreal remis en Idle, celui du
+  rendu Movie Render Queue compris (il tourne à part) ; l'encodage final en `nice 19`. 7 183 images en 4K en 33 minutes.
+  Comparé au rendu de 2 h 10 : la bête passe sous la surface au lieu de la crever, la barque roule davantage, la fleur
+  3D de la proue a disparu ; le pont et le lac sont identiques. Les médias de l'article en sont refaits (une seule
+  référence pour les montages, datée de l'état livré, 23/10 11 h 45, pour que la frise des six jours reste juste).
+- Le 5.1 n'est pas un élargissement de la stéréo : il refait ce que joue la démo, vu de la caméra. Les dix stems aux
+  positions du jeu ; les repères des créatures, la faune et le héron le long de leurs émetteurs, avec les atténuations
+  du jeu ; les ambiances autour ; panoramique par paires d'enceintes, graves sous 120 Hz dans le LFE ; même intensité
+  que la stéréo. Vérifié sans l'écouter : une carte des niveaux par enceinte et la direction de chaque son au fil du
+  temps (la bête arrive de l'arrière droit et double la barque, le troupeau traverse devant de droite à gauche, le héron
+  crie à 38 m à l'avant gauche puis se pose à 2,3 m). Pour YouTube, une piste stéréo puis une piste 5.1, comme dans
+  leurs recommandations. Reste l'oreille d'Olivier : l'arrière y est aussi présent que l'avant, fidèle au casque.

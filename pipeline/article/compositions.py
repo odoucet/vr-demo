@@ -26,7 +26,7 @@ OUT_DIAPOS = ROOT / "builds" / "article" / "diaporamas"
 DIAPO = (1600, 900)
 FONTS = Path("/mnt/c/Windows/Fonts")
 PAPIER, ENCRE, ENCRE_2, LANTERNE = "#f6f1e7", "#1d2b3a", "#5b6670", "#c8742b"
-FINALE = "review/iter-064/animatic-hd.mp4"
+FINALE = "review/iter-070/animatic-hd.mp4"          # version finale (23/10, 11 h 45), rendue en 4K le 30/10
 
 
 def font(size, bold=False):

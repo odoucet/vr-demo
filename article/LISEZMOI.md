@@ -59,6 +59,13 @@
   `review/iter-049/casque/030s.jpg`. Aucune n'est dans l'article.
 - Les rendus PC sont légendés comme tels ; seules les captures du casque montrent la vraie image du Quest.
 
+## La vidéo complète, pour YouTube
+
+`review/iter-070/animatic-hd-5.1.mp4` (1,6 Go, hors dépôt) : la balade entière en 4K, version finale rendue sur PC,
+avec une piste stéréo puis une piste 5.1 spatialisée comme au casque. Le son 5.1 seul : `review/iter-070/animatic-5.1.flac`.
+Pour les refaire : `python pipeline/review/animatic.py --iter N --hd` (éditeur ouvert), puis
+`python pipeline/review/mix51.py --iter N`.
+
 ## Régénérer
 
 Tout se refait par script, dans WSL, depuis le dépôt :

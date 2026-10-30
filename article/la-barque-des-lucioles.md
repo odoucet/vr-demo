@@ -4,7 +4,7 @@
 
 ![Le lac du final, la nuit : un héron blanc posé à l'avant d'une barque en bois, des lucioles, un arbre sur une île et la lune.](/wp-content/uploads/2026/10/barque-01-heros.jpg)
 
-*Le lac, à 3 min 52 : le héron vient de se poser sur la barque. Image de la version du 23 octobre, rendue sur PC.*
+*Le lac, à 3 min 52 : le héron vient de se poser sur la barque. Image de la version finale, rendue sur PC.*
 
 Ces derniers mois, les IA ont fait un bond, et les MCP se sont multipliés. Un MCP, c'est un connecteur qui laisse une IA piloter un logiciel : Unreal Engine a maintenant le sien, Blender aussi, et on en trouve pour ComfyUI, l'outil de génération d'images que j'utilise. Sur le papier, une IA peut donc faire tourner seule les outils d'un studio de jeu vidéo. J'ai voulu voir ce que ça donne en vrai.
 
@@ -18,7 +18,7 @@ Tout ce qui illustre cet article sort du dépôt du projet : captures du casque
 
 [video mp4="/wp-content/uploads/2026/10/barque-02-bande-annonce.mp4" poster="/wp-content/uploads/2026/10/barque-02-bande-annonce-poster.jpg" width="1920" height="1080" preload="metadata"][/video]
 
-*La bande-annonce : huit plans de la version du 23 octobre, rendue sur PC en 4K. Dans le casque, l'image est moins fine.*
+*La bande-annonce : huit plans de la version finale, rendue sur PC en 4K. Dans le casque, l'image est moins fine.*
 
 ## Le terrain d'essai
 
@@ -30,7 +30,7 @@ Sept moments ponctuent les quatre minutes : le noir et le clapotis du départ, 
 
 ![La rivière vue de dessus avec ses sept moments, une vignette par moment, et la forme d'onde de la musique avec le début de chaque moment.](/wp-content/uploads/2026/10/barque-04-balade.jpg)
 
-*La balade vue de dessus, une image par moment (rendu PC de la version du 23 octobre), et la musique sur laquelle tout est calé.*
+*La balade vue de dessus, une image par moment (rendu PC de la version finale), et la musique sur laquelle tout est calé.*
 
 La musique commande tout. « Luminous Wonder » est un morceau que j'ai généré sur Suno. L'agent en a analysé la structure et repéré les frontières : la plus forte, une modulation, tombe à 2 min 38 dans la démo et ouvre la scène de la lune. Après le noir du début, chaque moment démarre sur une de ces frontières. Le séquencier suit la musique, jamais l'inverse.
 

@@ -8,7 +8,7 @@ les moments-clés tirés de HISTORY.md (heures du journal ; « ≈ » quand le j
 leviers : le temps GPU gagné en coupant chaque élément, essais A/B au casque (review/perf/ab-20261018-142*.txt).
 lac : l'enregistrement de l'ambiance du lac lu sans l'écouter (spectre, niveau des graves), les zones écartées.
 balade : la rivière vue de dessus, une image par beat, la musique et ses beats (pipeline/layout/river.json,
-sequencer.yaml, animatique iter-064).
+sequencer.yaml, animatique finale).
 son : les stems de la musique placés autour du spectateur, vue de dessus (pipeline/audio/stems.yaml).
 
 Sorties : builds/article/graphiques/<nom>.png (2600 px de large, maîtres hors dépôt ; versions web :
@@ -36,6 +36,7 @@ from PIL import Image  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "builds" / "article" / "graphiques"
+FINALE = "review/iter-070/animatic-hd.mp4"          # version finale (23/10, 11 h 45), rendue en 4K le 30/10
 
 PAPIER, ENCRE, ENCRE_2, FILET, NUIT = "#f6f1e7", "#1d2b3a", "#5b6670", "#dcd4c4", "#ebe4d5"
 EAU, LANTERNE = "#2a79a5", "#c8742b"
@@ -337,7 +338,7 @@ def balade():
     w = 0.92 / 7
     for k, b in enumerate(seq["beats"]):
         ax = fig.add_axes([0.04 + k * w + 0.004, 0.29, w - 0.008, w * 13 / 9.4 * 9 / 16])
-        ax.imshow(frame("review/iter-064/animatic-hd.mp4", BEATS[b["id"]][1]))
+        ax.imshow(frame(FINALE, BEATS[b["id"]][1]))
         ax.set_xticks([])
         ax.set_yticks([])
         for s in ax.spines.values():
