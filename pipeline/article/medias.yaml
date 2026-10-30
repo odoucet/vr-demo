@@ -22,14 +22,12 @@ medias:
   barque-10-casque-pose.jpg:        {src: review/iter-026/casque/062s.jpg, largeur: 1200}
   barque-11-bouton-a.jpg:           {src: review/casque-A/20261023/A-0118.2s.jpg, largeur: 1400}
   barque-12-roles.png:              {src: builds/article/schemas/roles.png, largeur: 1800}
-  barque-13-arbres-abc.jpg:         {src: builds/article/compositions/arbres-abc.jpg, largeur: 1440}
   barque-14-images-peintes.jpg:     {src: builds/article/compositions/images-peintes.jpg, largeur: 2000}
   barque-15-chaine-images.jpg:      {src: builds/article/compositions/chaine-sprites.jpg, largeur: 1920}
   barque-16-reference-resultat.jpg: {src: builds/article/compositions/reference-resultat.jpg, largeur: 1672}
   barque-17-barque-3d.jpg:          {src: review/3d/comparaison.jpg, recadre: [0, 0, 1, 0.5], largeur: 1536}
   barque-18-statues.jpg:            {src: builds/article/compositions/statues.jpg, largeur: 2000}
   barque-19-chaine-3d.jpg:          {src: builds/article/compositions/chaine-3d.jpg, largeur: 2000}
-  barque-20-pont-versions.jpg:      {src: builds/article/montages/pont-versions.jpg, largeur: 2000}
   barque-21-son.png:                {src: builds/article/graphiques/son.png, largeur: 1800}
   barque-22-lac.jpg:                {src: builds/article/graphiques/lac.png, largeur: 2000, qualite: 88}
   barque-23-heron.mp4:              {src: builds/article/montages/heron.mp4, affiche: 21}
@@ -41,3 +39,10 @@ medias:
   barque-29-avant-apres.jpg:        {src: builds/article/compositions/avant-apres.jpg, largeur: 1992}
   barque-30-volet-lac.mp4:          {src: builds/article/montages/volet-lac.mp4, affiche: 8.5}
   barque-31-chiffres.png:           {src: builds/article/schemas/chiffres.png, largeur: 1800}
+
+# Diaporamas MetaSlider (demande d'Olivier, 30/10 : les comparaisons « côte à côte », en plus grand) : une image par
+# diapositive, 1600×900, légende incrustée (compositions.py), publiées dans article/diaporamas/<nom>/. Dans l'article,
+# [metaslider id="REMPLACER-<nom>"] marque leur place, à remplacer par le code court donné par MetaSlider.
+diaporamas:
+  barque-13-arbres-abc:    {src: builds/article/diaporamas/barque-13-arbres-abc, largeur: 1600, qualite: 85}
+  barque-20-pont-versions: {src: builds/article/diaporamas/barque-20-pont-versions, largeur: 1600, qualite: 85}

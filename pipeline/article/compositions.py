@@ -1,21 +1,29 @@
 """Images composées de l'article, à partir des captures, rendus et images du dépôt.
 
-    python pipeline/article/compositions.py               # toutes
-    python pipeline/article/compositions.py heros         # une seule
+    python pipeline/article/compositions.py                          # toutes, diaporamas compris
+    python pipeline/article/compositions.py heros                    # une seule
+    python pipeline/article/compositions.py barque-20-pont-versions  # un diaporama
 
 Sorties : builds/article/compositions/<nom>.jpg, maîtres en pleine définition, hors dépôt (l'export web réduit
 et compresse : pipeline/article/export_web.py). Les images tirées des animatics demandent les vidéos de review/
 (hors dépôt).
+
+Diaporamas (MetaSlider dans WordPress) : une image par diapositive, toutes en 1600×900 pour que le diaporama n'ait
+rien à recadrer, la légende incrustée (MetaSlider ne montre pas la légende de la médiathèque) :
+builds/article/diaporamas/<nom>/<nom>-<n>.jpg.
 """
 import argparse
 import io
 import subprocess
 from pathlib import Path
 
+import yaml
 from PIL import Image, ImageDraw, ImageFont
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "builds" / "article" / "compositions"
+OUT_DIAPOS = ROOT / "builds" / "article" / "diaporamas"
+DIAPO = (1600, 900)
 FONTS = Path("/mnt/c/Windows/Fonts")
 PAPIER, ENCRE, ENCRE_2, LANTERNE = "#f6f1e7", "#1d2b3a", "#5b6670", "#c8742b"
 FINALE = "review/iter-064/animatic-hd.mp4"
@@ -78,10 +86,67 @@ def heros():
     return frame(FINALE, 232)
 
 
-def arbres_abc():
-    """Première rangée de la planche iter-022 : la même forêt en A, B, C au casque."""
-    planche = image("review/iter-022/planche-casque.jpg")
-    return planche.crop((0, 0, planche.width, planche.height // 3))
+def lignes(g, texte, police, largeur):
+    """Coupe un texte en lignes d'au plus `largeur` pixels, aux espaces ordinaires seulement (« 2 700 » reste entier)."""
+    out, cur = [], ""
+    for mot in texte.split(" "):
+        essai = f"{cur} {mot}".strip()
+        if cur and g.textlength(essai, font=police) > largeur:
+            out.append(cur)
+            cur = mot
+        else:
+            cur = essai
+    return out + [cur] if cur else out
+
+
+def legende(im, titre, sous_titre, compteur, largeur=760):
+    """Légende incrustée en bas à gauche (boîte sombre, texte blanc, comme dans les vidéos) et compteur en haut à
+    droite. `largeur` borne la boîte, pour laisser libre le centre de l'image."""
+    im = im.copy()
+    g = ImageDraw.Draw(im, "RGBA")
+    ft, fs, fc = font(44, True), font(31), font(28, True)
+    rangs = [(l, ft) for l in lignes(g, titre, ft, largeur)] + [(l, fs) for l in lignes(g, sous_titre, fs, largeur)]
+    pad, gap, marge = 22, 8, 44
+    hauts = [g.textbbox((0, 0), "Ag" + l, font=f)[3] for l, f in rangs]
+    w = max(g.textlength(l, font=f) for l, f in rangs) + 2 * pad
+    h = sum(hauts) + gap * (len(rangs) - 1) + 2 * pad
+    x0, y0 = marge, im.height - marge - h
+    g.rounded_rectangle((x0, y0, x0 + w, y0 + h), radius=10, fill=(0, 0, 0, 120))
+    y = y0 + pad
+    for (l, f), hl in zip(rangs, hauts):
+        g.text((x0 + pad, y), l, font=f, fill="white")
+        y += hl + gap
+    cw = g.textlength(compteur, font=fc) + 2 * 16
+    g.rounded_rectangle((im.width - marge - cw, marge, im.width - marge, marge + 52), radius=10, fill=(0, 0, 0, 120))
+    g.text((im.width - marge - cw + 16, marge + 8), compteur, font=fc, fill="white")
+    return im
+
+
+def diaporama_arbres():
+    """L'application A/B/C du 18/10 au casque (iter-022) : la forêt change de version toutes les 12 s. Le haut de
+    chaque capture (forêt, lanterne, lettre à la proue) recadré en 16:9 ; le fond de la barque en moins."""
+    caps = [("028s", "A · Les arbres 3D d'origine", "feuillages en boules texturées, 2 700 triangles par arbre"),
+            ("040s", "B · Des arbres peints", "une image générée en local, posée sur un plan de deux triangles"),
+            ("052s", "C · Des touffes ombrées", "la troisième piste, en volume")]
+    out = []
+    for i, (t, titre, sous) in enumerate(caps, 1):
+        im = image(f"review/iter-022/casque/{t}.jpg").crop((0, 40, 1440, 850))
+        out.append(legende(fit(im, *DIAPO), titre, sous, f"{i}/{len(caps)}", largeur=560))
+    return out
+
+
+def diaporama_pont():
+    """Les sept versions du passage du pont, au même instant que la planche du montage vidéo (montages.yaml)."""
+    m = yaml.safe_load((ROOT / "pipeline" / "article" / "montages.yaml").read_text(encoding="utf-8"))["pont-versions"]
+    t = m["pose"]
+    out = []
+    for i, v in enumerate(m["versions"], 1):
+        d = v["date"]
+        jour, heure = d[8:10] + "/" + d[5:7], f"{int(d[11:13])} h {d[14:16]}"
+        out.append(legende(fit(frame(v["src"], t), *DIAPO), f"{jour} · {heure}", v["quoi"],
+                           f"{i}/{len(m['versions'])} · {t // 60}:{t % 60:02d} de la balade"))
+    return out
+
 
 
 def avant_apres():
@@ -162,9 +227,10 @@ def images_peintes():
     return img
 
 
-COMPOSITIONS = {"heros": heros, "arbres-abc": arbres_abc, "avant-apres": avant_apres,
-                "reference-resultat": reference_resultat, "filtre-pc": filtre_pc, "chaine-3d": chaine_3d,
-                "chaine-sprites": chaine_sprites, "statues": statues, "images-peintes": images_peintes}
+COMPOSITIONS = {"heros": heros, "avant-apres": avant_apres, "reference-resultat": reference_resultat,
+                "filtre-pc": filtre_pc, "chaine-3d": chaine_3d, "chaine-sprites": chaine_sprites, "statues": statues,
+                "images-peintes": images_peintes}
+DIAPORAMAS = {"barque-13-arbres-abc": diaporama_arbres, "barque-20-pont-versions": diaporama_pont}
 
 
 def main():
@@ -172,7 +238,17 @@ def main():
     ap.add_argument("noms", nargs="*")
     args = ap.parse_args()
     OUT.mkdir(parents=True, exist_ok=True)
-    for nom in args.noms or COMPOSITIONS:
+    for nom in args.noms or [*COMPOSITIONS, *DIAPORAMAS]:
+        if nom in DIAPORAMAS:
+            d = OUT_DIAPOS / nom
+            d.mkdir(parents=True, exist_ok=True)
+            for p in d.glob("*.jpg"):
+                p.unlink()
+            diapos = DIAPORAMAS[nom]()
+            for i, im in enumerate(diapos, 1):
+                im.save(d / f"{nom}-{i}.jpg", quality=92)
+            print(f"{d.relative_to(ROOT)}/ ({len(diapos)} diapositives, {diapos[0].width}×{diapos[0].height})")
+            continue
         im = COMPOSITIONS[nom]()
         out = OUT / f"{nom}.jpg"
         im.save(out, quality=92)

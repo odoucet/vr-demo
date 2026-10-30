@@ -158,9 +158,9 @@ enseignements de l'article, l'intro peut le laisser venir.
 
 <img src="article/wp-content/uploads/2026/10/barque-05-commits.png" width="80%">
 
-<img src="article/wp-content/uploads/2026/10/barque-20-pont-versions.jpg" width="80%">
+<img src="article/diaporamas/barque-20-pont-versions/barque-20-pont-versions-1.jpg" width="40%"> <img src="article/diaporamas/barque-20-pont-versions/barque-20-pont-versions-7.jpg" width="40%">
 
-*G01 et la planche fixe de V02. La vidéo : `article/wp-content/uploads/2026/10/barque-06-pont-versions.mp4` (hors
+*G01, puis la première et la dernière diapositive du diaporama tiré de V02 (MetaSlider, 30/10). La vidéo : `article/wp-content/uploads/2026/10/barque-06-pont-versions.mp4` (hors
 dépôt, régénérable).*
 
 ### 3. Q1 — L'autonomie, jusqu'où ? (~1 800 mots)

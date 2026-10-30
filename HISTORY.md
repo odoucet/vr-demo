@@ -647,3 +647,15 @@ autonome. `SUIVI.md` dit où en est le projet ; ce fichier raconte comment on y 
   de la planche. Une seconde capture montre la pièce d'Olivier (iter-049, 30 s) : ajoutée aux images à ne pas publier.
 - Impasses : le navigateur headless se bloquait de temps en temps sur son profil (un profil par schéma, délai et
   nouvel essai) ; les expressions de position de ffmpeg cassaient sur leurs virgules (désormais entre guillemets).
+
+## 30/10 fin d'après-midi — deux comparaisons en diaporama
+
+- Olivier : « j'adore les comparaisons d'image "side by side", mais on gagnerait à utiliser un slideshow pour voir ça
+  plus grand », pour les arbres A/B/C et le pont en sept versions, avec MetaSlider : une image par diapositive, et « une
+  éventuelle légende dans l'image pour être visible dans le slideshow ».
+- Les diapositives repartent des sources en pleine définition plutôt que des planches : les captures du casque en
+  1440 px pour les arbres (recadrées en 16:9 sur la forêt, la lanterne et la lettre de la proue ; le fond de la barque
+  en moins), les animatics pour le pont, au même instant et avec les mêmes légendes que le montage vidéo. Toutes en
+  1600×900 : MetaSlider recadre les images au format du diaporama, et une bande de légende sous l'image aurait été
+  coupée ; la légende est donc incrustée dans le cadre, en bas à gauche, bornée en largeur pour laisser visibles la
+  lettre de la proue et le pont. Dans l'article, un code court `[metaslider id="REMPLACER-…"]` marque leur place.

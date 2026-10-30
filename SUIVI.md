@@ -16,13 +16,15 @@ ici à l'état final ; il reste lisible dans l'historique git (`git show 3c4edf0
 Axe d'Olivier : jusqu'où une IA peut-elle être autonome sur une petite démo VR, en tour d'horizon. Plan validé (« le
 plan de l'article me va très bien »), article rédigé à sa voix, dans le style demandé (skill avoid-ai-writing).
 
-- **Livré** : `article/la-barque-des-lucioles.md` (~7 800 mots) et `article/wp-content/uploads/2026/10/`, 37 médias
-  prêts à envoyer dans la médiathèque WordPress (25 images, 6 vidéos et leurs affiches, 67 Mo) ; `article/apercu.html`
-  pour relire ; mode d'emploi dans `article/LISEZMOI.md`. Tout se régénère : `pipeline/article/` (maîtres dans
-  `builds/article/`, puis `export_web.py`).
-- **Attendu d'Olivier** : remplir l'unique `[À COMPLÉTER]` (temps passé, sessions au casque, coût) ; trancher le
-  paragraphe sur le style (A4) ; vérifier les droits (Suno, Midjourney, modèles locaux) ; plateforme : WordPress (A7,
-  tranché par sa demande).
+- **Livré** : `article/la-barque-des-lucioles.md` (~7 800 mots) et `article/wp-content/uploads/2026/10/`, 35 médias
+  prêts à envoyer dans la médiathèque WordPress (23 images, 6 vidéos et leurs affiches, 67 Mo), plus deux diaporamas
+  MetaSlider dans `article/diaporamas/` (A/B/C des arbres, 3 diapositives ; le pont en sept versions, 7), légende
+  incrustée ; `article/apercu.html` pour relire ; mode d'emploi dans `article/LISEZMOI.md`. Tout se régénère :
+  `pipeline/article/` (maîtres dans `builds/article/`, puis `export_web.py`).
+- **Attendu d'Olivier** : assembler les deux diaporamas dans MetaSlider et remplacer les deux
+  `[metaslider id="REMPLACER-…"]` ; remplir l'unique `[À COMPLÉTER]` (temps passé, sessions au casque, coût) ;
+  trancher le paragraphe sur le style (A4) ; vérifier les droits (Suno, Midjourney, modèles locaux) ; plateforme :
+  WordPress (A7, tranché par sa demande).
 - **Défauts appliqués** (réversibles) : vidéos H.264 plafonnées à 3 Mb/s (≤ 17,4 Mo chacune ; `export_web.py`) ;
   images ≤ 2000 px (JPEG 82-88, PNG en palette) ; noms numérotés dans l'ordre d'apparition ; espaces insécables à la
   française ; shortcodes `[video]` plutôt que des blocs Vidéo.

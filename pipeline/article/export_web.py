@@ -10,6 +10,10 @@ renommer, et les liens du Markdown (/wp-content/uploads/<mois>/...) tombent just
 des médias concordent. Écrit aussi article/apercu.html, l'article mis en page avec ses images et ses vidéos, pour le
 relire hors de WordPress (ouvrir dans un navigateur).
 
+Diaporamas (section diaporamas de medias.yaml) : les diapositives, légende incrustée, vont dans
+article/diaporamas/<nom>/, à assembler dans MetaSlider ; l'article réserve leur place par un code court
+[metaslider id="REMPLACER-<nom>"], à remplacer par celui que donne MetaSlider.
+
 Réglages : JPEG progressif (qualité 82, 88 pour les graphiques à dégradés), PNG en palette de 256 couleurs pour les
 schémas à aplats, vidéo H.264 à qualité constante (CRF 24) plafonnée à 3 Mb/s, son AAC 128 kb/s, métadonnées
 retirées, lecture progressive (faststart), affiche JPEG de 1280 px. Les maîtres viennent de schemas.py,
@@ -18,6 +22,7 @@ graphiques.py, compositions.py et montage.py (builds/article/). Les vidéos web 
 import argparse
 import io
 import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -88,8 +93,9 @@ def references(texte, mois):
     return set(re.findall(rf"/wp-content/uploads/{re.escape(mois)}/([\w.-]+)", texte))
 
 
-def apercu(md, out):
-    """L'article en HTML, chemins relatifs, shortcodes [video] changés en balises <video>."""
+def apercu(md, out, diapos):
+    """L'article en HTML, chemins relatifs, shortcodes [video] changés en balises <video>, emplacements MetaSlider en
+    bandeau d'images à faire défiler."""
     texte = md.read_text(encoding="utf-8")
 
     def balise(m):
@@ -98,7 +104,12 @@ def apercu(md, out):
         return (f'<video controls preload="metadata" playsinline{boucle} poster="{a.get("poster", "")}" '
                 f'src="{a.get("mp4", "")}" width="{a.get("width", "")}" height="{a.get("height", "")}"></video>')
 
+    def diaporama(m):
+        images = "".join(f'<img src="diaporamas/{m.group(1)}/{f}" alt="">' for f in diapos.get(m.group(1), []))
+        return f'<div class="diaporama">{images}</div>'
+
     texte = re.sub(r"\[video ([^\]]*)\]\[/video\]", balise, texte)
+    texte = re.sub(r'\[metaslider id="REMPLACER-([\w-]+)"\]', diaporama, texte)
     corps = markdown.markdown(texte, extensions=["extra"]).replace('="/wp-content/', '="wp-content/')
     titre = re.search(r"^# (.+)$", texte, re.M).group(1)
     out.write_text(f"""<!doctype html>
@@ -120,6 +131,8 @@ def apercu(md, out):
   table {{ border-collapse: collapse; font: 15px/1.45 "Segoe UI", system-ui, sans-serif; margin: 24px 0; }}
   th, td {{ text-align: left; padding: 8px 10px; border-bottom: 1px solid #dcd4c4; vertical-align: top; }}
   code {{ font-size: 15px; background: #f1ece2; padding: 1px 4px; border-radius: 3px; }}
+  .diaporama {{ display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; margin: 28px 0 6px; }}
+  .diaporama img {{ flex: 0 0 100%; margin: 0; scroll-snap-align: start; }}
 </style>
 <main>
 {corps}
@@ -177,7 +190,31 @@ def main():
         else:
             info = image(src, out, m)
         print(f"{nom:34} {info:20} {taille(out)}")
-    apercu(md, ROOT / "article" / "apercu.html")
+
+    racine = ROOT / "article" / "diaporamas"
+    racine.mkdir(exist_ok=True)
+    conf_diapos = conf.get("diaporamas") or {}
+    for d in racine.iterdir():
+        if d.name not in conf_diapos:
+            shutil.rmtree(d)
+            print(f"retiré : diaporamas/{d.name}")
+    diapos = {}
+    for nom, m in conf_diapos.items():
+        sources = sorted((ROOT / m["src"]).glob("*.jpg"), key=lambda p: int(p.stem.rsplit("-", 1)[1]))
+        if not sources:
+            sys.exit(f"diaporama {nom} : aucune image dans {m['src']} (python pipeline/article/compositions.py {nom})")
+        d = racine / nom
+        d.mkdir(exist_ok=True)
+        for p in d.iterdir():
+            p.unlink()
+        for p in sources:
+            info = image(p, d / p.name, m)
+        diapos[nom] = [p.name for p in sources]
+        poids = sum(p.stat().st_size for p in d.iterdir())
+        print(f"diaporamas/{nom:24} {len(sources)} × {info:11} {poids / 1e6:.1f} Mo")
+        if f'[metaslider id="REMPLACER-{nom}"]' not in texte:
+            print(f"  attention : aucun emplacement [metaslider id=\"REMPLACER-{nom}\"] dans l'article")
+    apercu(md, ROOT / "article" / "apercu.html", diapos)
     total = sum(p.stat().st_size for p in dest.iterdir())
     print(f"{len(attendus)} fichiers dans {dest.relative_to(ROOT)}, {total / 1e6:.0f} Mo ; aperçu : article/apercu.html")
 

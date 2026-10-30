@@ -160,7 +160,7 @@ Restent le périmètre (« ne fais rien de plus », « tout noter sans corrig
 
 Le soir du deuxième jour, après une journée passée à gagner des millisecondes, la forêt restait le point faible : des arbres en 3D aux feuillages en boules texturées, qui faisaient jeu des années 90. L'agent a proposé trois pistes : des plans peints, des touffes festonnées, un autre décor. J'ai voulu les voir toutes : « Tu peux proposer les différentes idées sur les arbres dans le même APK ? » Vingt-quatre minutes plus tard, j'avais une application où la forêt changeait toutes les douze secondes, avec une lettre à la proue : A pour les arbres 3D, B pour des arbres peints, C pour des touffes ombrées. Mêmes positions, même fluidité.
 
-![Trois captures du casque : la même forêt en arbres 3D, en arbres peints et en touffes ombrées.](/wp-content/uploads/2026/10/barque-13-arbres-abc.jpg)
+[metaslider id="REMPLACER-barque-13-arbres-abc"]
 
 *L'application de comparaison vue au casque : la même forêt en arbres 3D (A), en arbres peints (B) et en touffes ombrées (C).*
 
@@ -212,7 +212,7 @@ Deux questions m'ont occupé entre-temps : « Quel élément de la chaîne fix
 
 Puis une de mes remarques a débusqué deux bugs : « Ta vue 3D sur fond gris est très belle, c'est pas du tout ce que je vois dans le jeu. » L'agent a monté une planche de comparaison, la vue tournante du modèle à côté de trois vues depuis la barque, et trouvé deux défauts d'import présents depuis le début. Nanite, la géométrie virtualisée d'Unreal, activée par défaut, faisait afficher au Quest un maillage de secours dix fois plus pauvre. Et les réimports gardaient l'ancienne texture : mon pont portait celle de son substitut gris, la nouvelle barque celle de l'ancienne. L'agent venait de projeter mon image sur la face avant du pont pour rattraper le détail. Son journal le résume : « La projection, astucieuse, compensait un bug qu'on n'avait pas vu. »
 
-![Sept vignettes du passage du pont au même instant, datées du 19 au 23 octobre.](/wp-content/uploads/2026/10/barque-20-pont-versions.jpg)
+[metaslider id="REMPLACER-barque-20-pont-versions"]
 
 *Le pont et son passage en sept versions, au même instant de la balade (1 min 52).*
 
