@@ -58,6 +58,8 @@ assets/textures/sprites/**/essai_*.png
 
 # Animatics vidéo : lourds et régénérables (pipeline/review/animatic.py) ; la planche-animatic.jpg reste versionnée.
 review/**/animatic*.mp4
+# Son 5.1 de l'animatique : régénérable (pipeline/review/mix51.py)
+review/**/animatic*.flac
 
 # Vidéos de l'article et aperçu local : régénérables (pipeline/article/montage.py, export_web.py) ; les images web
 # de article/wp-content/ restent versionnées.
